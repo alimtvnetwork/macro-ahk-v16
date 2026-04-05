@@ -176,15 +176,32 @@ export function DependencyChainPanel() {
             <span className="text-[9px] text-muted-foreground uppercase tracking-wider">
               Last injection chain
             </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-5 w-5 p-0"
-              onClick={fetchChain}
-              disabled={loading}
-            >
-              <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
-            </Button>
+            <div className="flex items-center gap-0.5">
+              {snapshot && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 w-5 p-0"
+                  onClick={copyToClipboard}
+                  title="Copy chain diagnostics"
+                >
+                  {copied ? (
+                    <Check className="h-3 w-3 text-emerald-500" />
+                  ) : (
+                    <Copy className="h-3 w-3" />
+                  )}
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-5 w-5 p-0"
+                onClick={fetchChain}
+                disabled={loading}
+              >
+                <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
           </div>
 
           {!snapshot && !loading && (
