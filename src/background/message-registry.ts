@@ -15,7 +15,7 @@ import { buildHealthResponse } from "./health-handler";
 import { buildAuthHealthResponse } from "./auth-health-handler";
 import { handleNetworkStatus, handleNetworkRequest, getRecentNetworkRequests, getNetworkStats, clearNetworkRequests } from "./network-handler";
 import { buildApiEndpointsResponse, buildApiStatusResponse } from "./api-explorer-handler";
-import { getRecentTrackedMessages } from "./message-router";
+import { getRecentTrackedMessages } from "./message-tracker";
 
 import {
     handleGetConfig,

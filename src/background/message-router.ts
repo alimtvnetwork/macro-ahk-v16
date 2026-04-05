@@ -6,7 +6,8 @@
  * keep complexity low per function.
  */
 
-import { type MessageRequest, type TrackedMessageEvent } from "../shared/messages";
+import { type MessageRequest } from "../shared/messages";
+import { trackMessage } from "./message-tracker";
 
 import {
     BROADCAST_TYPES,
@@ -14,29 +15,10 @@ import {
 } from "./message-registry";
 
 /* ------------------------------------------------------------------ */
-/*  Message Ring Buffer (last 50 handled messages)                     */
+/*  Re-export for backward compat                                      */
 /* ------------------------------------------------------------------ */
 
-const MAX_TRACKED = 50;
-const trackedMessages: TrackedMessageEvent[] = [];
-
-function trackMessage(type: string, durationMs: number, ok: boolean): void {
-    trackedMessages.push({
-        type,
-        timestamp: new Date().toISOString(),
-        durationMs,
-        ok,
-    });
-    if (trackedMessages.length > MAX_TRACKED) {
-        trackedMessages.shift();
-    }
-}
-
-/** Returns the most recent tracked messages (newest first). */
-export function getRecentTrackedMessages(limit = 10): TrackedMessageEvent[] {
-    const count = Math.min(limit, trackedMessages.length);
-    return trackedMessages.slice(-count).reverse();
-}
+export { getRecentTrackedMessages } from "./message-tracker";
 
 /* ------------------------------------------------------------------ */
 /*  Message Dispatch                                                   */
