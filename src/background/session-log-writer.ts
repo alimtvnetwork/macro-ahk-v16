@@ -302,7 +302,7 @@ export async function pruneOldSessionLogs(maxAgeDays = 7): Promise<number> {
                     toDelete.push(name);
                 }
             } catch {
-                // No events.log → stale dir, mark for deletion
+                // No events.log at "opfs-root/session-logs/{name}/events.log" → stale dir, mark for deletion
                 toDelete.push(name);
             }
         }
