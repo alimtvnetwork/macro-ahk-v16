@@ -155,9 +155,9 @@ export async function handleLogError(message: MessageRequest): Promise<OkRespons
         scriptFile?: string;
     };
 
-    insertErrorRow(msg);
+    const sessionId = await ensureSessionId();
+    insertErrorRow(msg, sessionId);
     writeErrorEntry(msg);
-    dbManager!.markDirty();
     return { isOk: true };
 }
 
