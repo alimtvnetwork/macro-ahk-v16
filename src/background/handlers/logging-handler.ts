@@ -174,9 +174,8 @@ function insertErrorRow(msg: {
     projectId?: string;
     configId?: string;
     scriptFile?: string;
-}): void {
+}, sessionId: number): void {
     const db = getErrorsDb();
-    const sessionId = ensureSessionId();
     const now = new Date().toISOString();
     const version = chrome.runtime.getManifest().version;
 
