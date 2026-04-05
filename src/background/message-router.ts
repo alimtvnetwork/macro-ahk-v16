@@ -6,7 +6,7 @@
  * keep complexity low per function.
  */
 
-import { type MessageRequest, type TrackedMessageEvent } from "../shared/messages";
+import { type MessageRequest } from "../shared/messages";
 import { trackMessage } from "./message-tracker";
 
 import {
