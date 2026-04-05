@@ -32,6 +32,7 @@ import { setBootStep, setBootPersistenceMode, finalizeBoot } from "./boot-diagno
 import { configureUserScriptWorld } from "./csp-fallback";
 import { markInitialized, drainBuffer } from "./message-buffer";
 import { cacheScriptCode, getCachedScriptCode, purgeStaleEntries, syncCacheWithBuildId } from "./injection-cache";
+import { invalidateNamespaceCache } from "./namespace-cache";
 
 const BUILD_META_URL = "build-meta.json";
 
