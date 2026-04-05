@@ -130,6 +130,13 @@ const OptionsPage = () => {
   const [viewDirection, setViewDirection] = useState<"forward" | "back">("forward");
   const extensionVersion = getChromeRuntime()?.getManifest?.().version ?? null;
 
+  const handleSidebarSelect = useCallback((s: SidebarSelection) => {
+    setIsCreating(false);
+    // Navigating to a section from a detail view = going back
+    setViewDirection(s.type === "section" ? "back" : "forward");
+    setSelection(s);
+  }, []);
+
   if (onboardingLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -215,13 +222,6 @@ const OptionsPage = () => {
     };
     reader.readAsText(file);
   };
-
-  const handleSidebarSelect = useCallback((s: SidebarSelection) => {
-    setIsCreating(false);
-    // Navigating to a section from a detail view = going back
-    setViewDirection(s.type === "section" ? "back" : "forward");
-    setSelection(s);
-  }, []);
 
   const handleNewScript = () => {
     // Create a blank script and navigate to it
