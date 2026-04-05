@@ -32,6 +32,7 @@ import { setBootStep, setBootPersistenceMode, finalizeBoot } from "./boot-diagno
 import { configureUserScriptWorld } from "./csp-fallback";
 import { markInitialized, drainBuffer } from "./message-buffer";
 import { cacheScriptCode, getCachedScriptCode, purgeStaleEntries, syncCacheWithBuildId } from "./injection-cache";
+import { invalidateNamespaceCache } from "./namespace-cache";
 
 const BUILD_META_URL = "build-meta.json";
 
@@ -180,11 +181,9 @@ function bindAllHandlers(manager: DbManager): void {
     bindKvDbManager(manager);
     bindGroupedKvDbManager(manager);
     bindFileStorageDbManager(manager);
-    // Wire file-change → namespace cache invalidation without circular import
+    // Wire file-change → namespace cache invalidation without circular import.
     onFileStorageChange((projectId) => {
-        import("./namespace-cache").then(({ invalidateNamespaceCache }) => {
-            invalidateNamespaceCache(projectId).catch(() => {});
-        }).catch(() => {});
+        invalidateNamespaceCache(projectId).catch(() => {});
     });
     bindStorageBrowserDbManager(manager);
     bindUpdaterDbManager(manager);
