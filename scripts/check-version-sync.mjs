@@ -65,16 +65,6 @@ const files = [
       return m ? m[1] : null;
     },
   },
-  {
-    label: "seed-manifest.json (macro-controller entry)",
-    path: "standalone-scripts/_generated/seed-manifest.json",
-    optional: true,
-    extract: (txt) => {
-      // Find the macro-controller project entry's version
-      const m = txt.match(/"name"\s*:\s*"macro-controller"[\s\S]*?"version"\s*:\s*"(\d+\.\d+\.\d+)/);
-      return m ? m[1] : null;
-    },
-  },
 ];
 
 const results = files.map(({ label, path, extract, optional }) => {
