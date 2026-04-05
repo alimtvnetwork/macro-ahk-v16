@@ -83,6 +83,52 @@ export function DependencyChainPanel() {
     }
   }, []);
 
+  const formatChainText = useCallback((snap: ChainSnapshot): string => {
+    const flag = (ok: boolean) => ok ? "✓" : "✗";
+    const divider = "═".repeat(50);
+    const lines = [
+      divider,
+      "  Dependency Chain Diagnostics",
+      `  Generated: ${new Date().toISOString()}`,
+      `  Injection: ${new Date(snap.timestamp).toISOString()}`,
+      `  Total: ${snap.totalMs}ms  |  Tab: ${snap.tabId}`,
+      divider,
+      "",
+      `── CHAIN (${snap.chain.length} scripts) ──`,
+      "",
+      "  #  Script                Role          R  F  E  Time   Source",
+      "  ── ──────────────────── ───────────── ── ── ── ────── ──────",
+    ];
+    for (let i = 0; i < snap.chain.length; i++) {
+      const e = snap.chain[i];
+      const num = String(i + 1).padStart(2);
+      const name = e.scriptName.padEnd(20);
+      const role = (ROLE_LABELS[e.role] ?? e.role).padEnd(13);
+      const r = flag(e.resolved);
+      const f = flag(e.fetched);
+      const x = flag(e.executed);
+      const ms = e.executeMs !== null ? `${e.executeMs}ms`.padEnd(6) : "  —   ";
+      const src = e.codeSource ?? "";
+      lines.push(`  ${num} ${name} ${role} ${r}  ${f}  ${x}  ${ms} ${src}`);
+      if (e.error) {
+        lines.push(`     ⚠ ${e.error}`);
+      }
+    }
+    lines.push("");
+    const allOk = snap.chain.every(c => c.resolved && c.fetched && c.executed);
+    lines.push(`  Status: ${allOk ? "✓ ALL OK" : "✗ ISSUES DETECTED"}`);
+    lines.push(divider);
+    return lines.join("\n");
+  }, []);
+
+  const copyToClipboard = useCallback(async () => {
+    if (!snapshot) return;
+    const text = formatChainText(snapshot);
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [snapshot, formatChainText]);
+
   useEffect(() => {
     if (expanded) {
       fetchChain();
