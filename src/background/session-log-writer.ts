@@ -58,6 +58,7 @@ let sessionDir: FileSystemDirectoryHandle | null = null;
 let sessionId: string | null = null;
 let version: string = "0.0.0";
 let sessionStartedAt: string = "";
+let sessionInitPromise: Promise<void> | null = null;
 
 // Buffered writers — we append to the same files
 const fileHandleCache = new Map<string, FileSystemFileHandle>();
@@ -68,48 +69,81 @@ let flushScheduled = false;
 /*  Initialization                                                     */
 /* ------------------------------------------------------------------ */
 
+async function ensureSessionDir(): Promise<FileSystemDirectoryHandle | null> {
+    if (!sessionId) return null;
+    if (sessionDir) return sessionDir;
+
+    try {
+        const root = await navigator.storage.getDirectory();
+        const logsRoot = await root.getDirectoryHandle(LOGS_DIR_NAME, { create: true });
+        sessionDir = await logsRoot.getDirectoryHandle(`${SESSION_PREFIX}${sessionId}`, { create: true });
+        return sessionDir;
+    } catch (err) {
+        const absDir = `opfs-root/${LOGS_DIR_NAME}/${SESSION_PREFIX}${sessionId}`;
+        const errDetail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+        console.warn(`[session-log-writer::ensureSessionDir] Failed to access "${absDir}" (${errDetail})`);
+        sessionDir = null;
+        return null;
+    }
+}
+
 /** Creates a new session directory in OPFS and prepares file handles. */
 export async function initSessionLogDir(sid: string, ver: string): Promise<void> {
     sessionId = sid;
     version = ver;
     sessionStartedAt = new Date().toISOString();
+    fileHandleCache.clear();
 
-    try {
-        const root = await navigator.storage.getDirectory();
-        const logsRoot = await root.getDirectoryHandle(LOGS_DIR_NAME, { create: true });
-        sessionDir = await logsRoot.getDirectoryHandle(`${SESSION_PREFIX}${sid}`, { create: true });
+    sessionInitPromise = (async () => {
+        try {
+            const dir = await ensureSessionDir();
+            if (!dir) return;
 
-        // Write initial header to events.log
-        const header = [
-            LOG_SEPARATOR,
-            `  Marco Session Log — Session #${sid}`,
-            `  Started:  ${sessionStartedAt}`,
-            `  Version:  ${ver}`,
-            `  Platform: ${navigator.userAgent}`,
-            LOG_SEPARATOR,
-            "",
-        ].join("\n");
+            // Seed files directly during init to avoid waiting on our own init promise
+            const seeds = new Map<string, string>([
+                [EVENTS_LOG, [
+                    LOG_SEPARATOR,
+                    `  Marco Session Log — Session #${sid}`,
+                    `  Started:  ${sessionStartedAt}`,
+                    `  Version:  ${ver}`,
+                    `  Platform: ${navigator.userAgent}`,
+                    LOG_SEPARATOR,
+                    "",
+                ].join("\n")],
+                [ERRORS_LOG, [
+                    `=== Errors — Session #${sid} — ${sessionStartedAt} ===`,
+                    "",
+                ].join("\n")],
+                [SCRIPTS_LOG, [
+                    `=== Script Lifecycle — Session #${sid} — ${sessionStartedAt} ===`,
+                    "",
+                ].join("\n")],
+            ]);
 
-        await appendToFile(EVENTS_LOG, header);
-        await appendToFile(ERRORS_LOG, [
-            `=== Errors — Session #${sid} — ${sessionStartedAt} ===`,
-            "",
-        ].join("\n"));
-        await appendToFile(SCRIPTS_LOG, [
-            `=== Script Lifecycle — Session #${sid} — ${sessionStartedAt} ===`,
-            "",
-        ].join("\n"));
+            for (const [filename, content] of seeds) {
+                const handle = await dir.getFileHandle(filename, { create: true });
+                fileHandleCache.set(filename, handle);
+                const writable = await handle.createWritable({ keepExistingData: true });
+                const file = await handle.getFile();
+                await writable.seek(file.size);
+                await writable.write(content);
+                await writable.close();
+            }
 
-        console.log(`[session-log-writer] Initialized OPFS dir "opfs-root/${LOGS_DIR_NAME}/${SESSION_PREFIX}${sid}/" with files: [${EVENTS_LOG}, ${ERRORS_LOG}, ${SCRIPTS_LOG}]`);
+            console.log(`[session-log-writer] Initialized OPFS dir "opfs-root/${LOGS_DIR_NAME}/${SESSION_PREFIX}${sid}/" with files: [${EVENTS_LOG}, ${ERRORS_LOG}, ${SCRIPTS_LOG}]`);
 
-        // Fire-and-forget: prune old sessions on each new session start
-        void pruneOldSessionLogs();
-    } catch (err) {
-        const absDir = `opfs-root/${LOGS_DIR_NAME}/${SESSION_PREFIX}${sid}`;
-        const errDetail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-        console.warn(`[session-log-writer::initSessionDir] OPFS dir init failed at "${absDir}" (${errDetail}). Expected files: [${absDir}/${EVENTS_LOG}, ${absDir}/${ERRORS_LOG}, ${absDir}/${SCRIPTS_LOG}]`);
-        sessionDir = null;
-    }
+            // Fire-and-forget: prune old sessions on each new session start
+            void pruneOldSessionLogs();
+        } catch (err) {
+            const absDir = `opfs-root/${LOGS_DIR_NAME}/${SESSION_PREFIX}${sid}`;
+            const errDetail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+            console.warn(`[session-log-writer::initSessionDir] OPFS dir init failed at "${absDir}" (${errDetail}). Expected files: [${absDir}/${EVENTS_LOG}, ${absDir}/${ERRORS_LOG}, ${absDir}/${SCRIPTS_LOG}]`);
+            sessionDir = null;
+        }
+    })();
+
+    await sessionInitPromise;
+    sessionInitPromise = null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -118,7 +152,12 @@ export async function initSessionLogDir(sid: string, ver: string): Promise<void>
 
 /** Appends text to a file in the session directory. Buffered + debounced. */
 async function appendToFile(filename: string, text: string): Promise<void> {
-    if (!sessionDir) return;
+    if (sessionInitPromise) {
+        await sessionInitPromise;
+    }
+
+    const dir = await ensureSessionDir();
+    if (!dir) return;
 
     const existing = pendingWrites.get(filename) ?? [];
     existing.push(text);
@@ -134,7 +173,8 @@ async function appendToFile(filename: string, text: string): Promise<void> {
 /** Flushes all pending writes to OPFS files. */
 async function flushPending(): Promise<void> {
     flushScheduled = false;
-    if (!sessionDir) return;
+    const dir = await ensureSessionDir();
+    if (!dir) return;
 
     const entries = Array.from(pendingWrites.entries());
     pendingWrites.clear();
@@ -143,7 +183,7 @@ async function flushPending(): Promise<void> {
         try {
             let handle = fileHandleCache.get(filename);
             if (!handle) {
-                handle = await sessionDir.getFileHandle(filename, { create: true });
+                handle = await dir.getFileHandle(filename, { create: true });
                 fileHandleCache.set(filename, handle);
             }
 
@@ -158,6 +198,7 @@ async function flushPending(): Promise<void> {
             const absPath = `opfs-root/${LOGS_DIR_NAME}/${SESSION_PREFIX}${sessionId}/${filename}`;
             const errDetail = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
             console.warn(`[session-log-writer::flushPending] Failed to write "${absPath}" (${errDetail})`);
+            fileHandleCache.delete(filename);
         }
     }
 }

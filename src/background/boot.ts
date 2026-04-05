@@ -77,7 +77,7 @@ export async function boot(): Promise<void> {
 
         step = "start-session";
         setBootStep(step);
-        const sessionId = startSession(chrome.runtime.getManifest().version);
+        const sessionId = await startSession(chrome.runtime.getManifest().version);
         setCurrentSessionId(sessionId);
 
         step = "seed-scripts";

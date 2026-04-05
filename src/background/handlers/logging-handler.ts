@@ -30,7 +30,7 @@ export function bindDbManager(manager: DbManager): void {
 }
 
 /** Starts a new logging session and returns its ID (INTEGER AUTOINCREMENT). */
-export function startSession(version: string): string {
+export async function startSession(version: string): Promise<string> {
     const db = getLogsDb();
     const now = new Date().toISOString();
 
@@ -44,8 +44,8 @@ export function startSession(version: string): string {
     currentSessionId = sessionId;
     dbManager!.markDirty();
 
-    // Initialize OPFS session log directory
-    void initSessionLogDir(String(sessionId), version);
+    // Initialize OPFS session log directory before first writes can race past it
+    await initSessionLogDir(String(sessionId), version);
 
     return String(sessionId);
 }
@@ -75,11 +75,11 @@ export function getErrorsDb() {
 }
 
 /** Returns the current session ID, creating one if needed. */
-function ensureSessionId(): number {
+async function ensureSessionId(): Promise<number> {
     const isMissingSession = currentSessionId === null;
 
     if (isMissingSession) {
-        startSession("0.0.0");
+        await startSession("0.0.0");
     }
     return currentSessionId!;
 }
@@ -106,8 +106,9 @@ export async function handleLogEntry(message: MessageRequest): Promise<OkRespons
         configId?: string;
     };
 
-    insertLogRow(msg);
-    writeLogEntry(msg);
+    const sessionId = await ensureSessionId();
+    insertLogRow(msg, sessionId);
+    void writeLogEntry(msg);
     dbManager!.markDirty();
     return { isOk: true };
 }
@@ -122,9 +123,8 @@ function insertLogRow(msg: {
     scriptId?: string;
     projectId?: string;
     configId?: string;
-}): void {
+}, sessionId: number): void {
     const db = getLogsDb();
-    const sessionId = ensureSessionId();
     const now = new Date().toISOString();
     const version = chrome.runtime.getManifest().version;
 
@@ -155,9 +155,9 @@ export async function handleLogError(message: MessageRequest): Promise<OkRespons
         scriptFile?: string;
     };
 
-    insertErrorRow(msg);
+    const sessionId = await ensureSessionId();
+    insertErrorRow(msg, sessionId);
     writeErrorEntry(msg);
-    dbManager!.markDirty();
     return { isOk: true };
 }
 
@@ -174,9 +174,8 @@ function insertErrorRow(msg: {
     projectId?: string;
     configId?: string;
     scriptFile?: string;
-}): void {
+}, sessionId: number): void {
     const db = getErrorsDb();
-    const sessionId = ensureSessionId();
     const now = new Date().toISOString();
     const version = chrome.runtime.getManifest().version;
 
