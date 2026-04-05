@@ -130,6 +130,13 @@ const OptionsPage = () => {
   const [viewDirection, setViewDirection] = useState<"forward" | "back">("forward");
   const extensionVersion = getChromeRuntime()?.getManifest?.().version ?? null;
 
+  const handleSidebarSelect = useCallback((s: SidebarSelection) => {
+    setIsCreating(false);
+    // Navigating to a section from a detail view = going back
+    setViewDirection(s.type === "section" ? "back" : "forward");
+    setSelection(s);
+  }, []);
+
   if (onboardingLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -198,30 +205,6 @@ const OptionsPage = () => {
           id: crypto.randomUUID(),
           schemaVersion: manifest.schemaVersion ?? 1,
           name: manifest.name ?? file.name.replace(/\.json$/, ""),
-          version: manifest.version ?? "1.0.0",
-          description: manifest.description ?? "",
-          targetUrls: manifest.targetUrls ?? [],
-          scripts: manifest.scripts ?? [],
-          configs: manifest.configs ?? [],
-          variables: manifest.variables ? JSON.stringify(manifest.variables) : "{}",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        await pSave(newProject);
-        toast.success(`Imported "${newProject.name}"`);
-      } catch {
-        toast.error("Failed to parse JSON file");
-      }
-    };
-    reader.readAsText(file);
-  };
-
-  const handleSidebarSelect = useCallback((s: SidebarSelection) => {
-    setIsCreating(false);
-    // Navigating to a section from a detail view = going back
-    setViewDirection(s.type === "section" ? "back" : "forward");
-    setSelection(s);
-  }, []);
 
   const handleNewScript = () => {
     // Create a blank script and navigate to it
