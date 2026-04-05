@@ -34,7 +34,7 @@ const marco = Object.freeze({
     utils: Object.freeze(createUtilsApi()),
     prompts: Object.freeze(createPromptsApi()),
     api: Object.freeze(createApiModule()),
-    version: "1.3.0",
+    version: "2.9.0",
 });
 
 /* ------------------------------------------------------------------ */
