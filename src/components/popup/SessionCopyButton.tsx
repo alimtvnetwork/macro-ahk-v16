@@ -133,7 +133,7 @@ const CURRENT_SESSION_VALUE = "__current__";
 // eslint-disable-next-line max-lines-per-function -- session selector + copy button with loading/copied states
 export function SessionCopyButton() {
   const [state, setState] = useState<"idle" | "loading" | "copied">("idle");
-  const [sessions, setSessions] = useState<string[]>([]);
+  const [sessions, setSessions] = useState<SessionInfoEntry[]>([]);
   const [selectedSession, setSelectedSession] = useState<string>(CURRENT_SESSION_VALUE);
   const [loadingSessions, setLoadingSessions] = useState(false);
 
@@ -145,9 +145,8 @@ export function SessionCopyButton() {
     sendMessage<SessionReportResponse>({ type: "GET_SESSION_REPORT" })
       .then((res) => {
         if (cancelled) return;
-        const available = res.sessions ?? [];
-        setSessions(available);
-        // Default to current session
+        const withTs = res.sessionsWithTimestamps ?? (res.sessions ?? []).map((id) => ({ id, lastModified: "" }));
+        setSessions(withTs);
         if (res.sessionId && res.sessionId !== "none") {
           setSelectedSession(res.sessionId);
         }
