@@ -11,9 +11,16 @@
 
 import type { Database as SqlJsDatabase } from "sql.js";
 import type { DbManager } from "../db-manager";
-import { invalidateNamespaceCache } from "../namespace-cache";
-
 let dbManager: DbManager | null = null;
+let onFilesChanged: ((projectId: string) => void) | null = null;
+
+/**
+ * Registers a callback invoked when files change (save/delete).
+ * Used by namespace-cache to invalidate without a circular import.
+ */
+export function onFileStorageChange(cb: (projectId: string) => void): void {
+    onFilesChanged = cb;
+}
 
 export function bindFileStorageDbManager(manager: DbManager): void {
     dbManager = manager;
@@ -55,8 +62,8 @@ export async function handleFileSave(msg: unknown): Promise<{ isOk: true; id: st
     const result = db.exec("SELECT last_insert_rowid()");
     const id = String(result[0].values[0][0]);
     markDirty();
-    // ✅ 15.8: Invalidate namespace cache when files change
-    invalidateNamespaceCache(projectId).catch(() => {});
+    // Notify listeners (e.g. namespace cache) without circular import
+    onFilesChanged?.(projectId);
     return { isOk: true, id };
 }
 

@@ -16,7 +16,7 @@ import { bindErrorDbManager } from "./handlers/error-handler";
 import { bindPromptDbManager, reseedPrompts } from "./handlers/prompt-handler";
 import { bindKvDbManager } from "./handlers/kv-handler";
 import { bindGroupedKvDbManager } from "./handlers/grouped-kv-handler";
-import { bindFileStorageDbManager } from "./handlers/file-storage-handler";
+import { bindFileStorageDbManager, onFileStorageChange } from "./handlers/file-storage-handler";
 import { bindStorageBrowserDbManager } from "./handlers/storage-browser-handler";
 import { bindUpdaterDbManager } from "./handlers/updater-handler";
 import {
@@ -180,6 +180,12 @@ function bindAllHandlers(manager: DbManager): void {
     bindKvDbManager(manager);
     bindGroupedKvDbManager(manager);
     bindFileStorageDbManager(manager);
+    // Wire file-change → namespace cache invalidation without circular import
+    onFileStorageChange((projectId) => {
+        import("./namespace-cache").then(({ invalidateNamespaceCache }) => {
+            invalidateNamespaceCache(projectId).catch(() => {});
+        }).catch(() => {});
+    });
     bindStorageBrowserDbManager(manager);
     bindUpdaterDbManager(manager);
 }
