@@ -96,3 +96,5 @@ dump.rdb
 
 marco-script-ahk-v4/logs/activity.txt
 
+/standalone-scripts/_generated
+/chrome-extension
