@@ -106,8 +106,9 @@ export async function handleLogEntry(message: MessageRequest): Promise<OkRespons
         configId?: string;
     };
 
+    await ensureSessionId();
     insertLogRow(msg);
-    writeLogEntry(msg);
+    void writeLogEntry(msg);
     dbManager!.markDirty();
     return { isOk: true };
 }
