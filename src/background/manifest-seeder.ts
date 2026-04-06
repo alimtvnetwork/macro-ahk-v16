@@ -55,11 +55,7 @@ export async function seedFromManifest(): Promise<SeedResult> {
         return { scripts: 0, configs: 0, projects: 0, errors: [`Invalid schemaVersion: ${sv}`] };
     }
     if (sv > SUPPORTED_SCHEMA_VERSIONS.max) {
-        console.error(
-            "[manifest-seeder::seedFromManifest] ❌ schemaVersion %d is newer than supported max (%d) — aborting. Update the extension to support this manifest.",
-            sv,
-            SUPPORTED_SCHEMA_VERSIONS.max,
-        );
+        logBgWarnError("[manifest-seeder]", `schemaVersion ${sv} is newer than supported max (${SUPPORTED_SCHEMA_VERSIONS.max}) — aborting. Update the extension.`);
         return { scripts: 0, configs: 0, projects: 0, errors: [`Unsupported schemaVersion ${sv} (max supported: ${SUPPORTED_SCHEMA_VERSIONS.max})`] };
     }
     if (sv < SUPPORTED_SCHEMA_VERSIONS.min) {
