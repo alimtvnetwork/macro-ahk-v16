@@ -363,7 +363,7 @@ async function attemptUserScriptFallback(
         : userScriptTierLabel;
 
     const combinedError = `All injection tiers failed | MAIN: ${mainErrorMessage ?? "unknown"} | USER_SCRIPT: ${userScriptReason} | ISOLATED_BLOB: ${blobResult.errorMessage ?? "unknown"} | ISOLATED_EVAL: ${evalResult.errorMessage ?? "unknown"}`;
-    console.error("[injection:csp] ❌ %s", combinedError);
+    logBgWarnError("[injection:csp]", combinedError);
     return buildResult(false, "ISOLATED", true, combinedError);
 }
 
