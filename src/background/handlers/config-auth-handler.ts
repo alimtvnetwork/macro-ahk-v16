@@ -689,7 +689,7 @@ async function readCookieValueByNameCandidates(
             const errorMessage = cookieError instanceof Error
                 ? cookieError.message
                 : String(cookieError);
-            console.error(`[config-auth] Cookie read failed (${cookieName}): ${errorMessage}`);
+            logCaughtError("[config-auth]", `Cookie read failed (${cookieName})`, cookieError);
         }
 
         if (value !== null) {
