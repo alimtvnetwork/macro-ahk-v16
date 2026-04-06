@@ -114,7 +114,7 @@ async function getActiveProjectScripts(): Promise<unknown[]> {
 
     const project = response?.activeProject;
     if (!project) {
-        console.error("[Marco] Shortcut: GET_ACTIVE_PROJECT returned no active project");
+        logBgWarnError("[shortcut]", "GET_ACTIVE_PROJECT returned no active project");
         return [];
     }
 
