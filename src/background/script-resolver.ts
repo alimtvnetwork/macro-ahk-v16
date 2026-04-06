@@ -95,7 +95,7 @@ async function resolveScriptCode(script: StoredScript): Promise<ResolvedCode> {
 
             cacheScriptCode(candidate.path, code).catch(() => {});
             if (candidate.path !== script.filePath) {
-                console.error("[script-resolver] Recovered %s via bundled fallback %s", script.filePath, candidate.path);
+                logBgWarnError("[script-resolver]", `Recovered ${script.filePath} via bundled fallback ${candidate.path}`);
                 cacheScriptCode(script.filePath, code).catch(() => {});
             }
 
