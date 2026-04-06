@@ -231,12 +231,25 @@ function copyProjectScripts(): Plugin {
             let copiedCount = 0;
 
             for (const folder of scriptFolders) {
-                const instructionPath = resolve(standaloneDir, folder.name, "dist", "instruction.json");
+                const projectRootDir = resolve(standaloneDir, folder.name);
+                const sourceInstructionPath = resolve(projectRootDir, "src", "instruction.ts");
+                const instructionPath = resolve(projectRootDir, "dist", "instruction.json");
+
+                if (!existsSync(instructionPath) && existsSync(sourceInstructionPath)) {
+                    try {
+                        execSync(
+                            `node scripts/compile-instruction.mjs "standalone-scripts/${folder.name}"`,
+                            { cwd: __dirname, stdio: "inherit" },
+                        );
+                    } catch (e) {
+                        console.warn(`[copy-project-scripts] Failed to compile instruction for ${folder.name}: ${e}`);
+                    }
+                }
+
                 if (!existsSync(instructionPath)) continue;
 
                 try {
                     const instruction = JSON.parse(readFileSync(instructionPath, "utf-8"));
-                    const projectRootDir = resolve(standaloneDir, folder.name);
                     const distDir = resolve(projectRootDir, "dist");
 
                     // Per-project subfolder

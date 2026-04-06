@@ -4,7 +4,52 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { resolve } from 'path';
 import { copyFileSync, mkdirSync, existsSync, readFileSync, writeFileSync, readdirSync } from 'fs';
 import { execSync } from 'node:child_process';
-import { generateAutoAliases } from './scripts/vite-plugin-auto-alias';
+
+function resolveDeclaredAssetSource(projectRootDir: string, projectDistDir: string, fileName: string, assetKey?: string): string | null {
+  const directCandidates = [
+    resolve(projectDistDir, fileName),
+    resolve(projectRootDir, fileName),
+  ];
+
+  for (const candidate of directCandidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  const rootFiles = existsSync(projectRootDir)
+    ? readdirSync(projectRootDir).filter((file) => !file.startsWith('.'))
+    : [];
+  const normalizedFileName = fileName.toLowerCase();
+  const prefixedMatch = rootFiles.find((file) => file.toLowerCase().endsWith(`-${normalizedFileName}`));
+
+  if (prefixedMatch) {
+    return resolve(projectRootDir, prefixedMatch);
+  }
+
+  if (assetKey === 'config') {
+    const configMatch = rootFiles.find(
+      (file) => /\.json$/i.test(file)
+        && /config/i.test(file)
+        && !/instruction|theme|prompt/i.test(file),
+    );
+    if (configMatch) {
+      return resolve(projectRootDir, configMatch);
+    }
+  }
+
+  if (assetKey === 'theme') {
+    const themeMatch = rootFiles.find(
+      (file) => /\.json$/i.test(file) && /theme/i.test(file),
+    );
+    if (themeMatch) {
+      return resolve(projectRootDir, themeMatch);
+    }
+  }
+
+  return null;
+}
+
 
 /**
  * Custom plugin that copies manifest.json to dist/ and rewrites
@@ -206,18 +251,31 @@ function copyProjectScripts(): Plugin {
       let copiedCount = 0;
 
       for (const folder of scriptFolders) {
-        const instructionPath = resolve(standaloneDir, folder.name, 'dist', 'instruction.json');
+        const projectRootDir = resolve(standaloneDir, folder.name);
+        const sourceInstructionPath = resolve(projectRootDir, 'src', 'instruction.ts');
+        const instructionPath = resolve(projectRootDir, 'dist', 'instruction.json');
+
+        if (!existsSync(instructionPath) && existsSync(sourceInstructionPath)) {
+          try {
+            const rootDir = resolve(__dirname, '..');
+            execSync(
+              `node scripts/compile-instruction.mjs "standalone-scripts/${folder.name}"`,
+              { cwd: rootDir, stdio: 'inherit' },
+            );
+          } catch (e) {
+            console.warn(`[copy-project-scripts] Failed to compile instruction for ${folder.name}: ${e}`);
+          }
+        }
+
         if (!existsSync(instructionPath)) continue;
 
         try {
           const instruction = JSON.parse(readFileSync(instructionPath, 'utf-8'));
+          const scriptDistDir = resolve(projectRootDir, 'dist');
 
-          // Per-project subfolder
           const projectDir = resolve(projectsBaseDir, folder.name);
           mkdirSync(projectDir, { recursive: true });
 
-          // Copy ALL dist/ artifacts into the project subfolder
-          const scriptDistDir = resolve(standaloneDir, folder.name, 'dist');
           if (existsSync(scriptDistDir)) {
             const distFiles = readdirSync(scriptDistDir).filter(
               (f) => !f.startsWith('.'),
@@ -228,6 +286,36 @@ function copyProjectScripts(): Plugin {
               copyFileSync(src, dest);
               console.log(`[copy-project-scripts]   + ${folder.name}/${distFile}`);
             }
+          }
+
+          const declaredAssets = [
+            ...(instruction.assets?.configs ?? []),
+            ...(instruction.assets?.templates ?? []),
+            ...(instruction.assets?.prompts ?? []),
+            ...(instruction.assets?.css ?? []),
+            ...(instruction.assets?.scripts ?? []),
+          ] as Array<{ file: string; key?: string }>;
+
+          for (const asset of declaredAssets) {
+            const dest = resolve(projectDir, asset.file);
+            if (existsSync(dest)) {
+              continue;
+            }
+
+            const source = resolveDeclaredAssetSource(
+              projectRootDir,
+              scriptDistDir,
+              asset.file,
+              asset.key,
+            );
+
+            if (!source) {
+              console.warn(`[copy-project-scripts] Missing declared asset for ${folder.name}: ${asset.file}`);
+              continue;
+            }
+
+            copyFileSync(source, dest);
+            console.log(`[copy-project-scripts]   + ${folder.name}/${asset.file} (declared asset)`);
           }
 
           copiedCount++;
