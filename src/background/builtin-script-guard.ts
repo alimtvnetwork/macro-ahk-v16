@@ -111,7 +111,7 @@ export async function ensureBuiltinScriptsExist(
         `[builtin-guard] Missing built-in scripts in store: [${missing.join(", ")}] — reseeding from manifest`,
     );
 
-    console.warn(
+    console.error(
         "[builtin-guard] ⚠ %d built-in script(s) missing from store: [%s] — reseeding from manifest",
         missing.length,
         missing.join(", "),
