@@ -9,6 +9,7 @@ import { initDatabases } from "./db-manager";
 import { checkAndAutoPrune } from "./storage-auto-pruner";
 import { saveTransientState } from "./state-manager";
 import { isInitialized } from "./message-buffer";
+import { logCaughtError } from "./bg-logger";
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
