@@ -330,7 +330,7 @@ async function attemptUserScriptFallback(
         }
     } else {
         userScriptTierLabel = "skipped(forceLegacyInjection=true)";
-        console.error("[injection:csp] forceLegacyInjection enabled — skipping userScripts and using legacy ISOLATED chain");
+        logBgWarnError("[injection:csp]", "forceLegacyInjection enabled — skipping userScripts and using legacy ISOLATED chain");
     }
 
     // Legacy tier 1: ISOLATED blob script tag
