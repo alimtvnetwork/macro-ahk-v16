@@ -451,7 +451,7 @@ async function logInjectionFailure(
             ? loggingError.message
             : String(loggingError);
 
-        console.error("[injection] logInjectionFailure skipped: %s", reason);
+        logCaughtError("[injection]", "logInjectionFailure skipped", loggingError);
     }
 }
 
