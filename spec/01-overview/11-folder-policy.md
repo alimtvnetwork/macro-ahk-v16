@@ -42,3 +42,34 @@ All AHK version folders have been moved to `skipped/` and are **read-only archiv
 ### Why
 
 The project has transitioned from AHK desktop automation to a Chrome extension architecture. The AHK codebase is complete and stable but no longer the active development target. Previous AI sessions repeatedly modified wrong version folders, causing confusion and wasted effort. All AHK folders are now in `skipped/` to prevent this permanently.
+
+---
+
+## Rule: Spec Folder Creation & Numbering
+
+All folders inside `spec/` must follow these rules:
+
+1. **Naming**: lowercase, hyphen-separated, with a two-digit numeric prefix (e.g., `07-chrome-extension/`).
+2. **Sequential numbering**: Prefixes must be continuous with no gaps (currently `01`–`12`).
+3. **New folders**: Append at the next available number — never insert or reorder existing folders.
+4. **Single ownership**: Each topic lives in exactly one folder — no duplication across folders.
+5. **Cross-references**: Always use relative paths (e.g., `../08-coding-guidelines/engineering-standards.md`).
+6. **Deprecation**: Historical or deprecated specs go to `spec/archive/`, not deleted.
+
+### Current Spec Folder Index
+
+| # | Folder | Purpose |
+|---|--------|---------|
+| 01 | `01-overview/` | Master docs, architecture, version history, folder policy |
+| 02 | `02-app-issues/` | Bug reports, issue tracking, debugging notes |
+| 03 | `03-data-and-api/` | Data schemas, API samples, DB join specs, JSON schema guides |
+| 04 | `04-tasks/` | Roadmap, task breakdowns, feature planning |
+| 05 | `05-design-diagram/` | Diagram design specifications (Mermaid) |
+| 06 | `06-macro-controller/` | Macro controller specs: credits, workspaces, UI, TS migrations |
+| 07 | `07-chrome-extension/` | Extension architecture, build, message protocol, testing |
+| 08 | `08-coding-guidelines/` | Unified coding standards (TS, Go, PHP, Chrome, engineering) |
+| 09 | `09-devtools-and-injection/` | DevTools injection, SDK conventions, per-project architecture |
+| 10 | `10-features/` | Feature specs: PStore, advanced automation, cross-project sync |
+| 11 | `11-imported/` | Imported external specs: error management, WordPress, PowerShell |
+| 12 | `12-prompts/` | AI prompt samples and prompt folder structure |
+| — | `archive/` | Legacy AHK specs, performance audits, XMind files |
