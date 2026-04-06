@@ -176,8 +176,7 @@ export async function ensureBuiltinScriptsExist(
         );
         return false;
     } catch (err) {
-        const reason = err instanceof Error ? err.message : String(err);
-        console.error("[builtin-guard] ❌ Direct fallback failed:", reason);
+        logCaughtError("[builtin-guard]", "Direct fallback failed", err);
         await persistInjectionError(
             "BUILTIN_GUARD_DIRECT_SEED_FAILED",
             `[builtin-guard] Direct instruction.json fallback failed: ${reason}`,
