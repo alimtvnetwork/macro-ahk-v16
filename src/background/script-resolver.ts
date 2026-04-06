@@ -84,7 +84,7 @@ async function resolveScriptCode(script: StoredScript): Promise<ResolvedCode> {
             const totalMs = (performance.now() - t0).toFixed(1);
 
             if (!code || code.length < 10) {
-                console.error("[script-resolver] filePath returned empty/tiny response for %s", candidate.path);
+                logBgWarnError("[script-resolver]", `filePath returned empty/tiny response for ${candidate.path}`);
                 continue;
             }
 
