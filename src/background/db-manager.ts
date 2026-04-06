@@ -106,7 +106,7 @@ async function tryOpfsInit(): Promise<boolean> {
         console.log("[db-manager] OPFS persistence active");
         return true;
     } catch (err) {
-        console.warn("[db-manager] OPFS unavailable:", err);
+        console.error("[db-manager] OPFS unavailable:", err);
         return false;
     }
 }
