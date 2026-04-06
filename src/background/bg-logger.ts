@@ -19,6 +19,49 @@ import { MessageType, type MessageRequest } from "../shared/messages";
 import { handleLogError } from "./handlers/logging-handler";
 
 /* ------------------------------------------------------------------ */
+/*  Log Tag Enum                                                       */
+/* ------------------------------------------------------------------ */
+
+/** Canonical log tags — eliminates magic strings across all background modules. */
+export const enum BgLogTag {
+    BOOT = "[boot]",
+    BUILTIN_GUARD = "[builtin-guard]",
+    BUILTIN_GUARD_FALLBACK = "[builtin-guard:fallback]",
+    CACHE_WARMER = "[cache-warmer]",
+    CONFIG_AUTH = "[config-auth]",
+    CONFIG_SEEDER = "[config-seeder]",
+    COOKIE_WATCHER = "[cookie-watcher]",
+    CSP_FALLBACK = "[csp-fallback]",
+    DATA_BRIDGE = "[data-bridge]",
+    DYNAMIC_REQUIRE = "[dynamic-require]",
+    HEALTH = "[health]",
+    INJECTION = "[injection]",
+    INJECTION_BOOTSTRAP = "[injection:bootstrap]",
+    INJECTION_CACHE = "[injection-cache]",
+    INJECTION_CSP = "[injection:csp]",
+    INJECTION_DEPS = "[injection:deps]",
+    INJECTION_NS = "[injection:ns]",
+    INJECTION_RESOLVE = "[injection:resolve]",
+    INJECTION_SETTINGS = "[injection:settings]",
+    KEEPALIVE = "[keepalive]",
+    LOGGING = "[logging]",
+    MANIFEST_SEEDER = "[manifest-seeder]",
+    MARCO = "[Marco]",
+    MESSAGE_ROUTER = "[message-router]",
+    NS_CACHE = "[ns-cache]",
+    PROJECT_SAVE_CONFIG_SEED = "[project-save:config-seed]",
+    PROMPTS = "[prompts]",
+    REMOTE_CONFIG = "[remote-config]",
+    SCRIPT_RESOLVER = "[script-resolver]",
+    SEEDER = "[seeder]",
+    SHORTCUT = "[shortcut]",
+    STATUS_HANDLER = "[status-handler]",
+    TOKEN_SEEDER = "[token-seeder]",
+    URL_MATCHER = "[url-matcher]",
+    XPATH = "[xpath]",
+}
+
+/* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
