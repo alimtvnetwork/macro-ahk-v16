@@ -8,6 +8,7 @@
 
 import { type MessageRequest } from "../shared/messages";
 import { trackMessage } from "./message-tracker";
+import { logCaughtError } from "./bg-logger";
 
 import {
     BROADCAST_TYPES,
