@@ -38,19 +38,29 @@ const BUILTIN_BUNDLED_PATHS: Record<string, string> = {
     "xpath.js": "projects/scripts/xpath/xpath.js",
 };
 
+function isBuiltinScript(script: StoredScript): boolean {
+    return normalizeScriptKey(script.name) in BUILTIN_BUNDLED_PATHS;
+}
+
 /**
  * Resolves script code from its filePath if available.
- * Falls back to the embedded `code` property.
- * Returns both the code and the source for diagnostics.
+ * Falls back to the embedded `code` property for non-built-ins only.
+ * Built-in scripts MUST come from bundled files so stale storage payloads
+ * can never be injected after an update.
  */
 // eslint-disable-next-line max-lines-per-function, sonarjs/cognitive-complexity -- cache-check + multi-candidate fetch with diagnostics
 async function resolveScriptCode(script: StoredScript): Promise<ResolvedCode> {
-    if (!script.filePath) return { code: script.code, source: "embedded" };
+    if (!script.filePath) {
+        if (isBuiltinScript(script)) {
+            throw new Error(`Built-in script ${script.name} is missing filePath; refusing embedded fallback`);
+        }
+        return { code: script.code, source: "embedded" };
+    }
 
     const t0 = performance.now();
     const isMainBundle = script.filePath.includes("macro-looping");
+    const isBuiltin = isBuiltinScript(script);
 
-    // Check IndexedDB cache first for previously resolved script code
     try {
         const cached = await getCachedScriptCode(script.filePath);
         if (cached) {
@@ -65,7 +75,6 @@ async function resolveScriptCode(script: StoredScript): Promise<ResolvedCode> {
     } catch { /* cache miss — proceed to fetch */ }
 
     const cacheMissMs = (performance.now() - t0).toFixed(1);
-
     const candidates = buildFilePathCandidates(script);
 
     for (const candidate of candidates) {
@@ -105,10 +114,13 @@ async function resolveScriptCode(script: StoredScript): Promise<ResolvedCode> {
         }
     }
 
-    logBgWarnError(BgLogTag.SCRIPT_RESOLVER, `All filePath fetches failed for ${script.filePath}, falling back to embedded code`);
-    if (isMainBundle) {
-        console.error("[script-resolver] ⚠️ LEGACY FALLBACK: macro-looping.js using EMBEDDED code from chrome.storage — this may be an outdated/legacy version! filePath=%s", script.filePath);
+    if (isBuiltin) {
+        const msg = `All bundled fetches failed for built-in script ${script.name} (${script.filePath}) — refusing stale embedded fallback`;
+        logBgWarnError(BgLogTag.SCRIPT_RESOLVER, msg);
+        throw new Error(msg);
     }
+
+    logBgWarnError(BgLogTag.SCRIPT_RESOLVER, `All filePath fetches failed for ${script.filePath}, falling back to embedded code`);
     return { code: script.code, source: "embedded" };
 }
 
