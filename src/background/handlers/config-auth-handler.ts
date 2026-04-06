@@ -757,9 +757,5 @@ function buildMissingCookieMessage(
 
 /** Logs a refresh failure. */
 function logRefreshError(error: unknown): void {
-    const errorMessage = error instanceof Error
-        ? error.message
-        : String(error);
-
-    console.error(`[config-auth] Token refresh failed: ${errorMessage}`);
+    logCaughtError("[config-auth]", "Token refresh failed", error);
 }

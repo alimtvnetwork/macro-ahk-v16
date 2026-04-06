@@ -983,8 +983,7 @@ async function ensureRelayInjected(tabId: number): Promise<void> {
         relayInjectedTabs.add(tabId);
         console.log("[injection] Message relay injected into tab %d (safety net)", tabId);
     } catch (relayError) {
-        const reason = relayError instanceof Error ? relayError.message : String(relayError);
-        console.error("[injection] Failed to inject message relay: %s", reason);
+        logCaughtError("[injection]", "Failed to inject message relay", relayError);
     }
 }
 
