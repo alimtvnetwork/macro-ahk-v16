@@ -112,7 +112,7 @@ try {
         removeTabInjection(tabId);
     });
 } catch (err) {
-    console.error("[Marco] ⚠ tabs.onRemoved registration failed:", err);
+    logCaughtError("[Marco]", "tabs.onRemoved registration failed", err);
 }
 
 /* ------------------------------------------------------------------ */

@@ -49,6 +49,6 @@ async function handleKeepaliveTick(): Promise<void> {
         await checkAndAutoPrune();
         await saveTransientState();
     } catch (tickError) {
-        console.error("[Marco] Keepalive tick skipped:", tickError);
+        logCaughtError("[keepalive]", "Keepalive tick skipped", tickError);
     }
 }

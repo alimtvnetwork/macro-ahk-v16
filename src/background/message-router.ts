@@ -101,7 +101,7 @@ function buildErrorResponse(error: unknown): {
         ? error.message
         : String(error);
 
-    console.error(`[Marco] Message handler failed: ${errorMessage}`);
+    logCaughtError("[message-router]", `Message handler failed: ${errorMessage}`, error);
 
     return {
         isOk: false,
