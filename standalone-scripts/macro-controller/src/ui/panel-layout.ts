@@ -156,6 +156,16 @@ export function enableFloating(ctx: PanelLayoutCtx) {
   if (ctx.isFloating) return;
   log('Switching MacroLoop panel to floating mode', 'info');
   ctx.isFloating = true;
+
+  // Add a dark backdrop behind the panel so the host page's white bg doesn't show through
+  const BACKDROP_ID = 'marco-panel-backdrop';
+  if (!document.getElementById(BACKDROP_ID)) {
+    const backdrop = document.createElement('div');
+    backdrop.id = BACKDROP_ID;
+    backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.35);z-index:99996;pointer-events:none;';
+    document.body.appendChild(backdrop);
+  }
+
   ctx.ui.style.position = 'fixed';
   ctx.ui.style.zIndex = '99997';
   ctx.ui.style.margin = '0';
@@ -190,6 +200,10 @@ export function disableFloating(ctx: PanelLayoutCtx): void {
   if (!ctx.isFloating) return;
   log('Switching MacroLoop panel from floating to docked mode', 'info');
   ctx.isFloating = false;
+
+  // Remove backdrop when docking
+  const backdrop = document.getElementById('marco-panel-backdrop');
+  if (backdrop) backdrop.remove();
   ctx.ui.style.position = 'relative';
   ctx.ui.style.zIndex = '';
   ctx.ui.style.margin = '8px 0';
