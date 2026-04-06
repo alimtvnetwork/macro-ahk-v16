@@ -100,8 +100,7 @@ async function getActiveTabId(): Promise<number | null> {
 
         return typeof tabId === "number" ? tabId : null;
     } catch (err) {
-        console.error("[Marco] Shortcut: chrome.tabs.query failed: %s",
-            err instanceof Error ? err.message : String(err));
+        logCaughtError("[shortcut]", "chrome.tabs.query failed", err);
 
         return null;
     }
