@@ -10,7 +10,7 @@
  */
 
 import { initDatabases, type DbManager } from "./db-manager";
-import { bindDbManager, startSession } from "./handlers/logging-handler";
+import { bindDbManager, startSession, getLogsDb, getErrorsDb, markLoggingDirty } from "./handlers/logging-handler";
 import { bindStorageDbManager } from "./handlers/storage-handler";
 import { bindErrorDbManager } from "./handlers/error-handler";
 import { bindPromptDbManager, reseedPrompts } from "./handlers/prompt-handler";
@@ -180,13 +180,35 @@ async function readCurrentBuildId(): Promise<string | null> {
             return null;
         }
 
-        const meta = await response.json() as { buildId?: unknown };
+        const meta = await response.json() as { buildId?: unknown; freshStart?: boolean };
+
+        if (meta.freshStart === true) {
+            clearAllLogsAndErrors();
+            console.log("[Marco] ✓ Fresh start: cleared all logs and errors");
+        }
+
         return typeof meta.buildId === "string" && meta.buildId.length > 0
             ? meta.buildId
             : null;
     } catch {
         return null;
     }
+}
+
+/** Clears all log and error rows for a fresh start. */
+function clearAllLogsAndErrors(): void {
+    try {
+        const logsDb = getLogsDb();
+        logsDb.run("DELETE FROM Logs");
+        logsDb.run("DELETE FROM Sessions");
+    } catch { /* logs DB not ready */ }
+
+    try {
+        const errorsDb = getErrorsDb();
+        errorsDb.run("DELETE FROM Errors");
+    } catch { /* errors DB not ready */ }
+
+    markLoggingDirty();
 }
 
 /** Binds all handler modules to the shared DbManager. */

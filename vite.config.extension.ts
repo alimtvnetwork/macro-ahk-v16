@@ -204,6 +204,7 @@ function generateBuildMeta(): Plugin {
                 JSON.stringify({
                     buildId: Math.random().toString(36).slice(2, 10),
                     timestamp: new Date().toISOString(),
+                    freshStart: true,
                 }, null, 2),
             );
         },

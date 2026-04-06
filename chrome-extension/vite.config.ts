@@ -218,6 +218,7 @@ function generateBuildMeta(): Plugin {
       const meta = {
         buildId,
         timestamp: new Date().toISOString(),
+        freshStart: true,
       };
 
       writeFileSync(
