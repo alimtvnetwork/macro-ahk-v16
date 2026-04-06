@@ -8,6 +8,7 @@
  */
 
 import { taskNextState } from './task-next-ui';
+import { getBackdropOpacity, setBackdropOpacity } from './panel-layout';
 import type { ExtensionResponse, ResolvedPromptsConfig } from '../types';
 import { getLogConfig, resetLogConfig, type LogManagerConfig } from '../log-manager';
 import {
@@ -293,6 +294,45 @@ export function buildGeneralPanel(
     inputs[f.key] = field.input;
     panel.appendChild(field.row);
   });
+
+  // ── Backdrop Opacity Slider ──
+  const currentBackdropOpacity = getBackdropOpacity();
+  const bdRow = document.createElement('div');
+  bdRow.style.cssText = 'margin-top:14px;margin-bottom:10px;';
+  const bdLabel = document.createElement('div');
+  bdLabel.style.cssText = 'font-size:10px;color:' + cSectionHeader + ';margin-bottom:3px;font-weight:600;';
+  bdLabel.textContent = 'Backdrop Opacity';
+  bdRow.appendChild(bdLabel);
+
+  const bdSliderRow = document.createElement('div');
+  bdSliderRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+
+  const bdSlider = document.createElement('input');
+  bdSlider.type = 'range';
+  bdSlider.min = '0';
+  bdSlider.max = '100';
+  bdSlider.value = String(Math.round(currentBackdropOpacity * 100));
+  bdSlider.style.cssText = 'flex:1;height:6px;accent-color:' + cPrimary + ';cursor:pointer;';
+
+  const bdValueLabel = document.createElement('span');
+  bdValueLabel.style.cssText = 'font-size:11px;color:' + cPanelText + ';min-width:36px;text-align:right;font-family:monospace;';
+  bdValueLabel.textContent = bdSlider.value + '%';
+
+  bdSlider.oninput = function() {
+    const pct = parseInt(bdSlider.value, 10);
+    bdValueLabel.textContent = pct + '%';
+    setBackdropOpacity(pct / 100);
+  };
+
+  bdSliderRow.appendChild(bdSlider);
+  bdSliderRow.appendChild(bdValueLabel);
+  bdRow.appendChild(bdSliderRow);
+
+  const bdHint = document.createElement('div');
+  bdHint.style.cssText = 'font-size:9px;color:#64748b;margin-top:2px;';
+  bdHint.textContent = 'Dark overlay behind the floating panel. 0% = transparent, 100% = opaque.';
+  bdRow.appendChild(bdHint);
+  panel.appendChild(bdRow);
 
   const verInfo = document.createElement('div');
   verInfo.style.cssText = 'margin-top:16px;padding:10px;background:' + cPanelBgAlt + ';border-radius:6px;font-size:10px;color:#64748b;';
