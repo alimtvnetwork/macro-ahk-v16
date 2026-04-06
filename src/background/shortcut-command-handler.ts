@@ -85,9 +85,6 @@ async function runScriptsFromShortcut(): Promise<void> {
 
         console.log("[Marco] Shortcut: injection complete — %d results in %dms", resultCount, elapsed);
     } catch (runError) {
-        const reason = runError instanceof Error ? runError.message : String(runError);
-        const stack = runError instanceof Error ? runError.stack : undefined;
-
         logCaughtError("[shortcut]", "Shortcut run failed", runError);
     }
 }
