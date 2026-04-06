@@ -99,11 +99,7 @@ for (const [label, register] of registrations) {
     try {
         register();
     } catch (err) {
-        console.error(
-            "[Marco] ⚠ Registration '%s' failed (non-fatal): %s",
-            label,
-            err instanceof Error ? err.message : String(err),
-        );
+        logCaughtError("[Marco]", `Registration '${label}' failed (non-fatal)`, err);
     }
 }
 
