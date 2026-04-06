@@ -129,6 +129,7 @@ export function usePopupData() {
     projectData,
     status,
     health,
+    opfsStatus,
     injections,
     scripts,
     loading,
