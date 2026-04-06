@@ -247,11 +247,7 @@ async function broadcastToTargetTabs(
 
         console.log(`[cookie-watcher] Broadcast ${type} to ${tabs.length} tab(s)`);
     } catch (broadcastError) {
-        const errorMessage = broadcastError instanceof Error
-            ? broadcastError.message
-            : String(broadcastError);
-
-        console.warn(`[cookie-watcher] Broadcast failed: ${errorMessage}`);
+        console.error("[cookie-watcher] Broadcast failed:", broadcastError);
     }
 }
 
