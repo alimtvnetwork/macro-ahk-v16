@@ -250,7 +250,6 @@ function copyProjectScripts(): Plugin {
 
                 try {
                     const instruction = JSON.parse(readFileSync(instructionPath, "utf-8"));
-                    const projectRootDir = resolve(standaloneDir, folder.name);
                     const distDir = resolve(projectRootDir, "dist");
 
                     // Per-project subfolder
