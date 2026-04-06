@@ -78,6 +78,7 @@ export async function resolveInjectionRequestScripts(
                 injectable,
                 configJson: null,
                 themeJson: null,
+                codeSource: null,
             })),
         ),
         skipped,
