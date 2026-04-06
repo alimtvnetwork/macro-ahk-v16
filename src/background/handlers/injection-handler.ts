@@ -669,12 +669,7 @@ async function injectSettingsNamespace(tabId: number, allProjects: StoredProject
         }
         const result = await injectWithCspFallback(tabId, script, "MAIN");
         if (result.isFallback) {
-            console.error(
-                "[injection:settings] ⚠️ CRITICAL — Settings namespace injected via %s fallback (tab %d).\n" +
-                "  → RiseupAsiaMacroExt.Settings will NOT be visible in the page console.\n" +
-                "  → CSP on this page blocked MAIN world injection.",
-                result.world, tabId,
-            );
+            logBgWarnError("[injection:settings]", `CRITICAL — Settings namespace injected via ${result.world} fallback (tab ${tabId}). RiseupAsiaMacroExt.Settings will NOT be visible in the page console.`);
             transitionHealth("DEGRADED", "Settings namespace fell back to " + result.world + " — not visible in MAIN world");
         } else {
             console.log("[injection:settings] Registered RiseupAsiaMacroExt.Settings + docs (port=%d)", settings.broadcastPort);
