@@ -95,6 +95,7 @@ describe("buildMarcoSdkScript", () => {
             scriptId: "s",
             configId: "",
             urlRuleId: "",
+            version: "1.0.0",
         });
 
         // When window.marco exists, should still ensure RiseupAsiaMacroExt then return
