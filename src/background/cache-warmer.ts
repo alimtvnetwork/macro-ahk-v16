@@ -80,7 +80,7 @@ async function warmOneScript(script: StoredScript): Promise<boolean> {
 
         const code = await response.text();
         if (!code || code.length < 10) {
-            console.warn("[cache-warmer] Empty/tiny response for %s (%d chars)", filePath, code?.length ?? 0);
+            console.error("[cache-warmer] Empty/tiny response for %s (%d chars)", filePath, code?.length ?? 0);
             return false;
         }
 
