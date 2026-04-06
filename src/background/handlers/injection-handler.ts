@@ -419,7 +419,7 @@ async function logInjectionSuccess(
             ? loggingError.message
             : String(loggingError);
 
-        console.error("[injection] logInjectionSuccess skipped: %s", reason);
+        logCaughtError("[injection]", "logInjectionSuccess skipped", loggingError);
     }
 }
 
