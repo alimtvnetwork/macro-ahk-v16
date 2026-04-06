@@ -149,7 +149,7 @@ describe("Edge — Empty script code", () => {
         registerAutoInjector();
     });
 
-    it("injects wrapper even when script code is empty string", async () => {
+    it("skips injection when script code is empty string", async () => {
         await seedRaw(
             [makeProject()],
             [makeScript({ code: "" })],
@@ -159,14 +159,11 @@ describe("Edge — Empty script code", () => {
         await flush();
 
         const calls = getCallsForTab(1100);
-        expect(calls.length).toBe(1);
-
-        const body = getInjectedCode(calls[0]);
-        expect(body).toContain("try {");
-        expect(body).toContain("USER_SCRIPT_ERROR");
+        // Empty scripts are now skipped by script-resolver (empty_code skip)
+        expect(calls.length).toBe(0);
     });
 
-    it("injects wrapper when script code is only whitespace", async () => {
+    it("skips injection when script code is only whitespace", async () => {
         await seedRaw(
             [makeProject()],
             [makeScript({ code: "   \n\t  " })],
@@ -176,7 +173,8 @@ describe("Edge — Empty script code", () => {
         await flush();
 
         const calls = getCallsForTab(1101);
-        expect(calls.length).toBe(1);
+        // Whitespace-only scripts are now skipped by script-resolver (empty_code skip)
+        expect(calls.length).toBe(0);
     });
 
     it("skips script that does not exist in storage", async () => {

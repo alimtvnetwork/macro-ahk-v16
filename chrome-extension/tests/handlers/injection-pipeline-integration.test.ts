@@ -217,7 +217,9 @@ describe("URL Matching + Script Resolution — Integration", () => {
         const result = await resolveScriptBindings(bindings);
 
         expect(result.resolved.length).toBe(3);
-        // Order should be preserved as-is (sorting happens in auto-injector)
-        expect(result.resolved[0].injectable.id).toBe(script3.id);
+        // Scripts are now sorted by order in the resolver
+        expect(result.resolved[0].injectable.id).toBe(script1.id);
+        expect(result.resolved[1].injectable.id).toBe(script2.id);
+        expect(result.resolved[2].injectable.id).toBe(script3.id);
     });
 });
