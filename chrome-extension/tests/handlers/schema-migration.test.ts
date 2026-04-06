@@ -52,7 +52,7 @@ describe("Schema Migration Runner", () => {
         await migrateSchema(logsDb, errorsDb);
 
         const snapshot = getMockStoreSnapshot();
-        expect(snapshot["marco_schema_version"]).toBe(4);
+        expect(snapshot["marco_schema_version"]).toBe(6);
     });
 
     it("skips migrations when already at current version", async () => {
