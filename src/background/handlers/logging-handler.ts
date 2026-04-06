@@ -344,3 +344,12 @@ export { collectRows, countTable };
 export async function handleBrowseOpfsSessions() {
     return browseOpfsSessions();
 }
+
+/* ------------------------------------------------------------------ */
+/*  GET_OPFS_STATUS                                                    */
+/* ------------------------------------------------------------------ */
+
+/** Returns the health status of the current OPFS session directory. */
+export async function handleGetOpfsStatus(): Promise<OpfsStatusData> {
+    return getOpfsSessionStatus();
+}
