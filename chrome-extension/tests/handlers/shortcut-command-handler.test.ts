@@ -26,6 +26,7 @@ beforeEach(() => {
                     commandListeners.push(listener);
                 },
             },
+            getAll: vi.fn((cb: any) => cb([])),
         },
         tabs: {
             query: vi.fn().mockResolvedValue([{ id: 42 }]),
