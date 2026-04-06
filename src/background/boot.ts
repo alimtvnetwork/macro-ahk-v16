@@ -10,7 +10,7 @@
  */
 
 import { initDatabases, type DbManager } from "./db-manager";
-import { bindDbManager, startSession } from "./handlers/logging-handler";
+import { bindDbManager, startSession, getLogsDb, getErrorsDb, markLoggingDirty } from "./handlers/logging-handler";
 import { bindStorageDbManager } from "./handlers/storage-handler";
 import { bindErrorDbManager } from "./handlers/error-handler";
 import { bindPromptDbManager, reseedPrompts } from "./handlers/prompt-handler";
