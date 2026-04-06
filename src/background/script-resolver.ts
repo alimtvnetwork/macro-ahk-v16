@@ -106,6 +106,9 @@ async function resolveScriptCode(script: StoredScript): Promise<ResolvedCode> {
     }
 
     logBgWarnError(BgLogTag.SCRIPT_RESOLVER, `All filePath fetches failed for ${script.filePath}, falling back to embedded code`);
+    if (isMainBundle) {
+        console.error("[script-resolver] ⚠️ LEGACY FALLBACK: macro-looping.js using EMBEDDED code from chrome.storage — this may be an outdated/legacy version! filePath=%s", script.filePath);
+    }
     return { code: script.code, source: "embedded" };
 }
 
