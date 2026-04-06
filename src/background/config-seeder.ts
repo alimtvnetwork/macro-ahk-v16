@@ -21,6 +21,7 @@
  */
 
 import type { ProjectDbManager } from "./project-db-manager";
+import { logCaughtError } from "./bg-logger";
 
 /* ------------------------------------------------------------------ */
 /*  Schema                                                             */

@@ -272,9 +272,5 @@ function buildExportFilename(prefix: string, ext: string): string {
 
 /** Logs a ZIP export error. */
 function logZipError(error: unknown): void {
-    const errorMessage = error instanceof Error
-        ? error.message
-        : String(error);
-
-    console.error(`[logging] ZIP export failed: ${errorMessage}`);
+    logCaughtError("[logging]", "ZIP export failed", error);
 }

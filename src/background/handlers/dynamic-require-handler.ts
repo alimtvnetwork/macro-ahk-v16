@@ -21,6 +21,7 @@ import { injectWithCspFallback } from "../csp-fallback";
 import { wrapWithIsolation } from "./injection-wrapper";
 import { getLogsDb, markLoggingDirty } from "./logging-handler";
 import { getFilesByProject } from "./file-storage-handler";
+import { logCaughtError } from "../bg-logger";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */

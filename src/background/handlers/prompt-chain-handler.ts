@@ -9,6 +9,7 @@
 
 import type { MessageRequest } from "../../shared/messages";
 import { getChatBoxXPath, applyTemplateVariables } from "./settings-handler";
+import { logBgWarnError, logCaughtError } from "../bg-logger";
 
 const STORAGE_KEY = "marco_prompt_chains";
 

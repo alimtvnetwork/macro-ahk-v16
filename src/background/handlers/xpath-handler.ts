@@ -94,11 +94,7 @@ async function stopRecording(tabId: number): Promise<void> {
 
 /** Logs an injection error for recorder start/stop. */
 function logInjectionError(action: string, error: unknown): void {
-    const errorMessage = error instanceof Error
-        ? error.message
-        : String(error);
-
-    console.error(`[xpath] Failed to ${action} recorder: ${errorMessage}`);
+    logCaughtError("[xpath]", `Failed to ${action} recorder`, error);
 }
 
 /* ------------------------------------------------------------------ */
