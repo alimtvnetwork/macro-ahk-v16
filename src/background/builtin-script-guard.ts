@@ -250,9 +250,8 @@ async function seedMissingBuiltinsDirectly(
                 );
             }
         } catch (fetchErr) {
-            const reason = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
-            console.warn("[builtin-guard:fallback] ❌ Failed to fetch instruction.json for %s: %s — URL: %s",
-                scriptName, reason, instrAbsUrl);
+            console.error("[builtin-guard:fallback] ❌ Failed to fetch instruction.json for %s — URL: %s",
+                scriptName, instrAbsUrl, fetchErr);
             void persistInjectionError(
                 "BUILTIN_GUARD_INSTRUCTION_FETCH_FAILED",
                 `[builtin-guard:fallback] instruction.json fetch failed for ${scriptName}: ${reason}. URL: ${instrAbsUrl}`,
