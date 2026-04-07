@@ -46,25 +46,6 @@ export interface WsDropdownResult {
 /**
  * Build the entire workspace dropdown section.
  */
-/** Try to read workspace name from Transfer dialog DOM. */
-function readWorkspaceFromDialog(): string {
-  const selectors = [
-    'div[role="dialog"] p.min-w-0.truncate',
-    'div[role="dialog"] p.truncate'
-  ];
-  for (const sel of selectors) {
-    const domEl = document.querySelector(sel);
-    if (domEl) {
-      const domText = (domEl.textContent || '').trim();
-      if (domText) {
-        state.workspaceName = domText;
-        log('Focus Current: read workspace from Transfer dialog DOM: "' + domText + '"', 'success');
-        return domText;
-      }
-    }
-  }
-  return '';
-}
 
 /** Scroll to and highlight the current workspace item in the list. */
 function scrollToCurrentItem(setLoopWsNavIndex: (v: number) => void, label: string): void {
