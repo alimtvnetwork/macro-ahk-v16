@@ -116,11 +116,6 @@ function _assembleTitleRow(titleRow: HTMLElement, els: Record<string, HTMLElemen
   titleSpacer.style.cssText = 'flex:1;';
   titleRow.appendChild(titleSpacer);
   titleRow.appendChild(els.wsNameEl);
-  const titleSep = document.createElement('span');
-  titleSep.style.cssText = CSS_FONT_SIZE + tFontTiny + ';color:' + cNeutral500 + ';margin:0 2px;user-select:none;';
-  titleSep.textContent = '·';
-  titleRow.appendChild(titleSep);
-  titleRow.appendChild(els.projectNameEl);
   titleRow.appendChild(els.versionSpan);
   titleRow.appendChild(els.authBadge);
   titleRow.appendChild(els.panelToggleSpan);
