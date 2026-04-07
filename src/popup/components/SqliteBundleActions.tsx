@@ -114,10 +114,9 @@ export function SqliteBundleActions({
             />
             <div className="sqlite-bundle-actions">
                 <div className="sqlite-bar">
-                    <button className="btn-action" onClick={() => void handleExport()}>
-                        {exportLabel}
+                    <button className="btn-action" onClick={handleImportClick}>
+                        {importLabel}
                     </button>
-                    <div className="bar-divider" />
                     <div className="import-mode-toggle">
                         <button
                             className={`mode-btn${importMode === "merge" ? " active" : ""}`}
@@ -135,8 +134,8 @@ export function SqliteBundleActions({
                         </button>
                     </div>
                     <div className="bar-divider" />
-                    <button className="btn-action" onClick={handleImportClick}>
-                        {importLabel}
+                    <button className="btn-action" onClick={() => void handleExport()}>
+                        {exportLabel}
                     </button>
                 </div>
             </div>
