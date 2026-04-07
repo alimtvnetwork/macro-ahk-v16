@@ -56,6 +56,7 @@ const DEFAULT_SETTINGS: ExtensionSettings = {
     broadcastPort: 19280,
     logRetentionDays: 30,
     injectionBudgetMs: 500,
+    showInjectionToast: true,
 };
 
 /* ------------------------------------------------------------------ */

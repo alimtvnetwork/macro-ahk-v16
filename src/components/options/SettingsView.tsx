@@ -323,6 +323,18 @@ export function SettingsView() {
 
         <Separator />
 
+        <SettingRow
+          label="Injection toast"
+          description="Show a toast in the target tab after script injection (success or failure)"
+        >
+          <Switch
+            checked={settings.showInjectionToast}
+            onCheckedChange={(v) => update("showInjectionToast", v)}
+          />
+        </SettingRow>
+
+        <Separator />
+
         <EditorThemeRow />
       </SettingsGroup>
 
