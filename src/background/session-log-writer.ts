@@ -80,7 +80,7 @@ async function ensureSessionDir(): Promise<FileSystemDirectoryHandle | null> {
         return sessionDir;
     } catch (err) {
         const absDir = `opfs-root/${LOGS_DIR_NAME}/${SESSION_PREFIX}${sessionId}`;
-        console.error(`[session-log-writer::ensureSessionDir] Failed to access "${absDir}"`, err);
+        console.error(`[session-log-writer::ensureSessionDir] Failed to access OPFS directory\n  Path: ${absDir}\n  Missing: Writable OPFS directory handle for session "${sessionId}"\n  Reason: ${err instanceof Error ? err.message : String(err)} — OPFS may not be supported or navigator.storage.getDirectory() failed`, err);
         sessionDir = null;
         return null;
     }
@@ -135,7 +135,7 @@ export async function initSessionLogDir(sid: string, ver: string): Promise<void>
             void pruneOldSessionLogs();
         } catch (err) {
             const absDir = `opfs-root/${LOGS_DIR_NAME}/${SESSION_PREFIX}${sid}`;
-            console.error(`[session-log-writer::initSessionDir] OPFS dir init failed at "${absDir}". Expected files: [${absDir}/${EVENTS_LOG}, ${absDir}/${ERRORS_LOG}, ${absDir}/${SCRIPTS_LOG}]`, err);
+            console.error(`[session-log-writer::initSessionDir] OPFS dir init failed\n  Path: ${absDir}\n  Missing: Session log files [${EVENTS_LOG}, ${ERRORS_LOG}, ${SCRIPTS_LOG}]\n  Reason: ${err instanceof Error ? err.message : String(err)} — directory or file handle creation failed`, err);
             sessionDir = null;
         }
     })();
@@ -194,7 +194,7 @@ async function flushPending(): Promise<void> {
             await writable.close();
         } catch (err) {
             const absPath = `opfs-root/${LOGS_DIR_NAME}/${SESSION_PREFIX}${sessionId}/${filename}`;
-            console.error(`[session-log-writer::flushPending] Failed to write "${absPath}"`, err);
+            console.error(`[session-log-writer::flushPending] Failed to write log file\n  Path: ${absPath}\n  Missing: Successful write of ${chunks.length} buffered log chunk(s)\n  Reason: ${err instanceof Error ? err.message : String(err)} — file handle may be stale or OPFS quota exceeded`, err);
             fileHandleCache.delete(filename);
         }
     }
@@ -383,7 +383,7 @@ export async function pruneOldSessionLogs(maxAgeDays = 7): Promise<number> {
             console.log(`[session-log-writer] Pruned ${removed} session dirs from "opfs-root/${LOGS_DIR_NAME}/" older than ${maxAgeDays}d`);
         }
     } catch (err) {
-        console.error(`[session-log-writer::pruneOldSessionLogs] Pruning failed at "opfs-root/${LOGS_DIR_NAME}/"`, err);
+        console.error(`[session-log-writer::pruneOldSessionLogs] Pruning failed\n  Path: opfs-root/${LOGS_DIR_NAME}/\n  Missing: Successful cleanup of old session directories\n  Reason: ${err instanceof Error ? err.message : String(err)} — OPFS directory iteration or removal failed`, err);
     }
     return removed;
 }

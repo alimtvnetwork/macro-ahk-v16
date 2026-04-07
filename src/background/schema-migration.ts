@@ -261,7 +261,7 @@ async function applySingleMigration(
         console.log(`[migration] v${migration.version}: ${migration.description}`);
         return true;
     } catch (err) {
-        console.error(`[migration] v${migration.version} failed:`, err);  // Keep bare console.error — DB may be mid-migration
+        console.error(`[migration] Migration v${migration.version} failed\n  Path: SQLite in-memory DB (logs + errors)\n  Missing: Successful schema migration "${migration.description}"\n  Reason: ${err instanceof Error ? err.message : String(err)}`, err);  // Keep bare console.error — DB may be mid-migration
         attemptRollback(migration, logsDb, errorsDb);
         return false;
     }
@@ -278,9 +278,9 @@ function attemptRollback(
 ): void {
     try {
         migration.down(logsDb, errorsDb);
-        console.error(`[migration] Rolled back v${migration.version}`);
+        console.error(`[migration] Rolled back v${migration.version}\n  Path: SQLite in-memory DB (logs + errors)\n  Missing: Successful migration — rolled back to previous schema\n  Reason: Original migration threw, rollback applied`);
     } catch (rollbackErr) {
-        console.error(`[migration] Rollback of v${migration.version} also failed:`, rollbackErr);
+        console.error(`[migration] Rollback of v${migration.version} also failed\n  Path: SQLite in-memory DB (logs + errors)\n  Missing: Successful rollback of failed migration\n  Reason: ${rollbackErr instanceof Error ? rollbackErr.message : String(rollbackErr)} — database may be in inconsistent state`, rollbackErr);
     }
 }
 

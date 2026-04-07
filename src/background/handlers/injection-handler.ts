@@ -450,7 +450,7 @@ async function logInjectionSuccess(
     if (isMacroLooping) {
         const injectedVersion = extractMacroVersion(script.code);
         if (injectedVersion && injectedVersion !== EXTENSION_VERSION) {
-            const legacyMsg = `⚠️ LEGACY SCRIPT DETECTED: macro-looping.js v${injectedVersion} injected but extension is v${EXTENSION_VERSION}. Source: ${codeSource ?? "unknown"}. The injected script is OUTDATED — stale cache or embedded code fallback.`;
+            const legacyMsg = `LEGACY SCRIPT DETECTED\n  Path: chrome.storage.local script="${script.name}" id="${script.id}"\n  Missing: Current version macro-looping.js v${EXTENSION_VERSION}\n  Reason: Injected script is v${injectedVersion} but extension is v${EXTENSION_VERSION} — stale cache or embedded code fallback. Source: ${codeSource ?? "unknown"}`;
             console.error("[injection] " + legacyMsg);
             try {
                 await handleLogError({
@@ -665,7 +665,7 @@ else if(!window.RiseupAsiaMacroExt.Projects){window.RiseupAsiaMacroExt.Projects=
         console.log("[injection:bootstrap] ✅ RiseupAsiaMacroExt root bootstrapped in MAIN world (tab %d)", tabId);
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        logCaughtError(BgLogTag.INJECTION_BOOTSTRAP, `CRITICAL — Failed to bootstrap RiseupAsiaMacroExt in MAIN world (tab ${tabId}). Developer Guide console access will NOT work. CSP blocking inline scripts.`, err);
+        logCaughtError(BgLogTag.INJECTION_BOOTSTRAP, `CRITICAL — Failed to bootstrap namespace\n  Path: chrome.scripting.executeScript → tabId=${tabId}, world=MAIN\n  Missing: window.RiseupAsiaMacroExt root namespace object\n  Reason: ${msg} — CSP is blocking inline script execution in MAIN world`, err);
         transitionHealth("DEGRADED", "RiseupAsiaMacroExt MAIN world bootstrap blocked by CSP");
 
         // Also inject a visible console warning into the page
