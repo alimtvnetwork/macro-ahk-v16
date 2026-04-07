@@ -194,7 +194,7 @@ async function flushPending(): Promise<void> {
             await writable.close();
         } catch (err) {
             const absPath = `opfs-root/${LOGS_DIR_NAME}/${SESSION_PREFIX}${sessionId}/${filename}`;
-            console.error(`[session-log-writer::flushPending] Failed to write "${absPath}"`, err);
+            console.error(`[session-log-writer::flushPending] Failed to write log file\n  Path: ${absPath}\n  Missing: Successful write of ${chunks.length} buffered log chunk(s)\n  Reason: ${err instanceof Error ? err.message : String(err)} — file handle may be stale or OPFS quota exceeded`, err);
             fileHandleCache.delete(filename);
         }
     }
