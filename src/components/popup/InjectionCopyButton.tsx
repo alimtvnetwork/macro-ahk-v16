@@ -83,7 +83,7 @@ function formatLog(l: SessionLog): string {
   return `  ${ts}  ${lvl}  ${src}  ${detail}`;
 }
 
-// eslint-disable-next-line max-lines-per-function
+// eslint-disable-next-line max-lines-per-function, sonarjs/cognitive-complexity
 function buildInjectionReport(
   errors: ErrorEntry[],
   logs: SessionLog[],
@@ -220,7 +220,7 @@ export function InjectionCopyButton() {
         (async () => {
           const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
           if (!tab?.id) return null;
-          const res = await sendMessage<{ injections: Record<number, unknown> }>({ type: "GET_TAB_INJECTIONS", tabId: tab.id } as any);
+          const res = await sendMessage<{ injections: Record<number, unknown> }>({ type: "GET_TAB_INJECTIONS", tabId: tab.id });
           const record = res?.injections?.[tab.id] as { verification?: VerificationResult } | null;
           return record?.verification ?? null;
         })(),

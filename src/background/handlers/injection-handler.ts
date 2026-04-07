@@ -78,7 +78,7 @@ const PIPELINE_CACHE_CATEGORY: CacheCategory = "scripts";
 /* ------------------------------------------------------------------ */
 
 /** Injects scripts into the specified tab with error isolation. */
-// eslint-disable-next-line max-lines-per-function
+// eslint-disable-next-line max-lines-per-function, sonarjs/cognitive-complexity
 export async function handleInjectScripts(
     message: MessageRequest,
 ): Promise<{ results: InjectionResult[] }> {
@@ -273,7 +273,7 @@ export async function handleInjectScripts(
     } catch { /* use default */ }
     if (totalMs > budgetMs) {
         logBgWarnError(
-            "[injection]",
+            BgLogTag.INJECTION,
             `PERFORMANCE BUDGET EXCEEDED — ${totalMs}ms (budget: ${budgetMs}ms) breakdown=${JSON.stringify(timings)}`,
         );
         void mirrorDiagnosticToTab(
@@ -385,7 +385,7 @@ async function executeCachedPayload(
         budgetMs = settings.injectionBudgetMs ?? 500;
     } catch { /* use default */ }
     if (totalMs > budgetMs) {
-        logBgWarnError("[injection]", `PERFORMANCE BUDGET EXCEEDED (cached path) — ${totalMs}ms (budget: ${budgetMs}ms)`);
+        logBgWarnError(BgLogTag.INJECTION, `PERFORMANCE BUDGET EXCEEDED (cached path) — ${totalMs}ms (budget: ${budgetMs}ms)`);
     }
 
     recordInjectionTiming(totalMs, successCount, budgetMs);
@@ -411,7 +411,7 @@ async function executeCachedPayload(
  * executeScript call when possible. Scripts with CSS assets are injected
  * individually (CSS must precede their JS). Falls back to sequential on failure.
  */
-// eslint-disable-next-line max-lines-per-function, sonarjs/cognitive-complexity
+// eslint-disable-next-line max-lines-per-function
 async function injectAllScripts(
     tabId: number,
     scripts: Array<{ injectable: InjectableScript; configJson: string | null; themeJson: string | null }>,
@@ -674,7 +674,7 @@ async function executeInTab(tabId: number, code: string): Promise<{ path: string
 
     if (result.isFallback) {
         logBgWarnError(
-            "[injection]",
+            BgLogTag.INJECTION,
             `Script executed via ${result.world} fallback (tab ${tabId}) — window.marco created in non-MAIN world, RiseupAsiaMacroExt.Projects.* may not be accessible from the page console.`,
         );
     }
@@ -771,7 +771,6 @@ function buildSkipMessage(reason: SkipReason, scriptName: string): string {
  * If MAIN world injection fails (CSP), we log a loud error and transition
  * health to DEGRADED so the user knows docs-style access won't work.
  */
-// eslint-disable-next-line max-lines-per-function
 async function bootstrapNamespaceRoot(tabId: number): Promise<void> {
     const bootstrapCode = `;(function(){
 if(!window.RiseupAsiaMacroExt){window.RiseupAsiaMacroExt={Projects:{}};}
@@ -823,7 +822,6 @@ else if(!window.RiseupAsiaMacroExt.Projects){window.RiseupAsiaMacroExt.Projects=
  * Injects `window.RiseupAsiaMacroExt.Settings` with current extension
  * settings as a frozen read-only object.
  */
-// eslint-disable-next-line max-lines-per-function
 async function injectSettingsNamespace(tabId: number, allProjects: StoredProject[]): Promise<void> {
     try {
         const activeId = getActiveProjectId();
@@ -1269,6 +1267,7 @@ export async function handleGetTabInjections(
  * Uses window.marco.notify if the SDK is available, otherwise falls back to
  * a lightweight DOM-based toast in the bottom-right corner.
  */
+// eslint-disable-next-line max-lines-per-function
 async function showInjectionToastInTab(
     tabId: number,
     successCount: number,
@@ -1279,11 +1278,13 @@ async function showInjectionToastInTab(
         await chrome.scripting.executeScript({
             target: { tabId },
             world: "MAIN",
+            // eslint-disable-next-line max-lines-per-function
             func: (ok: number, total: number, ms: number, version: string) => {
                 const msg = `✅ Marco v${version} — ${ok}/${total} scripts injected (${ms}ms)`;
 
                 // Dismiss loading toast first
                 const loader = document.getElementById("__marco-inject-toast-loading");
+                // eslint-disable-next-line sonarjs/no-duplicate-string
                 if (loader) { loader.style.opacity = "0"; loader.style.transform = "translateY(8px) scale(0.96)"; setTimeout(() => loader.remove(), 300); }
 
                 // Try SDK toast first
@@ -1372,6 +1373,7 @@ async function showInjectionToastInTab(
  * Shows a red error toast in the target tab when one or more scripts fail injection.
  * Lists the failed script names so the user knows exactly what went wrong.
  */
+// eslint-disable-next-line max-lines-per-function
 async function showInjectionFailureToastInTab(
     tabId: number,
     failedNames: string[],
@@ -1383,6 +1385,7 @@ async function showInjectionFailureToastInTab(
         await chrome.scripting.executeScript({
             target: { tabId },
             world: "MAIN",
+            // eslint-disable-next-line max-lines-per-function
             func: (names: string[], failed: number, total: number, ms: number, version: string) => {
                 const nameList = names.length <= 3 ? names.join(", ") : names.slice(0, 3).join(", ") + ` +${names.length - 3} more`;
                 const msg = `❌ Marco v${version} — ${failed}/${total} scripts failed (${ms}ms)\n${nameList}`;
@@ -1463,6 +1466,7 @@ async function showInjectionFailureToastInTab(
                     toast.style.transform = "translateY(0) scale(1)";
                 });
 
+                // eslint-disable-next-line sonarjs/no-identical-functions
                 const dismiss = () => {
                     toast.style.opacity = "0";
                     toast.style.transform = "translateY(8px) scale(0.96)";
@@ -1489,6 +1493,7 @@ async function showInjectionFailureToastInTab(
  * actually exist after injection. Logs a detailed verification report to
  * the tab console so false-positive "SCRIPT_INJECTED" entries are caught.
  */
+// eslint-disable-next-line max-lines-per-function, sonarjs/cognitive-complexity
 async function verifyPostInjectionGlobals(tabId: number): Promise<void> {
     try {
         const [frameResult] = await chrome.scripting.executeScript({
@@ -1567,17 +1572,27 @@ async function verifyPostInjectionGlobals(tabId: number): Promise<void> {
                 `Post-injection verification INCOMPLETE on tab ${tabId}: ` +
                 `sdk=${r.marcoSdk} ext=${r.extRoot} mc=${r.mcClass} instance=${r.mcInstance} ui=${r.uiContainer}\n` +
                 `Verify stack: ${r.verifyStack}`,
-            );
+        );
         }
+    } catch {
+        // Verification is best-effort — never block the pipeline
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Loading spinner toast                                              */
+/* ------------------------------------------------------------------ */
 
 /**
  * Shows a loading spinner toast while injection is in progress.
  */
+// eslint-disable-next-line max-lines-per-function
 async function showInjectionLoadingToast(tabId: number, scriptCount: number): Promise<void> {
     try {
         await chrome.scripting.executeScript({
             target: { tabId },
             world: "MAIN",
+            // eslint-disable-next-line max-lines-per-function
             func: (count: number, version: string) => {
                 const CONTAINER_ID = "__marco-inject-toast";
                 let container = document.getElementById(CONTAINER_ID);
@@ -1644,9 +1659,5 @@ async function showInjectionLoadingToast(tabId: number, scriptCount: number): Pr
         });
     } catch (e) {
         logCaughtError(BgLogTag.INJECTION, "showInjectionLoadingToast failed", e);
-    }
-}
-    } catch {
-        // Verification is best-effort — never block the pipeline
     }
 }

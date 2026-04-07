@@ -87,6 +87,7 @@ async function ensureSessionDir(): Promise<FileSystemDirectoryHandle | null> {
 }
 
 /** Creates a new session directory in OPFS and prepares file handles. */
+// eslint-disable-next-line max-lines-per-function
 export async function initSessionLogDir(sid: string, ver: string): Promise<void> {
     sessionId = sid;
     version = ver;
@@ -295,6 +296,7 @@ export async function buildSessionReport(sid?: string): Promise<string> {
 }
 
 /** Attempts to read a session directory. Returns { ok, report } or { ok: false, error }. */
+// eslint-disable-next-line max-lines-per-function
 async function tryReadSessionDir(sid: string): Promise<{ ok: true; report: string } | { ok: false; error: string }> {
     const absDir = `opfs-root/${LOGS_DIR_NAME}/${SESSION_PREFIX}${sid}`;
     const expectedFiles = [EVENTS_LOG, ERRORS_LOG, SCRIPTS_LOG] as const;
@@ -442,6 +444,7 @@ export interface SessionInfo {
 }
 
 /** Lists all available sessions with their most recent file timestamp. */
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export async function listSessionsWithTimestamps(): Promise<SessionInfo[]> {
     try {
         const root = await navigator.storage.getDirectory();
@@ -496,6 +499,7 @@ interface SessionDirInfo {
 }
 
 /** Browses all OPFS session directories and returns file metadata with absolute paths. */
+// eslint-disable-next-line max-lines-per-function
 export async function browseOpfsSessions(): Promise<{
     rootPath: string;
     sessions: SessionDirInfo[];

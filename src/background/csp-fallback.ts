@@ -210,6 +210,7 @@ async function executeInMainWorld(code: string): Promise<string> {
     const targetName = target === document.body ? "body" : "documentElement";
     const markerComment = document.createComment(" MARCO: main-blob injection (appended at bottom of " + targetName + ") ");
 
+    // eslint-disable-next-line max-lines-per-function
     await new Promise<void>((resolve, reject) => {
         const timeoutId = window.setTimeout(() => {
             URL.revokeObjectURL(url);
@@ -231,6 +232,7 @@ async function executeInMainWorld(code: string): Promise<string> {
         // CRITICAL: appendNodeToTarget must be inlined here because this function
         // is serialized by chrome.scripting.executeScript — outer-scope references
         // are NOT available in the target page context. See spec/17-app-issues/92-*.md
+        // eslint-disable-next-line sonarjs/no-identical-functions
         const appendNode = (node: Node): boolean => {
             try {
                 Node.prototype.appendChild.call(target, node);
@@ -494,6 +496,7 @@ async function executeBlobInjection(code: string): Promise<string> {
     const targetName = target === document.body ? "body" : "documentElement";
     const markerComment = document.createComment(" MARCO: isolated-blob injection (appended at bottom of " + targetName + ") ");
 
+    // eslint-disable-next-line max-lines-per-function
     await new Promise<void>((resolve, reject) => {
         const timeoutId = window.setTimeout(() => {
             URL.revokeObjectURL(url);
@@ -514,6 +517,7 @@ async function executeBlobInjection(code: string): Promise<string> {
 
         // CRITICAL: Inlined — this function is serialized by chrome.scripting.executeScript.
         // Outer-scope references are NOT available. See spec/17-app-issues/92-*.md
+        // eslint-disable-next-line sonarjs/no-identical-functions
         const appendNode = (node: Node): boolean => {
             try {
                 Node.prototype.appendChild.call(target, node);

@@ -119,6 +119,7 @@ export async function mirrorDiagnosticToTab(
  *
  * Lines with level "__group__" or "__groupEnd__" create nested sub-groups.
  */
+// eslint-disable-next-line max-lines-per-function
 export async function mirrorPipelineLogsToTab(
     tabId: number,
     lines: Array<{ msg: string; level: "log" | "warn" | "error" | "__group__" | "__groupEnd__" }>,
@@ -132,6 +133,7 @@ export async function mirrorPipelineLogsToTab(
             func: (
                 entries: Array<{ msg: string; level: string }>,
                 title: string | undefined,
+            // eslint-disable-next-line sonarjs/cognitive-complexity
             ) => {
                 const realEntries = entries.filter((e) => e.level !== "__group__" && e.level !== "__groupEnd__");
                 const hasErrors = realEntries.some((e) => e.level === "error");
