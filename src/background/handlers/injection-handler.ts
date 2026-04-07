@@ -1494,6 +1494,7 @@ async function showInjectionFailureToastInTab(
  * actually exist after injection. Logs a detailed verification report to
  * the tab console so false-positive "SCRIPT_INJECTED" entries are caught.
  */
+// eslint-disable-next-line max-lines-per-function, sonarjs/cognitive-complexity
 async function verifyPostInjectionGlobals(tabId: number): Promise<void> {
     try {
         const [frameResult] = await chrome.scripting.executeScript({
