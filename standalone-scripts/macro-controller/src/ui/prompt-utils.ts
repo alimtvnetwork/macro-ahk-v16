@@ -159,7 +159,8 @@ function pasteIntoContentEditable(target: HTMLElement, text: string): boolean {
   return false;
 }
 
-export function pasteIntoEditor(text: string, promptsCfg: PromptsCfg, getByXPath: (xpath: string) => Element | null): boolean {
+export function pasteIntoEditor(rawText: string, promptsCfg: PromptsCfg, getByXPath: (xpath: string) => Element | null): boolean {
+  const text = normalizeNewlines(rawText);
   const target = findPasteTarget(promptsCfg, getByXPath) as HTMLElement | null;
   if (!target) {
     log('Prompt paste: No editor target found — copying to clipboard instead', 'warn');
