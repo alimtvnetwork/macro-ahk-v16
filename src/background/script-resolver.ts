@@ -93,7 +93,7 @@ async function resolveScriptCode(script: StoredScript): Promise<ResolvedCode> {
             const totalMs = (performance.now() - t0).toFixed(1);
 
             if (!code || code.length < 10) {
-                logBgWarnError(BgLogTag.SCRIPT_RESOLVER, `filePath returned empty/tiny response for ${candidate.path}`);
+                logBgWarnError(BgLogTag.SCRIPT_RESOLVER, `filePath returned empty/tiny response\n  Path: ${candidate.isAbsolute ? candidate.path : "chrome.runtime.getURL(\"" + candidate.path + "\")"}\n  Missing: Valid script code for "${script.name}" (got ${code?.length ?? 0} chars, minimum 10)\n  Reason: Response body is empty or near-empty — file may be a build placeholder`);
                 continue;
             }
 
