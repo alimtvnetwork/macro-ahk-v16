@@ -296,6 +296,7 @@ export async function buildSessionReport(sid?: string): Promise<string> {
 }
 
 /** Attempts to read a session directory. Returns { ok, report } or { ok: false, error }. */
+// eslint-disable-next-line max-lines-per-function
 async function tryReadSessionDir(sid: string): Promise<{ ok: true; report: string } | { ok: false; error: string }> {
     const absDir = `opfs-root/${LOGS_DIR_NAME}/${SESSION_PREFIX}${sid}`;
     const expectedFiles = [EVENTS_LOG, ERRORS_LOG, SCRIPTS_LOG] as const;
