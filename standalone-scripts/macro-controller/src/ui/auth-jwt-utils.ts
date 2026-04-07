@@ -90,6 +90,22 @@ export function decodeJwtPayload(token: string): JwtInfo {
   }
 }
 
+/**
+ * Format a Unix timestamp (seconds) into a compact date+time string.
+ * Same-day timestamps show time only; different-day includes the date.
+ */
+function formatTimestamp(epochSeconds: number): string {
+  const d = new Date(epochSeconds * 1000);
+  const now = new Date();
+  const timeStr = d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const isSameDay = d.getFullYear() === now.getFullYear()
+    && d.getMonth() === now.getMonth()
+    && d.getDate() === now.getDate();
+  if (isSameDay) return timeStr;
+  const monthDay = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return monthDay + ' ' + timeStr;
+}
+
 /** Format milliseconds remaining into a human-readable duration. */
 export function formatRemaining(milliseconds: number): string {
   const isExpired = milliseconds <= 0;
