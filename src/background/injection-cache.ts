@@ -145,7 +145,7 @@ export async function cacheSet<T>(category: CacheCategory, value: T, subKey = ""
             };
         });
     } catch (err) {
-        logCaughtError(BgLogTag.INJECTION_CACHE, "cacheSet error", err);
+        logCaughtError(BgLogTag.INJECTION_CACHE, `cacheSet error\n  Path: IndexedDB → ${DB_NAME} → store="${STORE_NAME}"\n  Missing: Successful cache write\n  Reason: ${err instanceof Error ? err.message : String(err)}`, err);
     }
 }
 
