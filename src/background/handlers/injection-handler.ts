@@ -1267,6 +1267,7 @@ export async function handleGetTabInjections(
  * Uses window.marco.notify if the SDK is available, otherwise falls back to
  * a lightweight DOM-based toast in the bottom-right corner.
  */
+// eslint-disable-next-line max-lines-per-function
 async function showInjectionToastInTab(
     tabId: number,
     successCount: number,
