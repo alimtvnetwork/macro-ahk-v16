@@ -499,6 +499,7 @@ interface SessionDirInfo {
 }
 
 /** Browses all OPFS session directories and returns file metadata with absolute paths. */
+// eslint-disable-next-line max-lines-per-function
 export async function browseOpfsSessions(): Promise<{
     rootPath: string;
     sessions: SessionDirInfo[];

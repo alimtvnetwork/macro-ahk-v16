@@ -517,6 +517,7 @@ async function executeBlobInjection(code: string): Promise<string> {
 
         // CRITICAL: Inlined — this function is serialized by chrome.scripting.executeScript.
         // Outer-scope references are NOT available. See spec/17-app-issues/92-*.md
+        // eslint-disable-next-line sonarjs/no-identical-functions
         const appendNode = (node: Node): boolean => {
             try {
                 Node.prototype.appendChild.call(target, node);
