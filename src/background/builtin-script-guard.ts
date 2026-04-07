@@ -176,10 +176,10 @@ export async function ensureBuiltinScriptsExist(
         );
         return false;
     } catch (err) {
-        logCaughtError(BgLogTag.BUILTIN_GUARD, "Direct fallback failed", err);
+        logCaughtError(BgLogTag.BUILTIN_GUARD, `Direct fallback failed\n  Path: projects/scripts/<folder>/instruction.json\n  Missing: Seeded entries for [${missing.join(", ")}]\n  Reason: ${err instanceof Error ? err.message : String(err)}`, err);
         await persistInjectionError(
             "BUILTIN_GUARD_DIRECT_SEED_FAILED",
-            `[builtin-guard] Direct instruction.json fallback failed: ${reason}`,
+            `[builtin-guard] Direct instruction.json fallback failed\n  Path: projects/scripts/<folder>/instruction.json\n  Missing: Built-in scripts [${missing.join(", ")}]\n  Reason: ${err instanceof Error ? err.message : String(err)}`,
             { contextDetail: `Missing built-ins: [${missing.join(", ")}]` },
         );
         return false;
