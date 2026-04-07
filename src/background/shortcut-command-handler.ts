@@ -55,7 +55,7 @@ export function registerShortcutCommands(): void {
 }
 
 /** Runs active project scripts in the currently active tab. */
-async function runScriptsFromShortcut(): Promise<void> {
+async function runScriptsFromShortcut(forceReload: boolean): Promise<void> {
     const t0 = performance.now();
 
     try {
