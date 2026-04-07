@@ -98,7 +98,7 @@ async function injectJwtIntoTab(tabId: number, jwt: string): Promise<void> {
 
         console.log("[token-seeder] Seeded JWT into tab %d localStorage", tabId);
     } catch (seedError) {
-        logCaughtError(BgLogTag.TOKEN_SEEDER, "Failed to seed JWT", seedError);
+        logCaughtError(BgLogTag.TOKEN_SEEDER, `Failed to seed JWT into tab\n  Path: chrome.scripting.executeScript → tabId=${tabId}, world=MAIN → localStorage["${LS_MARCO_BEARER_KEY}"]\n  Missing: JWT bearer token in tab localStorage\n  Reason: ${seedError instanceof Error ? seedError.message : String(seedError)}`, seedError);
     }
 }
 

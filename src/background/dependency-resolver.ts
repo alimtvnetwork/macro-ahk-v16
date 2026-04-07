@@ -177,7 +177,7 @@ export function resolveInjectionOrder(projects: ProjectNode[]): ResolutionResult
         return {
             order: [],
             isSuccess: false,
-            errorMessage: `Circular dependency detected involving: ${missing.join(", ")}`,
+            errorMessage: `Circular dependency detected\n  Path: Project dependency graph (topological sort)\n  Missing: Valid acyclic injection order\n  Reason: Projects [${missing.join(", ")}] form a dependency cycle — Kahn's algorithm could not resolve them`,
         };
     }
 

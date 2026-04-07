@@ -121,7 +121,7 @@ async function tryStorageInit(): Promise<boolean> {
         console.log("[db-manager] storage.local persistence active");
         return true;
     } catch (err) {
-        console.error("[db-manager] storage.local failed:", err);
+        console.error(`[db-manager] storage.local persistence failed\n  Path: chrome.storage.local → SQLite serialized blobs\n  Missing: Deserialized SQLite database instances\n  Reason: ${err instanceof Error ? err.message : String(err)}`, err);
         return false;
     }
 }
