@@ -278,10 +278,10 @@ async function seedMissingBuiltinsDirectly(
                 );
             }
         } catch (fetchErr) {
-            logCaughtError(BgLogTag.BUILTIN_GUARD_FALLBACK, `Failed to fetch script ${scriptName} — URL: ${scriptAbsUrl}`, fetchErr);
+            logCaughtError(BgLogTag.BUILTIN_GUARD_FALLBACK, `Failed to fetch script file\n  Path: ${scriptAbsUrl}\n  Missing: Script code for "${scriptName}"\n  Reason: ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}`, fetchErr);
             void persistInjectionError(
                 "BUILTIN_GUARD_SCRIPT_FETCH_FAILED",
-                `[builtin-guard:fallback] Script fetch failed for ${scriptName}: ${reason}. URL: ${scriptAbsUrl}`,
+                `[builtin-guard:fallback] Script fetch failed\n  Path: ${scriptAbsUrl}\n  Missing: "${scriptName}" built-in script code\n  Reason: ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}`,
             );
         }
 
