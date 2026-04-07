@@ -115,7 +115,7 @@ async function resolveScriptCode(script: StoredScript): Promise<ResolvedCode> {
     }
 
     if (isBuiltin) {
-        const msg = `All bundled fetches failed for built-in script ${script.name} (${script.filePath}) — refusing stale embedded fallback`;
+        const msg = `All bundled fetches failed for built-in script\n  Path: chrome.storage.local script="${script.name}" filePath="${script.filePath}"\n  Missing: Valid script code from any candidate path\n  Reason: All ${candidates.length} fetch candidate(s) returned errors or empty responses — refusing stale embedded fallback`;
         logBgWarnError(BgLogTag.SCRIPT_RESOLVER, msg);
         throw new Error(msg);
     }
