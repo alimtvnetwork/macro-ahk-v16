@@ -209,7 +209,7 @@ export function InjectionCopyButton() {
     try {
       const [errorsRes, logsRes, statusRes, healthRes, injectionsRes] = await Promise.allSettled([
         sendMessage<{ errors: ErrorEntry[] }>({ type: "GET_ACTIVE_ERRORS" }),
-        sendMessage<{ logs: SessionLog[] }>({ type: "GET_RECENT_LOGS", limit: 100 }),
+        sendMessage<{ logs: SessionLog[] }>({ type: "GET_RECENT_LOGS", limit: 500 }),
         sendMessage<Record<string, unknown>>({ type: "GET_STATUS" }),
         sendMessage<Record<string, unknown>>({ type: "GET_HEALTH_STATUS" }),
         // Fetch verification from active tab's injection record
