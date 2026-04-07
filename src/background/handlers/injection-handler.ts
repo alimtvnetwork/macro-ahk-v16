@@ -47,6 +47,20 @@ import { ensureBuiltinScriptsExist } from "../builtin-script-guard";
 import { mirrorDiagnosticToTab, mirrorPipelineLogsToTab } from "../injection-diagnostics";
 
 /* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+/** Checks whether the injection toast setting is enabled. */
+async function isInjectionToastEnabled(): Promise<boolean> {
+    try {
+        const { settings } = await handleGetSettings();
+        return settings.showInjectionToast !== false;
+    } catch {
+        return true; // default on
+    }
+}
+
+/* ------------------------------------------------------------------ */
 /*  Module-level caches                                                */
 /* ------------------------------------------------------------------ */
 
