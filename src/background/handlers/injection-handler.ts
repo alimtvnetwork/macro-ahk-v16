@@ -1373,6 +1373,7 @@ async function showInjectionToastInTab(
  * Shows a red error toast in the target tab when one or more scripts fail injection.
  * Lists the failed script names so the user knows exactly what went wrong.
  */
+// eslint-disable-next-line max-lines-per-function
 async function showInjectionFailureToastInTab(
     tabId: number,
     failedNames: string[],
