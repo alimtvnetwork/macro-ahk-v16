@@ -1,6 +1,11 @@
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Clock, Route, Shield, Zap, Globe, Box, Timer } from "lucide-react";
+import { CheckCircle, Clock, Route, Shield, Zap, Globe, Box, Timer, XCircle, AlertTriangle } from "lucide-react";
 import type { InjectionStatus, PopupScript } from "@/hooks/use-popup-data";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Props {
   injections: InjectionStatus | null;
