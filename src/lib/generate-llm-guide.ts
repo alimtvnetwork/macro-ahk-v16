@@ -430,18 +430,28 @@ Shortcuts can be customized at \`chrome://extensions/shortcuts\`.
 
 ## 8. Performance & Caching
 
-### IndexedDB Script Cache
+### Pipeline Cache (IndexedDB)
 
-Stable scripts (SDK, XPath) are pre-cached in IndexedDB at extension boot.
-This eliminates \`fetch()\` calls from \`web_accessible_resources\` on subsequent injections.
+The full wrapped injection payload is cached in IndexedDB (\`marco_injection_cache\`) keyed by the extension's manifest version string. On subsequent runs, the **Cache Gate** checks this cache:
+
+- **HIT** (version matches): Skips Stages 0–3 entirely, jumps straight to Execute (Stage 4). Typical speedup: 50–80%.
+- **MISS** (version mismatch or empty): Full pipeline rebuild, then stores the new payload.
+- **FORCE** (user clicks Force Run): Deletes cached entry, performs full rebuild.
+
+Cache is invalidated by 3 layers:
+1. \`chrome.runtime.onInstalled\` clears cache on extension update.
+2. Version key mismatch triggers automatic rebuild.
+3. \`INVALIDATE_CACHE\` message for manual invalidation.
+
+### Script Pre-Cache
+
+Stable scripts (SDK, XPath) are also pre-cached in IndexedDB at extension boot to eliminate \`fetch()\` calls from \`web_accessible_resources\`.
 
 | Script | Caching | Reason |
 |--------|---------|--------|
 | \`marco-sdk.js\` | Pre-cached at boot | Rarely changes; provides core SDK |
 | \`xpath.js\` | Pre-cached at boot | Rarely changes; XPath utilities |
 | \`macro-looping.js\` | Cached after first inject | Changes frequently |
-
-Cache is automatically invalidated on extension version bump or manual \`INVALIDATE_CACHE\` message.
 
 ### Injection Budget
 
