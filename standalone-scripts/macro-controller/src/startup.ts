@@ -25,6 +25,7 @@ import {
   updateAuthBadge,
   getLastTokenSource,
   setLastTokenSource,
+  getBearerTokenFromCookie,
 } from './auth';
 import {
   IDS,
