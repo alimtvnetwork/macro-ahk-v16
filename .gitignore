@@ -101,3 +101,5 @@ marco-script-ahk-v4/logs/activity.txt
 /standalone-scripts/macro-controller
 /standalone-scripts/_generated
 standalone-scripts/_generated/seed-manifest.json
+.gitmap/release-assets
+release-assets
