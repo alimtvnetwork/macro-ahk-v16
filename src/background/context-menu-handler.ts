@@ -23,6 +23,7 @@ const MENU_ID = {
     ROOT: "marco-root",
     PROJECT_PARENT: "marco-projects",
     RUN: "marco-run",
+    FORCE_RUN: "marco-force-run",
     REINJECT: "marco-reinject",
     SEP1: "marco-sep-1",
     COPY_LOGS: "marco-copy-logs",
