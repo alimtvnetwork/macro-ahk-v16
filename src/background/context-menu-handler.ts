@@ -236,7 +236,7 @@ async function handleMenuClick(
 /*  Action Implementations                                             */
 /* ------------------------------------------------------------------ */
 
-async function handleRunScripts(tabId: number): Promise<void> {
+async function handleRunScripts(tabId: number, forceReload = false): Promise<void> {
     const hasValidTab = tabId > 0;
     if (!hasValidTab) return;
 
@@ -253,6 +253,7 @@ async function handleRunScripts(tabId: number): Promise<void> {
         type: MessageType.INJECT_SCRIPTS,
         tabId,
         scripts: enabledScripts,
+        ...(forceReload ? { forceReload: true } : {}),
     });
 }
 
