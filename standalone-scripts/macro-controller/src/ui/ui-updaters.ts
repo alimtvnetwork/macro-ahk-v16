@@ -15,7 +15,7 @@ import { cacheWorkspaceName } from '../workspace-cache';
 
 function mc() { return MacroController.getInstance(); }
 import { IDS, TIMING, state, loopCreditState } from '../shared-state';
-import { log, getDisplayProjectName } from '../logging';
+import { log } from '../logging';
 import { runCycle } from '../loop-engine';
 
 // Re-export status renderer symbols
