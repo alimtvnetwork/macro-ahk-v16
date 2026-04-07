@@ -117,7 +117,7 @@ export function resolveInjectionOrder(projects: ProjectNode[]): ResolutionResult
                 return {
                     order: [],
                     isSuccess: false,
-                    errorMessage: `Project "${p.id}" depends on unknown project "${dep.projectId}"`,
+                    errorMessage: `Dependency not found\n  Path: Project dependency graph → "${p.id}".dependencies\n  Missing: Project with id="${dep.projectId}"\n  Reason: "${p.id}" declares dependency on "${dep.projectId}" but no project with that ID exists in the resolved project set`,
                 };
             }
 
