@@ -126,7 +126,7 @@ export function resolveInjectionOrder(projects: ProjectNode[]): ResolutionResult
                 return {
                     order: [],
                     isSuccess: false,
-                    errorMessage: `Version mismatch: "${p.id}" requires "${dep.projectId}@${dep.version}" but found "${depProject.version}"`,
+                    errorMessage: `Version mismatch in dependency\n  Path: Project "${p.id}" → dependsOn "${dep.projectId}@${dep.version}"\n  Missing: Compatible version of "${dep.projectId}" (found v${depProject.version})\n  Reason: "${p.id}" requires "${dep.projectId}@${dep.version}" but installed version is "${depProject.version}" which does not satisfy the range`,
                 };
             }
 
