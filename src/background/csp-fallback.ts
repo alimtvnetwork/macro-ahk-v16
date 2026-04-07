@@ -210,6 +210,7 @@ async function executeInMainWorld(code: string): Promise<string> {
     const targetName = target === document.body ? "body" : "documentElement";
     const markerComment = document.createComment(" MARCO: main-blob injection (appended at bottom of " + targetName + ") ");
 
+    // eslint-disable-next-line max-lines-per-function
     await new Promise<void>((resolve, reject) => {
         const timeoutId = window.setTimeout(() => {
             URL.revokeObjectURL(url);
