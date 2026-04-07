@@ -95,14 +95,36 @@ export async function handleInjectScripts(
     const msg = message as MessageRequest & {
         tabId: number;
         scripts: unknown[];
+        forceReload?: boolean;
     };
 
-    console.log("[injection] ── PIPELINE START ── tabId=%d, raw scripts=%d", msg.tabId, msg.scripts.length);
+    const isForceRun = msg.forceReload === true;
+
+    console.log("[injection] ── PIPELINE START ── tabId=%d, raw scripts=%d, forceReload=%s", msg.tabId, msg.scripts.length, isForceRun);
 
     // Show loading spinner toast at start of injection
     const toastEnabledEarly = await isInjectionToastEnabled();
     if (toastEnabledEarly) {
         void showInjectionLoadingToast(msg.tabId, msg.scripts.length).catch(() => {});
+    }
+
+    // ── Force Run: clear cached payload before proceeding ──
+    if (isForceRun) {
+        await cacheDelete(PIPELINE_CACHE_CATEGORY, PIPELINE_CACHE_KEY);
+        console.log("[injection] FORCE RUN — pipeline cache cleared by user");
+    }
+
+    // ── Cache Gate: check for cached wrapped payload ──
+    if (!isForceRun) {
+        const cachedPayload = await time("cache_gate", () =>
+            cacheGet<{ code: string; scriptMeta: Array<{ id: string; name: string }> }>(PIPELINE_CACHE_CATEGORY, PIPELINE_CACHE_KEY));
+        if (cachedPayload) {
+            console.log("[injection] CACHE HIT — skipping Stages 0–3, using cached payload (%d chars, %d scripts) in %.1fms",
+                cachedPayload.code.length, cachedPayload.scriptMeta.length, timings["cache_gate"]);
+            // Jump directly to Stage 2 (env prep) + Stage 4 (execute) with cached payload
+            return await executeCachedPayload(msg.tabId, cachedPayload, pipelineStart, timings, time);
+        }
+        console.log("[injection] CACHE MISS — proceeding through full pipeline (%.1fms)", timings["cache_gate"]);
     }
 
     // ✅ 15.2: Read all projects ONCE, pass to all consumers
