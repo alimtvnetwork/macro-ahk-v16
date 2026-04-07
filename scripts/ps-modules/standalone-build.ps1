@@ -139,8 +139,8 @@ function Build-StandaloneScript([string]$ScriptDirPath, [string]$ScriptName, [st
 .OUTPUTS
     Int — number of successfully built scripts. Throws on fatal failure.
 #>
-function Build-AllStandaloneScripts([string]$RootDir) {
-    Write-Host "  Building standalone scripts (parallel)..." -ForegroundColor Yellow
+function Build-AllStandaloneScripts([string]$RootDir, [string]$BuildMode = "production") {
+    Write-Host "  Building standalone scripts (parallel, mode: $BuildMode)..." -ForegroundColor Yellow
 
     $standaloneDir = Join-Path $RootDir "standalone-scripts"
     $scriptDirs = Get-ChildItem -Path $standaloneDir -Directory -ErrorAction SilentlyContinue | Where-Object {
@@ -159,13 +159,13 @@ function Build-AllStandaloneScripts([string]$RootDir) {
     foreach ($dir in $scriptDirs) {
         $scriptName = $dir.Name
         $scriptPath = $dir.FullName
-        Write-Host "    [START] $scriptName" -ForegroundColor DarkCyan
+        Write-Host "    [START] $scriptName ($BuildMode)" -ForegroundColor DarkCyan
 
         $job = Start-Job -ScriptBlock {
-            param($ModulePath, $ScriptDirPath, $ScriptName, $RootDir)
+            param($ModulePath, $ScriptDirPath, $ScriptName, $RootDir, $Mode)
             . $ModulePath
-            Build-StandaloneScript -ScriptDirPath $ScriptDirPath -ScriptName $ScriptName -RootDir $RootDir
-        } -ArgumentList $thisModulePath, $scriptPath, $scriptName, $RootDir
+            Build-StandaloneScript -ScriptDirPath $ScriptDirPath -ScriptName $ScriptName -RootDir $RootDir -BuildMode $Mode
+        } -ArgumentList $thisModulePath, $scriptPath, $scriptName, $RootDir, $BuildMode
 
         $jobs += $job
     }
