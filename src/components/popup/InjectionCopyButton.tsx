@@ -66,6 +66,7 @@ function buildInjectionReport(
   logs: SessionLog[],
   status: Record<string, unknown> | null,
   health: Record<string, unknown> | null,
+  verification?: VerificationResult | null,
 ): string {
   const sections: string[] = [];
 
