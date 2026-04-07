@@ -26,6 +26,16 @@ interface ErrorEntry {
   resolved?: number;
 }
 
+interface VerificationResult {
+  marcoSdk: boolean;
+  extRoot: boolean;
+  mcClass: boolean;
+  mcInstance: boolean;
+  uiContainer: boolean;
+  markerEl: boolean;
+  verifiedAt: string;
+}
+
 interface SessionLog {
   id?: number;
   timestamp?: string;
