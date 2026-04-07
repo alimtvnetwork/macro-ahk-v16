@@ -52,7 +52,7 @@ function isBuiltinScript(script: StoredScript): boolean {
 async function resolveScriptCode(script: StoredScript): Promise<ResolvedCode> {
     if (!script.filePath) {
         if (isBuiltinScript(script)) {
-            throw new Error(`Built-in script ${script.name} is missing filePath; refusing embedded fallback`);
+            throw new Error(`Built-in script "${script.name}" is missing filePath\n  Path: chrome.storage.local script entry id="${script.id}"\n  Missing: filePath field on StoredScript\n  Reason: Built-in scripts MUST have a filePath pointing to dist/ — refusing embedded fallback to prevent stale code injection`);
         }
         return { code: script.code, source: "embedded" };
     }
