@@ -54,10 +54,11 @@ export function usePopupActions() {
 
   /** Run all enabled scripts into the active tab. */
   // eslint-disable-next-line max-lines-per-function
-  const handleRun = useCallback(async () => {
+  const handleRun = useCallback(async (options?: { forceReload?: boolean }) => {
+    const isForce = options?.forceReload === true;
     setRunLoading(true);
     setLastRunResults([]);
-    console.log("[popup:handleRun] Starting injection flow...");
+    console.log("[popup:handleRun] Starting injection flow...%s", isForce ? " (FORCE RUN)" : "");
     try {
       const platform = getPlatform();
       const tabId = await platform.tabs.getActiveTabId();
@@ -82,11 +83,12 @@ export function usePopupActions() {
         return;
       }
 
-      console.log("[popup:handleRun] Sending INJECT_SCRIPTS for tab %d with %d scripts...", tabId, scripts.length);
+      console.log("[popup:handleRun] Sending INJECT_SCRIPTS for tab %d with %d scripts...%s", tabId, scripts.length, isForce ? " forceReload=true" : "");
       const result = await sendMessage<{ results: InjectionResultEntry[] }>({
         type: "INJECT_SCRIPTS",
         tabId,
         scripts,
+        ...(isForce ? { forceReload: true } : {}),
       });
       console.log("[popup:handleRun] Injection result:", JSON.stringify(result));
 
