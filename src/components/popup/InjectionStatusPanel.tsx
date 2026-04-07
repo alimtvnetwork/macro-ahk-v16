@@ -290,3 +290,89 @@ function PipelinePerformanceBar({
     </div>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/*  Verification Badge                                                 */
+/* ------------------------------------------------------------------ */
+
+const VERIFICATION_CHECKS = [
+  { key: "marcoSdk", label: "Marco SDK" },
+  { key: "extRoot", label: "Extension Root" },
+  { key: "mcClass", label: "MacroController Class" },
+  { key: "mcInstance", label: "MC Instance" },
+  { key: "uiContainer", label: "UI Container" },
+  { key: "markerEl", label: "Injection Marker" },
+] as const;
+
+function VerificationBadge({
+  verification,
+}: {
+  verification?: InjectionStatus["verification"];
+}) {
+  if (!verification) return null;
+
+  const passed = VERIFICATION_CHECKS.filter(
+    (c) => verification[c.key] === true,
+  ).length;
+  const total = VERIFICATION_CHECKS.length;
+  const allPassed = passed === total;
+  const nonePassed = passed === 0;
+
+  const StatusIcon = allPassed
+    ? CheckCircle
+    : nonePassed
+      ? XCircle
+      : AlertTriangle;
+
+  const statusColor = allPassed
+    ? "text-[hsl(var(--success))]"
+    : nonePassed
+      ? "text-[hsl(var(--destructive))]"
+      : "text-[hsl(var(--warning))]";
+
+  const badgeBorder = allPassed
+    ? "border-[hsl(var(--success))]/50"
+    : nonePassed
+      ? "border-[hsl(var(--destructive))]/50"
+      : "border-[hsl(var(--warning))]/50";
+
+  return (
+    <div className="pt-1.5 border-t border-border mt-1 space-y-1">
+      <div className="flex items-center gap-1.5">
+        <Shield className="h-3 w-3 text-muted-foreground" />
+        <span className="text-[10px] text-muted-foreground">Verification:</span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge
+              variant="outline"
+              className={`text-[9px] px-1.5 py-0 h-4 gap-1 cursor-default ${badgeBorder} ${statusColor}`}
+            >
+              <StatusIcon className="h-2.5 w-2.5" />
+              {passed}/{total} passed
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-[220px]">
+            <div className="space-y-0.5">
+              {VERIFICATION_CHECKS.map((c) => {
+                const ok = verification[c.key] === true;
+                return (
+                  <div key={c.key} className="flex items-center gap-1.5 text-xs">
+                    {ok ? (
+                      <CheckCircle className="h-3 w-3 text-[hsl(var(--success))]" />
+                    ) : (
+                      <XCircle className="h-3 w-3 text-[hsl(var(--destructive))]" />
+                    )}
+                    <span>{c.label}</span>
+                  </div>
+                );
+              })}
+              <p className="text-[10px] text-muted-foreground pt-1">
+                Verified at {new Date(verification.verifiedAt).toLocaleTimeString()}
+              </p>
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+    </div>
+  );
+}
