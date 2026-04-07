@@ -8,7 +8,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { OptionsSidebar, type SidebarSelection, type SidebarSection } from "@/components/options/OptionsSidebar";
 import { ProjectsListView } from "@/components/options/ProjectsListView";
 import { ProjectCreateForm } from "@/components/options/ProjectCreateForm";
-import { ThemeToggle } from "@/components/theme/ThemeToggle";
+// Dark-only: ThemeToggle removed
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { DraggableOverlay } from "@/components/overlay/DraggableOverlay";
 import { ErrorDrawer } from "@/components/options/ErrorDrawer";
@@ -286,7 +286,7 @@ const OptionsPage = () => {
               >
                 <PanelRightOpen className={`h-4 w-4 ${showOverlay ? "text-primary" : ""}`} />
               </Button>
-              <ThemeToggle />
+              {/* Dark-only: theme toggle removed */}
             </div>
           </header>
 
