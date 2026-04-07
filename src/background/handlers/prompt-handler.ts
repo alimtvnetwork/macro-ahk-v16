@@ -355,10 +355,11 @@ async function seedDefaultPromptsIfEmpty(): Promise<void> {
     console.log(`[prompts] Re-seeded ${defaults.length} default prompts (version: ${bundledVersion})`);
 }
 
-/** Compute a simple version string from bundled prompts for change detection. */
+/** Compute a version string from bundled prompts for change detection.
+ *  Includes text length in the signature so text-only changes trigger re-seeding. */
 function computeBundledVersion(prompts: PromptEntry[]): string {
     const signature = prompts
-        .map((p) => `${p.id ?? ""}:${p.name}:${p.version ?? "1.0.0"}`)
+        .map((p) => `${p.id ?? ""}:${p.name}:${p.version ?? "1.0.0"}:${(p.text ?? "").length}`)
         .join("|");
     // Simple hash
     let hash = 0;
