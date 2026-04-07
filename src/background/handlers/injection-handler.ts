@@ -1466,6 +1466,7 @@ async function showInjectionFailureToastInTab(
                     toast.style.transform = "translateY(0) scale(1)";
                 });
 
+                // eslint-disable-next-line sonarjs/no-identical-functions
                 const dismiss = () => {
                     toast.style.opacity = "0";
                     toast.style.transform = "translateY(8px) scale(0.96)";
