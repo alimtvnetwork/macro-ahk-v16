@@ -244,8 +244,7 @@ export async function handleInjectScripts(
     recordInjection(msg.tabId, sorted, lastSuccessPath, lastDomTarget, totalMs, budgetMs);
 
     // ── Post-injection verification — confirm globals actually landed in MAIN world ──
-    // Only runs in dev builds to avoid overhead in production.
-    if (successCount > 0 && import.meta.env.DEV) {
+    if (successCount > 0) {
         void verifyPostInjectionGlobals(msg.tabId).catch(() => {});
     }
 
