@@ -114,7 +114,7 @@ export async function ensureBuiltinScriptsExist(
 
     logBgWarnError(
         "[builtin-guard]",
-        `${missing.length} built-in script(s) missing from store: [${missing.join(", ")}] — reseeding from manifest`,
+        `${missing.length} built-in script(s) missing from store\n  Path: chrome.storage.local["${STORAGE_KEY_ALL_SCRIPTS}"]\n  Missing: Script entries for [${missing.join(", ")}]\n  Reason: Scripts referenced by projects but not found in storage — triggering reseed from manifest`,
     );
 
     // --- Stage 1: Try seed-manifest.json ---
@@ -145,10 +145,10 @@ export async function ensureBuiltinScriptsExist(
             `[builtin-guard] seed-manifest.json returned 0 scripts (projects=${seedResult.projects}, errors=${seedResult.errors.length}). Falling back to instruction.json.`,
         );
     } catch (err) {
-        logCaughtError(BgLogTag.BUILTIN_GUARD, "Manifest reseed failed", err);
+        logCaughtError(BgLogTag.BUILTIN_GUARD, `Manifest reseed failed\n  Path: chrome.runtime.getURL("seed-manifest.json")\n  Missing: Successful reseed of built-in scripts [${missing.join(", ")}]\n  Reason: ${err instanceof Error ? err.message : String(err)}`, err);
         void persistInjectionError(
             "BUILTIN_GUARD_MANIFEST_RESEED_FAILED",
-            `[builtin-guard] Manifest reseed failed: ${reason}`,
+            `[builtin-guard] Manifest reseed failed\n  Path: seed-manifest.json\n  Missing: Built-in scripts [${missing.join(", ")}]\n  Reason: ${err instanceof Error ? err.message : String(err)}`,
             { contextDetail: `Missing built-ins: [${missing.join(", ")}]` },
         );
     }
@@ -168,18 +168,18 @@ export async function ensureBuiltinScriptsExist(
             return true;
         }
 
-        logBgWarnError(BgLogTag.BUILTIN_GUARD, "Direct fallback also seeded 0 scripts");
+        logBgWarnError(BgLogTag.BUILTIN_GUARD, `Direct fallback also seeded 0 scripts\n  Path: chrome.storage.local["${STORAGE_KEY_ALL_SCRIPTS}"]\n  Missing: Any seeded script for [${missing.join(", ")}]\n  Reason: Both seed-manifest.json and per-script instruction.json fallback returned 0 scripts`);
         await persistInjectionError(
             "BUILTIN_GUARD_DIRECT_SEED_EMPTY",
-            `[builtin-guard] Direct instruction.json fallback seeded 0 scripts for: [${missing.join(", ")}]`,
+            `[builtin-guard] Direct instruction.json fallback seeded 0 scripts\n  Path: projects/scripts/<folder>/instruction.json\n  Missing: Seeded entries for [${missing.join(", ")}]\n  Reason: Both manifest and direct fallback failed to restore built-ins`,
             { contextDetail: "Both manifest and direct fallback failed to restore built-ins" },
         );
         return false;
     } catch (err) {
-        logCaughtError(BgLogTag.BUILTIN_GUARD, "Direct fallback failed", err);
+        logCaughtError(BgLogTag.BUILTIN_GUARD, `Direct fallback failed\n  Path: projects/scripts/<folder>/instruction.json\n  Missing: Seeded entries for [${missing.join(", ")}]\n  Reason: ${err instanceof Error ? err.message : String(err)}`, err);
         await persistInjectionError(
             "BUILTIN_GUARD_DIRECT_SEED_FAILED",
-            `[builtin-guard] Direct instruction.json fallback failed: ${reason}`,
+            `[builtin-guard] Direct instruction.json fallback failed\n  Path: projects/scripts/<folder>/instruction.json\n  Missing: Built-in scripts [${missing.join(", ")}]\n  Reason: ${err instanceof Error ? err.message : String(err)}`,
             { contextDetail: `Missing built-ins: [${missing.join(", ")}]` },
         );
         return false;
@@ -213,7 +213,7 @@ async function seedMissingBuiltinsDirectly(
     for (const scriptName of missingNames) {
         const meta = BUILTIN_DIST_MAP[scriptName];
         if (!meta) {
-            logBgWarnError(BgLogTag.BUILTIN_GUARD_FALLBACK, `No dist map entry for ${scriptName} — skipping`);
+            logBgWarnError(BgLogTag.BUILTIN_GUARD_FALLBACK, `No dist map entry for "${scriptName}"\n  Path: BUILTIN_DIST_MAP["${scriptName}"]\n  Missing: Distribution mapping (folder, seedId, filePath)\n  Reason: Script name not registered in BUILTIN_DIST_MAP — skipping`);
             continue;
         }
 
@@ -241,17 +241,17 @@ async function seedMissingBuiltinsDirectly(
                 console.log("[builtin-guard:fallback] ✅ Read instruction.json for %s: v%s (from %s)",
                     scriptName, version, instrAbsUrl);
             } else {
-                logBgWarnError(BgLogTag.BUILTIN_GUARD_FALLBACK, `instruction.json HTTP ${instrResp.status} for ${scriptName} — URL: ${instrAbsUrl}`);
+                logBgWarnError(BgLogTag.BUILTIN_GUARD_FALLBACK, `instruction.json fetch returned non-OK\n  Path: ${instrAbsUrl}\n  Missing: instruction.json metadata for "${scriptName}"\n  Reason: HTTP ${instrResp.status} — file may not exist in web_accessible_resources`);
                 void persistInjectionWarn(
                     "BUILTIN_GUARD_INSTRUCTION_MISSING",
-                    `[builtin-guard:fallback] instruction.json not found for ${scriptName}: HTTP ${instrResp.status} at ${instrAbsUrl}`,
+                    `[builtin-guard:fallback] instruction.json not found\n  Path: ${instrAbsUrl}\n  Missing: Metadata for "${scriptName}"\n  Reason: HTTP ${instrResp.status}`,
                 );
             }
         } catch (fetchErr) {
-            logCaughtError(BgLogTag.BUILTIN_GUARD_FALLBACK, `Failed to fetch instruction.json for ${scriptName} — URL: ${instrAbsUrl}`, fetchErr);
+            logCaughtError(BgLogTag.BUILTIN_GUARD_FALLBACK, `Failed to fetch instruction.json\n  Path: ${instrAbsUrl}\n  Missing: instruction.json metadata for "${scriptName}"\n  Reason: ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}`, fetchErr);
             void persistInjectionError(
                 "BUILTIN_GUARD_INSTRUCTION_FETCH_FAILED",
-                `[builtin-guard:fallback] instruction.json fetch failed for ${scriptName}: ${reason}. URL: ${instrAbsUrl}`,
+                `[builtin-guard:fallback] instruction.json fetch failed\n  Path: ${instrAbsUrl}\n  Missing: Metadata for "${scriptName}"\n  Reason: ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}`,
             );
         }
 
@@ -268,20 +268,20 @@ async function seedMissingBuiltinsDirectly(
                     console.log("[builtin-guard:fallback] ✅ Loaded %s directly (%d chars) from %s",
                         scriptName, code.length, scriptAbsUrl);
                 } else {
-                    logBgWarnError(BgLogTag.BUILTIN_GUARD_FALLBACK, `Script file ${scriptName} returned empty/tiny response (${code?.length ?? 0} chars) from ${scriptAbsUrl}`);
+                    logBgWarnError(BgLogTag.BUILTIN_GUARD_FALLBACK, `Script file returned empty/tiny response\n  Path: ${scriptAbsUrl}\n  Missing: Valid script code for "${scriptName}" (got ${code?.length ?? 0} chars, minimum 10 required)\n  Reason: Server returned near-empty response — build artifact may be corrupt or a placeholder`);
                 }
             } else {
-                logBgWarnError(BgLogTag.BUILTIN_GUARD_FALLBACK, `Script file HTTP ${scriptResp.status} for ${scriptName} — URL: ${scriptAbsUrl}`);
+                logBgWarnError(BgLogTag.BUILTIN_GUARD_FALLBACK, `Script file fetch returned non-OK\n  Path: ${scriptAbsUrl}\n  Missing: Script code for "${scriptName}"\n  Reason: HTTP ${scriptResp.status} — file may not exist in dist/ or web_accessible_resources`);
                 void persistInjectionWarn(
                     "BUILTIN_GUARD_SCRIPT_FILE_MISSING",
-                    `[builtin-guard:fallback] Script file not found for ${scriptName}: HTTP ${scriptResp.status} at ${scriptAbsUrl}`,
+                    `[builtin-guard:fallback] Script file not found\n  Path: ${scriptAbsUrl}\n  Missing: "${scriptName}" built-in script\n  Reason: HTTP ${scriptResp.status}`,
                 );
             }
         } catch (fetchErr) {
-            logCaughtError(BgLogTag.BUILTIN_GUARD_FALLBACK, `Failed to fetch script ${scriptName} — URL: ${scriptAbsUrl}`, fetchErr);
+            logCaughtError(BgLogTag.BUILTIN_GUARD_FALLBACK, `Failed to fetch script file\n  Path: ${scriptAbsUrl}\n  Missing: Script code for "${scriptName}"\n  Reason: ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}`, fetchErr);
             void persistInjectionError(
                 "BUILTIN_GUARD_SCRIPT_FETCH_FAILED",
-                `[builtin-guard:fallback] Script fetch failed for ${scriptName}: ${reason}. URL: ${scriptAbsUrl}`,
+                `[builtin-guard:fallback] Script fetch failed\n  Path: ${scriptAbsUrl}\n  Missing: "${scriptName}" built-in script code\n  Reason: ${fetchErr instanceof Error ? fetchErr.message : String(fetchErr)}`,
             );
         }
 

@@ -58,7 +58,7 @@ export async function warmScriptCache(): Promise<{ warmed: number; failed: numbe
 
         console.log("[cache-warmer] ✅ Warmed %d scripts, %d failed", warmed, failed);
     } catch (err) {
-        logCaughtError(BgLogTag.CACHE_WARMER, "Warming aborted", err);
+        logCaughtError(BgLogTag.CACHE_WARMER, `Warming aborted\n  Path: chrome.storage.local["${STORAGE_KEY_ALL_SCRIPTS}"]\n  Missing: Successful script cache warming\n  Reason: ${err instanceof Error ? err.message : String(err)}`, err);
     }
 
     return { warmed, failed };
@@ -75,13 +75,13 @@ async function warmOneScript(script: StoredScript): Promise<boolean> {
         const response = await fetch(url);
 
         if (!response.ok) {
-            logCaughtError(BgLogTag.CACHE_WARMER, `Fetch failed for ${filePath}: HTTP ${response.status}`, new Error(`HTTP ${response.status}`));
+            logCaughtError(BgLogTag.CACHE_WARMER, `Fetch failed for script file\n  Path: ${url}\n  Missing: Script code for "${filePath}" (HTTP ${response.status})\n  Reason: Server returned non-OK status ${response.status} — file may not exist in web_accessible_resources or dist/`, new Error(`HTTP ${response.status}`));
             return false;
         }
 
         const code = await response.text();
         if (!code || code.length < 10) {
-            logCaughtError(BgLogTag.CACHE_WARMER, `Empty/tiny response for ${filePath} (${code?.length ?? 0} chars)`, new Error("Empty response"));
+            logCaughtError(BgLogTag.CACHE_WARMER, `Empty/tiny response for script file\n  Path: ${url}\n  Missing: Valid script code (got ${code?.length ?? 0} chars, minimum 10 required)\n  Reason: Server returned an empty or near-empty response — file may be a placeholder or build artifact is corrupt`, new Error("Empty response"));
             return false;
         }
 
@@ -89,7 +89,7 @@ async function warmOneScript(script: StoredScript): Promise<boolean> {
         console.log("[cache-warmer] Cached %s (%d chars)", filePath, code.length);
         return true;
     } catch (err) {
-        logCaughtError(BgLogTag.CACHE_WARMER, `Error warming ${filePath}`, err);
+        logCaughtError(BgLogTag.CACHE_WARMER, `Error warming script\n  Path: ${url}\n  Missing: Cached script code for "${filePath}"\n  Reason: ${err instanceof Error ? err.message : String(err)}`, err);
         return false;
     }
 }

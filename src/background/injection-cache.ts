@@ -67,7 +67,7 @@ function openDb(): Promise<IDBDatabase> {
 
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => {
-            logCaughtError(BgLogTag.INJECTION_CACHE, "IndexedDB open failed", request.error);
+            logCaughtError(BgLogTag.INJECTION_CACHE, `IndexedDB open failed\n  Path: indexedDB.open("${DB_NAME}", ${DB_VERSION})\n  Missing: IDBDatabase connection\n  Reason: ${request.error?.message ?? "unknown DOMException — browser may have storage quota exceeded or IndexedDB disabled"}`, request.error);
             reject(request.error);
         };
     });
@@ -110,7 +110,7 @@ export async function cacheGet<T>(category: CacheCategory, subKey = ""): Promise
             };
 
             request.onerror = () => {
-                logCaughtError(BgLogTag.INJECTION_CACHE, `Get failed for ${key}`, request.error);
+                logCaughtError(BgLogTag.INJECTION_CACHE, `Get failed for cache entry\n  Path: IndexedDB → ${DB_NAME} → store="${STORE_NAME}" → key="${key}"\n  Missing: Cached value for "${key}"\n  Reason: IDBRequest error — ${request.error?.message ?? "unknown"}`, request.error);
                 resolve(null);
             };
         });
@@ -140,12 +140,12 @@ export async function cacheSet<T>(category: CacheCategory, value: T, subKey = ""
 
             request.onsuccess = () => resolve();
             request.onerror = () => {
-                logCaughtError(BgLogTag.INJECTION_CACHE, `Set failed for ${key}`, request.error);
+                logCaughtError(BgLogTag.INJECTION_CACHE, `Set failed for cache entry\n  Path: IndexedDB → ${DB_NAME} → store="${STORE_NAME}" → key="${key}"\n  Missing: Successful write of cached entry\n  Reason: IDBRequest error — ${request.error?.message ?? "unknown, possible quota exceeded"}`, request.error);
                 reject(request.error);
             };
         });
     } catch (err) {
-        logCaughtError(BgLogTag.INJECTION_CACHE, "cacheSet error", err);
+        logCaughtError(BgLogTag.INJECTION_CACHE, `cacheSet error\n  Path: IndexedDB → ${DB_NAME} → store="${STORE_NAME}"\n  Missing: Successful cache write\n  Reason: ${err instanceof Error ? err.message : String(err)}`, err);
     }
 }
 
@@ -284,7 +284,7 @@ export async function syncCacheWithBuildId(
 
         return { changed: true, cleared: clearResult.cleared };
     } catch (err) {
-        logCaughtError(BgLogTag.INJECTION_CACHE, "Build sync failed", err);
+        logCaughtError(BgLogTag.INJECTION_CACHE, `Build sync failed\n  Path: chrome.storage.local["${STORAGE_KEY_LAST_BUILD_ID}"]\n  Missing: Successful build ID comparison and cache invalidation\n  Reason: ${err instanceof Error ? err.message : String(err)}`, err);
         return { changed: false, cleared: 0 };
     }
 }

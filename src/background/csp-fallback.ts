@@ -106,7 +106,7 @@ export async function configureUserScriptWorld(): Promise<void> {
             console.log("[injection:csp] ✅ userScripts world '%s' configured", USER_SCRIPT_WORLD_ID);
             return;
         } catch (namedWorldError) {
-            logCaughtError(BgLogTag.INJECTION_CSP, "Named userScripts world failed, retrying default world", namedWorldError);
+            logCaughtError(BgLogTag.INJECTION_CSP, `Named userScripts world configuration failed\n  Path: chrome.userScripts.configureWorld({ worldId: "${USER_SCRIPT_WORLD_ID}" })\n  Missing: Configured USER_SCRIPT world with custom CSP\n  Reason: ${namedWorldError instanceof Error ? namedWorldError.message : String(namedWorldError)} — retrying with default world`, namedWorldError);
         }
 
         await chrome.userScripts.configureWorld({
@@ -119,7 +119,7 @@ export async function configureUserScriptWorld(): Promise<void> {
     } catch (configError) {
         userScriptsWorldConfigured = false;
         userScriptsWorldIdEnabled = false;
-        logCaughtError(BgLogTag.INJECTION_CSP, "Failed to configure userScripts world", configError);
+        logCaughtError(BgLogTag.INJECTION_CSP, `Failed to configure userScripts world\n  Path: chrome.userScripts.configureWorld()\n  Missing: Any usable USER_SCRIPT world (named and default both failed)\n  Reason: ${configError instanceof Error ? configError.message : String(configError)} — CSP fallback injection will be unavailable`, configError);
     }
 }
 
@@ -345,7 +345,7 @@ async function attemptUserScriptFallback(
                     ? userScriptError.message
                     : String(userScriptError);
                 userScriptTierLabel = "failed";
-                logCaughtError(BgLogTag.INJECTION_CSP, "userScripts.execute() failed — falling back to legacy ISOLATED chain", userScriptError);
+                logCaughtError(BgLogTag.INJECTION_CSP, `userScripts.execute() failed\n  Path: chrome.userScripts.execute({ target: { tabId: ${tabId} }, world: "USER_SCRIPT" })\n  Missing: Successful script execution in USER_SCRIPT world\n  Reason: ${userScriptTierError} — falling back to legacy ISOLATED chain`, userScriptError);
             }
         } else {
             userScriptTierLabel = "unavailable";

@@ -52,7 +52,7 @@ function isBuiltinScript(script: StoredScript): boolean {
 async function resolveScriptCode(script: StoredScript): Promise<ResolvedCode> {
     if (!script.filePath) {
         if (isBuiltinScript(script)) {
-            throw new Error(`Built-in script ${script.name} is missing filePath; refusing embedded fallback`);
+            throw new Error(`Built-in script "${script.name}" is missing filePath\n  Path: chrome.storage.local script entry id="${script.id}"\n  Missing: filePath field on StoredScript\n  Reason: Built-in scripts MUST have a filePath pointing to dist/ — refusing embedded fallback to prevent stale code injection`);
         }
         return { code: script.code, source: "embedded" };
     }
@@ -85,7 +85,7 @@ async function resolveScriptCode(script: StoredScript): Promise<ResolvedCode> {
             const fetchT0 = performance.now();
             const response = await fetch(url);
             if (!response.ok) {
-                logBgWarnError(BgLogTag.SCRIPT_RESOLVER, `filePath fetch failed (${response.status} ${candidate.path})`);
+                logBgWarnError(BgLogTag.SCRIPT_RESOLVER, `filePath fetch failed\n  Path: ${candidate.isAbsolute ? candidate.path : "chrome.runtime.getURL(\"" + candidate.path + "\")"}\n  Missing: Script code for "${script.name}" (HTTP ${response.status})\n  Reason: Server returned ${response.status} — file may not exist in web_accessible_resources or dist/`);
                 continue;
             }
             const code = await response.text();
@@ -93,7 +93,7 @@ async function resolveScriptCode(script: StoredScript): Promise<ResolvedCode> {
             const totalMs = (performance.now() - t0).toFixed(1);
 
             if (!code || code.length < 10) {
-                logBgWarnError(BgLogTag.SCRIPT_RESOLVER, `filePath returned empty/tiny response for ${candidate.path}`);
+                logBgWarnError(BgLogTag.SCRIPT_RESOLVER, `filePath returned empty/tiny response\n  Path: ${candidate.isAbsolute ? candidate.path : "chrome.runtime.getURL(\"" + candidate.path + "\")"}\n  Missing: Valid script code for "${script.name}" (got ${code?.length ?? 0} chars, minimum 10)\n  Reason: Response body is empty or near-empty — file may be a build placeholder`);
                 continue;
             }
 
@@ -110,12 +110,12 @@ async function resolveScriptCode(script: StoredScript): Promise<ResolvedCode> {
 
             return { code, source: "fetch" };
         } catch (err) {
-            logCaughtError(BgLogTag.SCRIPT_RESOLVER, `filePath fetch error for ${candidate.path}`, err);
+            logCaughtError(BgLogTag.SCRIPT_RESOLVER, `filePath fetch error\n  Path: ${candidate.isAbsolute ? candidate.path : "chrome.runtime.getURL(\"" + candidate.path + "\")"}\n  Missing: Script code for "${script.name}"\n  Reason: ${err instanceof Error ? err.message : String(err)}`, err);
         }
     }
 
     if (isBuiltin) {
-        const msg = `All bundled fetches failed for built-in script ${script.name} (${script.filePath}) — refusing stale embedded fallback`;
+        const msg = `All bundled fetches failed for built-in script\n  Path: chrome.storage.local script="${script.name}" filePath="${script.filePath}"\n  Missing: Valid script code from any candidate path\n  Reason: All ${candidates.length} fetch candidate(s) returned errors or empty responses — refusing stale embedded fallback`;
         logBgWarnError(BgLogTag.SCRIPT_RESOLVER, msg);
         throw new Error(msg);
     }
@@ -201,11 +201,11 @@ async function resolveDependencies(
 
             const depScript = findScript(allScripts, depId);
             if (!depScript) {
-                logBgWarnError(BgLogTag.SCRIPT_RESOLVER, `Dependency not found: ${depId} (required by ${script.name})`);
+                logBgWarnError(BgLogTag.SCRIPT_RESOLVER, `Dependency not found\n  Path: chrome.storage.local["${STORAGE_KEY_ALL_SCRIPTS}"]\n  Missing: Script with id="${depId}" (required by "${script.name}")\n  Reason: Dependency declared in script.dependencies but no matching script exists in storage`);
                 continue;
             }
             if (depScript.isEnabled === false) {
-                logBgWarnError(BgLogTag.SCRIPT_RESOLVER, `Dependency disabled: ${depScript.name} (required by ${script.name})`);
+                logBgWarnError(BgLogTag.SCRIPT_RESOLVER, `Dependency disabled\n  Path: chrome.storage.local script id="${depScript.id}" name="${depScript.name}"\n  Missing: Enabled dependency (isEnabled=false)\n  Reason: Script "${depScript.name}" is required by "${script.name}" but is currently disabled`);
                 continue;
             }
 
@@ -264,7 +264,7 @@ async function resolveOneBinding(
     const isMissingScript = script === null;
 
     if (isMissingScript) {
-        logBgWarnError(BgLogTag.INJECTION_RESOLVE, `Script not found: ${binding.scriptId} (store has ${scripts.length} scripts)`);
+        logBgWarnError(BgLogTag.INJECTION_RESOLVE, `Script not found in store\n  Path: chrome.storage.local["${STORAGE_KEY_ALL_SCRIPTS}"] → lookup by id/name="${binding.scriptId}"\n  Missing: StoredScript matching "${binding.scriptId}" (store has ${scripts.length} scripts)\n  Reason: Script ID from project config does not match any script entry by id, name, or normalized filename`);
         logMissingScript(binding.scriptId);
         void persistInjectionWarn(
             "SCRIPT_SKIPPED_MISSING",
