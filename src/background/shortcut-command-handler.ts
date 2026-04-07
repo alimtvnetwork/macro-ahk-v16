@@ -81,6 +81,7 @@ async function runScriptsFromShortcut(forceReload: boolean): Promise<void> {
             type: MessageType.INJECT_SCRIPTS,
             tabId: activeTabId,
             scripts,
+            ...(forceReload ? { forceReload: true } : {}),
         });
 
         const elapsed = Math.round(performance.now() - t0);
