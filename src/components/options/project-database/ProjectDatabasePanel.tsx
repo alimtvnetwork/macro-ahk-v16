@@ -80,6 +80,8 @@ export function ProjectDatabasePanel({ projectId, projectSlug }: ProjectDatabase
     setModalError(errModel);
     setErrorModalOpen(true);
   }, [projectSlug]);
+
+  const refreshTables = useCallback(async () => {
     setLoading(true);
     try {
       const result = await sendMessage<{ isOk: boolean; tables?: TableInfo[] }>({
