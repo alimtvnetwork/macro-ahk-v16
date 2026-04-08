@@ -13,13 +13,13 @@
 **Windows (PowerShell):**
 
 ```powershell
-irm https://github.com/riseup-asia/macro-ahk/releases/latest/download/install.ps1 | iex
+irm https://github.com/alimtvnetwork/macro-ahk-v15/releases/latest/download/install.ps1 | iex
 ```
 
 **Linux / macOS (Bash):**
 
 ```bash
-curl -fsSL https://github.com/riseup-asia/macro-ahk/releases/latest/download/install.sh | bash
+curl -fsSL https://github.com/alimtvnetwork/macro-ahk-v15/releases/latest/download/install.sh | bash
 ```
 
 ### Custom Directory Install
@@ -50,7 +50,7 @@ curl -fsSL https://github.com/riseup-asia/macro-ahk/releases/latest/download/ins
 |------|-------------|---------|
 | `-Version` | Pin a specific release | `-Version v2.115.0` |
 | `-InstallDir` | Custom install directory | `-InstallDir D:\marco-extension\v2.115.0` |
-| `-Repo` | Override GitHub repository | `-Repo riseup-asia/macro-ahk` |
+| `-Repo` | Override GitHub repository | `-Repo alimtvnetwork/macro-ahk-v15` |
 
 **Linux / macOS (Bash):**
 
@@ -58,11 +58,11 @@ curl -fsSL https://github.com/riseup-asia/macro-ahk/releases/latest/download/ins
 |------|-------------|---------|
 | `--version` | Pin a specific release | `--version v2.115.0` |
 | `--dir` | Custom install directory | `--dir ~/marco-extension/v2.115.0` |
-| `--repo` | Override GitHub repository | `--repo riseup-asia/macro-ahk` |
+| `--repo` | Override GitHub repository | `--repo alimtvnetwork/macro-ahk-v15` |
 
 ### Manual Install
 
-1. Download `marco-extension-v{VERSION}.zip` from [Releases](https://github.com/riseup-asia/macro-ahk/releases)
+1. Download `marco-extension-v{VERSION}.zip` from [Releases](https://github.com/alimtvnetwork/macro-ahk-v15/releases)
 2. Extract to a folder (e.g., `D:\marco-extension\v2.115.0`)
 3. Open `chrome://extensions` (or `edge://extensions`)
 4. Enable **Developer mode** (toggle in top-right)
@@ -328,7 +328,7 @@ Pushing to a `release/*` branch (e.g., `release/v2.117.0`) automatically:
 8. Generates categorized release notes from commit history with Bash + PowerShell install commands
 9. Creates a GitHub Release with all assets attached
 
-**No email or notification is sent** — check the [Releases page](https://github.com/riseup-asia/macro-ahk/releases) for status.
+**No email or notification is sent** — check the [Releases page](https://github.com/alimtvnetwork/macro-ahk-v15/releases) for status.
 
 ### Release Assets
 
@@ -348,13 +348,13 @@ Pushing to a `release/*` branch (e.g., `release/v2.117.0`) automatically:
 **Windows (PowerShell)**
 
 ```powershell
-irm https://github.com/riseup-asia/macro-ahk/releases/download/v{VER}/install.ps1 | iex
+irm https://github.com/alimtvnetwork/macro-ahk-v15/releases/download/v{VER}/install.ps1 | iex
 ```
 
 **Linux / macOS**
 
 ```bash
-curl -fsSL https://github.com/riseup-asia/macro-ahk/releases/download/v{VER}/install.sh | bash
+curl -fsSL https://github.com/alimtvnetwork/macro-ahk-v15/releases/download/v{VER}/install.sh | bash
 ```
 
 ---
