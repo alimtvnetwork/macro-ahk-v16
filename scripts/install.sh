@@ -32,7 +32,7 @@ while [[ $# -gt 0 ]]; do
     --dir|-d)     INSTALL_DIR="$2"; shift 2 ;;
     --repo|-r)    REPO="$2"; shift 2 ;;
     --help|-h)
-      echo "Usage: install-extension.sh [--version vX.Y.Z] [--dir PATH] [--repo owner/repo]"
+      echo "Usage: install.sh [--version vX.Y.Z] [--dir PATH] [--repo owner/repo]"
       exit 0
       ;;
     *) echo "Unknown option: $1"; exit 1 ;;
