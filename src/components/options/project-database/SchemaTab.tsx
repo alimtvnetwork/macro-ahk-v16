@@ -23,6 +23,8 @@ import { SchemaDiffPreview } from "./SchemaDiffPreview";
 import { SchemaVersionHistory } from "./SchemaVersionHistory";
 import { sendMessage } from "@/lib/message-client";
 import { toast } from "sonner";
+import { ErrorModal } from "./ErrorModal";
+import { createErrorModel, type ErrorModel } from "@/types/error-model";
 import {
   Plus, Trash2, ChevronDown, ChevronRight,
   Layers, Save, Loader2, CheckCircle2, AlertCircle,

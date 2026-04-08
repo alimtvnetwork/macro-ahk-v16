@@ -711,6 +711,7 @@ export function JsonSchemaTab({ projectSlug, onMigrationComplete }: Props) {
           )}
         </div>
       )}
+      <ErrorModal error={modalError} open={errorModalOpen} onOpenChange={setErrorModalOpen} />
     </div>
   );
 }
