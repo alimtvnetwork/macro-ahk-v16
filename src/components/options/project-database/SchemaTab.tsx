@@ -69,6 +69,8 @@ export function SchemaTab({ projectSlug, onMigrationComplete }: SchemaTabProps) 
   const [loadingExisting, setLoadingExisting] = useState(false);
   const [lastResult, setLastResult] = useState<ApplyResult | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
+  const [modalError, setModalError] = useState<ErrorModel | null>(null);
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
 
   const allTableNames = tables.map((t) => t.name).filter(Boolean);
 
