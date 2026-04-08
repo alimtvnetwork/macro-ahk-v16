@@ -83,6 +83,7 @@ function deriveErrorCode(message: string): string {
 }
 
 /** Formats an ErrorModel as a copyable text block for sharing. */
+// eslint-disable-next-line max-lines-per-function -- sequential line assembly, splitting would reduce readability
 export function formatErrorForClipboard(error: ErrorModel): string {
   const lines: string[] = [
     `## ${error.title}`,

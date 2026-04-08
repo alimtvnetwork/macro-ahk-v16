@@ -35,6 +35,7 @@ const ICONS: Record<string, typeof KeyRound> = {
   ProjectMeta: Settings2,
 };
 
+// eslint-disable-next-line max-lines-per-function -- status grid with expandable cards and inline browsers
 export function DefaultDatabasesStatus({ projectSlug }: DefaultDatabasesStatusProps) {
   const [statuses, setStatuses] = useState<DbStatus[]>(
     DEFAULT_PROJECT_DATABASES.map((d) => ({
