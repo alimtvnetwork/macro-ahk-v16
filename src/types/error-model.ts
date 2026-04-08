@@ -50,8 +50,8 @@ export function createErrorModel(
   const isError = error instanceof Error;
   const message = isError ? error.message : String(error);
   const stackTrace = isError ? error.stack : undefined;
-  const innerError = isError && error.cause
-    ? String(error.cause)
+  const innerError = isError && (error as Record<string, unknown>).cause
+    ? String((error as Record<string, unknown>).cause)
     : undefined;
 
   return {
