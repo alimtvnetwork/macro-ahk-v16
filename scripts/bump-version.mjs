@@ -17,6 +17,10 @@
  *   - standalone-scripts/xpath/src/instruction.ts              (version)
  *   - standalone-scripts/xpath/dist/instruction.json           (version)
  *
+ * Also updates:
+ *   - CHANGELOG.md              (inserts new version section header)
+ *   - plan.md                   (updates Chrome Extension version refs)
+ *
  * After running, check-version-sync.mjs will pass.
  */
 
@@ -171,6 +175,89 @@ for (const target of getTargets(newVer)) {
     console.log(`  [--]   ${target.path} (already at ${newVer})`);
   }
 }
+
+/* ── Changelog: insert new version section ───────────────────── */
+function updateChangelog(oldV, newV) {
+  const changelogPath = resolve(ROOT, "CHANGELOG.md");
+  if (!existsSync(changelogPath)) {
+    console.log(`  [SKIP] CHANGELOG.md (not found)`);
+    return false;
+  }
+
+  const content = readFileSync(changelogPath, "utf-8");
+
+  // Don't insert if section already exists
+  if (content.includes(`## [v${newV}]`)) {
+    console.log(`  [--]   CHANGELOG.md (v${newV} section already exists)`);
+    return false;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const newSection = [
+    `## [v${newV}] — ${today}`,
+    "",
+    "### Added",
+    "",
+    "### Fixed",
+    "",
+    "### Changed",
+    `- Version bump: ${oldV} → ${newV} (all version files synced)`,
+    "",
+    "---",
+    "",
+  ].join("\n");
+
+  // Insert after the first "---" separator (which follows the header)
+  const firstSepIdx = content.indexOf("\n---\n");
+  if (firstSepIdx === -1) {
+    console.log(`  [SKIP] CHANGELOG.md (could not find insertion point)`);
+    return false;
+  }
+
+  const insertAt = firstSepIdx + "\n---\n".length;
+  const updated = content.slice(0, insertAt) + "\n" + newSection + content.slice(insertAt);
+  writeFileSync(changelogPath, updated, "utf-8");
+  console.log(`  [OK]   CHANGELOG.md (inserted v${newV} section)`);
+  return true;
+}
+
+/* ── plan.md: update extension version references ────────────── */
+function updatePlan(oldV, newV) {
+  const planPath = resolve(ROOT, "plan.md");
+  if (!existsSync(planPath)) {
+    console.log(`  [SKIP] plan.md (not found)`);
+    return false;
+  }
+
+  let content = readFileSync(planPath, "utf-8");
+  const before = content;
+
+  // Update "Chrome Extension: vX.Y.Z" and "Extension vX.Y.Z" references
+  content = content.replace(
+    new RegExp(`Extension(?: v|: v?)${oldV.replace(/\./g, "\\.")}`, "g"),
+    (m) => m.replace(oldV, newV),
+  );
+  // Update "at v2.X.Y with" pattern
+  content = content.replace(
+    new RegExp(`at v${oldV.replace(/\./g, "\\.")} with`, "g"),
+    `at v${newV} with`,
+  );
+
+  if (content !== before) {
+    writeFileSync(planPath, content, "utf-8");
+    console.log(`  [OK]   plan.md (updated version refs)`);
+    return true;
+  }
+  console.log(`  [--]   plan.md (no refs to update)`);
+  return false;
+}
+
+/* ── Post-version-file updates ───────────────────────────────── */
+const changelogUpdated = updateChangelog(oldVer, newVer);
+const planUpdated = updatePlan(oldVer, newVer);
+
+if (changelogUpdated) updated++;
+if (planUpdated) updated++;
 
 console.log(`\nDone: ${updated} file(s) updated, ${skipped} skipped.`);
 console.log(`Run: node scripts/check-version-sync.mjs`);
