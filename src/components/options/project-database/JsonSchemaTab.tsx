@@ -191,6 +191,8 @@ export function JsonSchemaTab({ projectSlug, onMigrationComplete }: Props) {
   const [dbSchemaJson, setDbSchemaJson] = useState<string | null>(null);
   const [loadingDiff, setLoadingDiff] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
+  const [modalError, setModalError] = useState<ErrorModel | null>(null);
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
 
   /* ---- Load from MetaTables ---- */
   // eslint-disable-next-line max-lines-per-function
