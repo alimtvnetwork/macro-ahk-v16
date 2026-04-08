@@ -595,6 +595,11 @@ function renderPromptItem(
       pasteIntoEditor(p.text, promptsCfg, getByXPathAsElement);
       promptsDropdown.style.display = 'none';
     };
+  } else {
+    // Prompt text not loaded — show a helpful message on click
+    item.onclick = function() {
+      showPasteToast('⚠️ Prompt text not loaded — click ↻ Load to refresh', true);
+    };
   }
   item.appendChild(actions);
   return item;
