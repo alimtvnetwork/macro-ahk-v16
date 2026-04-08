@@ -253,10 +253,23 @@ export function ProjectDatabasePanel({ projectId, projectSlug }: ProjectDatabase
             <Button variant="ghost" size="sm" onClick={() => void refreshTables()} className="h-7 text-xs">
               <RefreshCw className="h-3 w-3 mr-1" /> Refresh
             </Button>
-            <Button size="sm" onClick={() => setShowCreateForm(!showCreateForm)} className="h-7 text-xs">
+            <Button variant="outline" size="sm" onClick={() => { setShowCreateDbForm(!showCreateDbForm); setShowCreateForm(false); }} className="h-7 text-xs">
+              <Database className="h-3 w-3 mr-1" /> Create Database
+            </Button>
+            <Button size="sm" onClick={() => { setShowCreateForm(!showCreateForm); setShowCreateDbForm(false); }} className="h-7 text-xs">
               <Plus className="h-3 w-3 mr-1" /> Create Table
             </Button>
           </div>
+
+          {/* Create database form (namespace-based) */}
+          {showCreateDbForm && (
+            <CreateDatabaseForm
+              projectSlug={projectSlug}
+              userDbCount={0}
+              onCreated={() => { setShowCreateDbForm(false); void refreshTables(); }}
+              onCancel={() => setShowCreateDbForm(false)}
+            />
+          )}
 
           {/* Create table form */}
           {showCreateForm && (
