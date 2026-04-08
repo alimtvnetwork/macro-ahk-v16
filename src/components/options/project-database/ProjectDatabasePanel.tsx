@@ -235,6 +235,9 @@ export function ProjectDatabasePanel({ projectId, projectSlug }: ProjectDatabase
           <span className="text-xs text-muted-foreground">
             ({tables.length} table{tables.length !== 1 ? "s" : ""})
           </span>
+          <Badge variant={userDbCount >= MAX_USER_DATABASES ? "destructive" : "secondary"} className="text-[10px] px-1.5 py-0">
+            {userDbCount}/{MAX_USER_DATABASES} databases
+          </Badge>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
