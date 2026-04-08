@@ -141,7 +141,7 @@ describe("handleUserScriptLog", () => {
         const params = insertArgs[1] as unknown[];
 
         expect(sql).toContain("INSERT INTO Logs");
-        expect(params[2]).toBe("user-script");
+        expect(params[3]).toBe("user-script");
     });
 
     it("passes project context to SQL insert", async () => {
