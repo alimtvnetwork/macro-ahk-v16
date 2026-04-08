@@ -156,6 +156,15 @@ export function SchemaTab({ projectSlug, onMigrationComplete }: SchemaTabProps) 
       setTables(loaded);
       toast.success(`Loaded ${loaded.length} table(s) from DB`);
     } catch (err) {
+      const errModel = createErrorModel(err, {
+        source: "Database",
+        operation: "LoadFromDB",
+        projectName: projectSlug,
+        contextJson: JSON.stringify({ type: "GENERATE_SCHEMA_DOCS", project: projectSlug, format: "meta" }),
+        suggestedAction: "Ensure the project slug is set. Try selecting a project from the project list first.",
+      });
+      setModalError(errModel);
+      setErrorModalOpen(true);
       toast.error(err instanceof Error ? err.message : "Load failed");
     } finally {
       setLoadingExisting(false);
