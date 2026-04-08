@@ -100,6 +100,7 @@ export default tseslint.config(
   // --- Standalone scripts (non-controller) — raise to 50 ---
   {
     files: ["standalone-scripts/**/src/**/*.ts"],
+    ignores: ["standalone-scripts/**/src/__tests__/**"],
     rules: {
       "max-lines-per-function": ["warn", { max: 50, skipBlankLines: true, skipComments: true }],
     },
