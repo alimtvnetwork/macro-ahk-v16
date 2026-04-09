@@ -103,3 +103,4 @@ marco-script-ahk-v4/logs/activity.txt
 standalone-scripts/_generated/seed-manifest.json
 .gitmap/release-assets
 release-assets
+standalone-scripts/macro-controller/01-macro-looping.js
