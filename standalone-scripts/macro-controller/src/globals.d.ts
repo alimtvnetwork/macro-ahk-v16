@@ -88,6 +88,22 @@ interface MarcoSDKAuthResolutionDiag {
   bridgeOutcome: 'hit' | 'timeout' | 'error' | 'skipped';
 }
 
+interface MarcoSDKAuthTokenUtils {
+  normalizeBearerToken(raw: string): string;
+  isJwtToken(raw: string): boolean;
+  isUsableToken(raw: string): boolean;
+  extractBearerTokenFromUnknown(raw: unknown): string;
+  scanSupabaseLocalStorage(
+    onFound?: (key: string, tokenLength: number) => void,
+    onScanError?: (error: unknown) => void,
+  ): string;
+  extractSupabaseTokenFromRaw(
+    key: string,
+    raw: string,
+    onFound?: (key: string, tokenLength: number) => void,
+  ): string;
+}
+
 interface MarcoSDK {
   auth?: {
     getToken(): Promise<string | null>;
@@ -97,6 +113,7 @@ interface MarcoSDK {
     getJwtPayload(): Promise<Record<string, unknown> | null>;
     getLastAuthDiag(): MarcoSDKAuthResolutionDiag | null;
   };
+  authUtils?: MarcoSDKAuthTokenUtils;
   api?: MarcoSDKApiModule;
   notify?: {
     toast(message: string, level?: string, opts?: Record<string, unknown>): void;
