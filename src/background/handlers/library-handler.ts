@@ -52,6 +52,16 @@ export interface SharedAsset {
     UpdatedAt: string;
 }
 
+export interface AssetVersion {
+    Id: number;
+    SharedAssetId: number;
+    Version: string;
+    ContentJson: string;
+    ContentHash: string;
+    ChangedBy: string;
+    CreatedAt: string;
+}
+
 export interface AssetLink {
     Id: number;
     SharedAssetId: number;
