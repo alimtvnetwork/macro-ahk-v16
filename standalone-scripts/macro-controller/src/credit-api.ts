@@ -1,5 +1,5 @@
 import { cCbAvail, cCbBilling, cCbBonus, cCbDaily, cCbEmpty, cCbRollover, cLogInfo, cPrimaryLight, creditBarWidthPx, tFont, tFontSm, trSlow } from './shared-state';
-import { CSS_SPAN_COLOR, CSS_BAR_SEGMENT_TAIL, CSS_TRANSITION_TAIL, CSS_EASE_CLOSE, CSS_STYLE_WIDTH } from './constants';
+import { CssFragment } from './types';
 
 /**
  * MacroLoop Controller — Credit Calculation & Rendering Module
@@ -103,29 +103,29 @@ export function renderCreditBar(opts: CreditBarOpts): string {
   let h = '<div style="display:flex;align-items:center;gap:8px;' + mt + wW + '">';
   h += '<div title="' + bTitle + '" style="flex:none;height:' + bH + ';width:' + bW + ';min-width:' + bW + ';max-width:' + bW + ';background:' + cCbEmpty + ';border-radius:' + bR + ';overflow:hidden;display:flex;border:' + bBorder + ';' + bShadow + '">';
   h += '<div style="width:' + fillPct.toFixed(2) + '%;height:100%;display:flex;transition:width ' + trSlow + ' ease;">';
-  h += '<div title="🎁 Bonus: ' + fr + CSS_STYLE_WIDTH + segments.free + CSS_BAR_SEGMENT_TAIL + cCbBonus[0] + ',' + cCbBonus[1] + CSS_TRANSITION_TAIL + trSlow + CSS_EASE_CLOSE;
-  h += '<div title="💰 Monthly: ' + ba + CSS_STYLE_WIDTH + segments.billing + CSS_BAR_SEGMENT_TAIL + cCbBilling[0] + ',' + cCbBilling[1] + CSS_TRANSITION_TAIL + trSlow + CSS_EASE_CLOSE;
-  h += '<div title="🔄 Rollover: ' + ro + CSS_STYLE_WIDTH + segments.rollover + CSS_BAR_SEGMENT_TAIL + cCbRollover[0] + ',' + cCbRollover[1] + CSS_TRANSITION_TAIL + trSlow + CSS_EASE_CLOSE;
-  h += '<div title="📅 Free: ' + df + CSS_STYLE_WIDTH + segments.daily + CSS_BAR_SEGMENT_TAIL + cCbDaily[0] + ',' + cCbDaily[1] + CSS_TRANSITION_TAIL + trSlow + CSS_EASE_CLOSE;
+  h += '<div title="🎁 Bonus: ' + fr + CssFragment.StyleWidth + segments.free + CssFragment.BarSegmentTail + cCbBonus[0] + ',' + cCbBonus[1] + CssFragment.TransitionTail + trSlow + CssFragment.EaseClose;
+  h += '<div title="💰 Monthly: ' + ba + CssFragment.StyleWidth + segments.billing + CssFragment.BarSegmentTail + cCbBilling[0] + ',' + cCbBilling[1] + CssFragment.TransitionTail + trSlow + CssFragment.EaseClose;
+  h += '<div title="🔄 Rollover: ' + ro + CssFragment.StyleWidth + segments.rollover + CssFragment.BarSegmentTail + cCbRollover[0] + ',' + cCbRollover[1] + CssFragment.TransitionTail + trSlow + CssFragment.EaseClose;
+  h += '<div title="📅 Free: ' + df + CssFragment.StyleWidth + segments.daily + CssFragment.BarSegmentTail + cCbDaily[0] + ',' + cCbDaily[1] + CssFragment.TransitionTail + trSlow + CssFragment.EaseClose;
   h += '</div>';
   h += '</div>';
   const icoStyle = 'display:inline-block;min-width:32px;text-align:right;';
   const icoStyleWide = 'display:inline-block;min-width:52px;text-align:right;font-weight:700;';
   if (compact) {
     h += '<span style="font-size:' + tFontSm + ';font-family:' + tFont + ';white-space:nowrap;">';
-    h += CSS_SPAN_COLOR + cPrimaryLight + ';' + icoStyle + '" title="🎁 Bonus — Promotional one-time credits">🎁' + fr + '</span> ';
-    h += CSS_SPAN_COLOR + cCbBilling[1] + ';' + icoStyle + '" title="💰 Monthly — Credits from subscription plan">💰' + ba + '</span> ';
-    h += CSS_SPAN_COLOR + cLogInfo + ';' + icoStyle + '" title="🔄 Rollover — Unused credits from previous period">🔄' + ro + '</span> ';
-    h += CSS_SPAN_COLOR + cCbDaily[1] + ';' + icoStyle + '" title="📅 Free — Daily free credits">📅' + df + '</span> ';
-    h += CSS_SPAN_COLOR + cCbAvail + ';' + icoStyleWide + '" title="Available / Total credits">⚡' + av + '/' + tc + '</span>';
+    h += CssFragment.SpanStyleColor + cPrimaryLight + ';' + icoStyle + '" title="🎁 Bonus — Promotional one-time credits">🎁' + fr + '</span> ';
+    h += CssFragment.SpanStyleColor + cCbBilling[1] + ';' + icoStyle + '" title="💰 Monthly — Credits from subscription plan">💰' + ba + '</span> ';
+    h += CssFragment.SpanStyleColor + cLogInfo + ';' + icoStyle + '" title="🔄 Rollover — Unused credits from previous period">🔄' + ro + '</span> ';
+    h += CssFragment.SpanStyleColor + cCbDaily[1] + ';' + icoStyle + '" title="📅 Free — Daily free credits">📅' + df + '</span> ';
+    h += CssFragment.SpanStyleColor + cCbAvail + ';' + icoStyleWide + '" title="Available / Total credits">⚡' + av + '/' + tc + '</span>';
     h += '</span>';
   } else {
     h += '<span style="font-size:' + tFontSm + ';white-space:nowrap;font-family:' + tFont + ';line-height:1;">';
-    h += CSS_SPAN_COLOR + cPrimaryLight + ';' + icoStyle + '" title="🎁 Bonus — Promotional one-time credits">🎁' + fr + '</span> ';
-    h += CSS_SPAN_COLOR + cCbBilling[1] + ';' + icoStyle + '" title="💰 Monthly — Credits from subscription plan">💰' + ba + '</span> ';
-    h += CSS_SPAN_COLOR + cLogInfo + ';' + icoStyle + '" title="🔄 Rollover — Unused credits carried from previous period">🔄' + ro + '</span> ';
-    h += CSS_SPAN_COLOR + cCbDaily[1] + ';' + icoStyle + '" title="📅 Free — Daily free credits (refreshed daily)">📅' + df + '</span> ';
-    h += CSS_SPAN_COLOR + cCbAvail + ';' + icoStyleWide + '" title="⚡ Available / Total credits">⚡' + av + '/' + tc + '</span>';
+    h += CssFragment.SpanStyleColor + cPrimaryLight + ';' + icoStyle + '" title="🎁 Bonus — Promotional one-time credits">🎁' + fr + '</span> ';
+    h += CssFragment.SpanStyleColor + cCbBilling[1] + ';' + icoStyle + '" title="💰 Monthly — Credits from subscription plan">💰' + ba + '</span> ';
+    h += CssFragment.SpanStyleColor + cLogInfo + ';' + icoStyle + '" title="🔄 Rollover — Unused credits carried from previous period">🔄' + ro + '</span> ';
+    h += CssFragment.SpanStyleColor + cCbDaily[1] + ';' + icoStyle + '" title="📅 Free — Daily free credits (refreshed daily)">📅' + df + '</span> ';
+    h += CssFragment.SpanStyleColor + cCbAvail + ';' + icoStyleWide + '" title="⚡ Available / Total credits">⚡' + av + '/' + tc + '</span>';
     h += '</span>';
   }
   h += '</div>';

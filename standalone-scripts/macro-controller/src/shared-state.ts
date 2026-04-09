@@ -47,7 +47,7 @@ if (_configWarnings.length > 0) {
 /** Get config validation warnings (for diagnostics). */
 export function getConfigValidationWarnings(): string[] { return _configWarnings; }
 
-import { FORCED_THEME_KEY } from './constants';
+import { StorageKey } from './types';
 
 export function resolvePreset(key: string): ThemePreset {
   const darkPreset = themeRoot.presets?.dark;
@@ -57,7 +57,7 @@ export function resolvePreset(key: string): ThemePreset {
   return {} as ThemePreset;
 }
 
-const theme = resolvePreset(FORCED_THEME_KEY);
+const theme = resolvePreset(StorageKey.ForcedTheme);
 const TC = theme.colors || {};
 const TP = TC.panel || {};
 const TPri = TC.primary || {};

@@ -11,7 +11,7 @@
 
 import { log } from './logging';
 import { persistResolvedBearerToken, updateAuthBadge, setLastTokenSource } from './auth';
-import { LABEL_SOURCE_EXTENSION as SOURCE_EXTENSION } from './constants';
+import { Label } from './types';
 
 interface TokenBroadcast {
   source: string;
@@ -57,7 +57,7 @@ export function registerTokenBroadcastListener(): void {
 
 function handleTokenBroadcast(event: MessageEvent): void {
   const data = event.data as TokenBroadcast | null;
-  if (!data || data.source !== SOURCE_EXTENSION) return;
+  if (!data || data.source !== Label.SourceExtension) return;
 
   const token = data.token
     || data.payload?.token

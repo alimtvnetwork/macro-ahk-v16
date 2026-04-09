@@ -11,7 +11,7 @@ import { logError, logWarn, logDebug } from './error-utils';
  * Ref: .lovable/fixes/macro-controller-toast-crash-and-slow-startup.md
  */
 
-import { WS_CACHE_PREFIX, WS_LAST_PROJECT_KEY } from './constants';
+import { StorageKey } from './types';
 
 /** Extract project ID from the current URL (lovable.dev/projects/{id} or {id}-preview--{uuid}). */
 function resolveProjectId(): string {
@@ -31,7 +31,7 @@ function resolveProjectId(): string {
 }
 
 function cacheKey(projectId: string, suffix: string): string {
-  return WS_CACHE_PREFIX + projectId + '_' + suffix;
+  return StorageKey.WsCachePrefix + projectId + '_' + suffix;
 }
 
 /** Read cached workspace name for the current project (returns '' if missing). */
@@ -73,7 +73,7 @@ export function cacheWorkspaceName(name: string, id?: string): void {
       }
     }
     // Track last project for cross-project detection
-    localStorage.setItem(WS_LAST_PROJECT_KEY, pid);
+    localStorage.setItem(StorageKey.WsLastProject, pid);
   } catch (e) {
     logError('setCachedWs', 'Failed to persist workspace cache', e);
     // localStorage unavailable — no-op
@@ -87,11 +87,11 @@ export function cacheWorkspaceName(name: string, id?: string): void {
 export function invalidateCacheOnProjectSwitch(): void {
   try {
     const currentPid = resolveProjectId();
-    const lastPid = localStorage.getItem(WS_LAST_PROJECT_KEY) || '';
+    const lastPid = localStorage.getItem(StorageKey.WsLastProject) || '';
     if (lastPid && lastPid !== currentPid && currentPid !== '_default') {
       // Different project — clear old project's cache (it stays for that project)
       // Just update the tracker; each project has its own scoped keys
-      localStorage.setItem(WS_LAST_PROJECT_KEY, currentPid);
+      localStorage.setItem(StorageKey.WsLastProject, currentPid);
     }
   } catch (_e) { logWarn('invalidateCacheOnProjectSwitch', 'localStorage write failed: ' + (_e instanceof Error ? _e.message : String(_e))); }
 }

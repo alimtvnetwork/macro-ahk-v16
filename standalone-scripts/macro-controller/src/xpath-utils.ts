@@ -12,7 +12,7 @@ import { CONFIG } from './shared-state';
 import { log, logSub } from './logging';
 import { domCache } from './dom-cache';
 
-import { LABEL_LOG_XPATHUTILS as LOG_XPATHUTILS } from './constants';
+import { Label } from './types';
 
 // ============================================
 // XPathUtils integration
@@ -36,9 +36,9 @@ export const hasXPathUtils = (): boolean => xpathUtilsState.detected;
 export function initXPathUtils(): void {
   if (hasXPathUtils()) {
     window.XPathUtils.setLogger(
-      function(fn: string, msg: string) { log(LOG_XPATHUTILS + fn + '] ' + msg, 'check'); },
+      function(fn: string, msg: string) { log(Label.LogXpathUtils + fn + '] ' + msg, 'check'); },
       function(_fn: string, msg: string) { logSub(msg); },
-      function(fn: string, msg: string) { log(LOG_XPATHUTILS + fn + '] WARN: ' + msg, 'warn'); }
+      function(fn: string, msg: string) { log(Label.LogXpathUtils + fn + '] WARN: ' + msg, 'warn'); }
     );
     log('XPathUtils v' + window.XPathUtils.version + ' detected — using shared utilities', 'success');
   } else {
@@ -47,9 +47,9 @@ export function initXPathUtils(): void {
       if (typeof window.XPathUtils !== 'undefined' && !hasXPathUtils()) {
         xpathUtilsState.detected = true;
         window.XPathUtils.setLogger(
-          function(fn: string, msg: string) { log(LOG_XPATHUTILS + fn + '] ' + msg, 'check'); },
+          function(fn: string, msg: string) { log(Label.LogXpathUtils + fn + '] ' + msg, 'check'); },
           function(_fn: string, msg: string) { logSub(msg); },
-          function(fn: string, msg: string) { log(LOG_XPATHUTILS + fn + '] WARN: ' + msg, 'warn'); }
+          function(fn: string, msg: string) { log(Label.LogXpathUtils + fn + '] WARN: ' + msg, 'warn'); }
         );
         log('XPathUtils detected on deferred retry (500ms)', 'success');
       }

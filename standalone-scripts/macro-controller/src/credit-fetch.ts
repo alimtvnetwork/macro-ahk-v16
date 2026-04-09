@@ -23,7 +23,7 @@ import { MacroController } from './core/MacroController';
 import { CREDIT_API_BASE, loopCreditState } from './shared-state';
 import { parseLoopApiResponse, syncCreditStateFromApi } from './credit-parser';
 import { logError } from './error-utils';
-import { API_USER_WORKSPACES } from './constants';
+import { ApiPath } from './types';
 
 
 function mc() { return MacroController.getInstance(); }
@@ -83,7 +83,7 @@ function emitAuthFailureToast(status: number, statusText: string): void {
     {
       noStop: true,
       requestDetail: {
-        method: 'GET', url: CREDIT_API_BASE + API_USER_WORKSPACES, headers: {}, status, statusText, responseBody: detail,
+        method: 'GET', url: CREDIT_API_BASE + ApiPath.UserWorkspaces, headers: {}, status, statusText, responseBody: detail,
       },
     },
   );
@@ -104,7 +104,7 @@ async function handleAuthRecovery(
   log('Credit API: Auth ' + status + ' — forcing token refresh before retry...', 'warn');
   showToast('Auth ' + status + ' — recovering session...', 'warn', {
     noStop: true,
-    requestDetail: { method: 'GET', url: CREDIT_API_BASE + API_USER_WORKSPACES, headers: {}, status, statusText },
+    requestDetail: { method: 'GET', url: CREDIT_API_BASE + ApiPath.UserWorkspaces, headers: {}, status, statusText },
   });
 
   const newToken = await getBearerToken({ force: true });
@@ -147,7 +147,7 @@ function handleNonAuthError(resp: SdkApiResponse): void {
   showToast('Credit API error: HTTP ' + resp.status, 'error', {
     noStop: true,
     requestDetail: {
-      method: 'GET', url: CREDIT_API_BASE + API_USER_WORKSPACES, headers: {}, status: resp.status, statusText: '', responseBody: bodyPreview,
+      method: 'GET', url: CREDIT_API_BASE + ApiPath.UserWorkspaces, headers: {}, status: resp.status, statusText: '', responseBody: bodyPreview,
     },
   });
 }
