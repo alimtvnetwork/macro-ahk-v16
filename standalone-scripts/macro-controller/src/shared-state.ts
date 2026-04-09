@@ -292,7 +292,7 @@ export const autoAttachCfg = cfg.autoAttach || {};
 export const autoAttachTiming = autoAttachCfg.timing || {};
 export const autoAttachGroups = autoAttachCfg.groups || [];
 
-// Storage constants — centralized in constants.ts
+// Storage constants — centralized in types/ enums and constants.ts
 export { StorageKey } from './types';
 export const LOG_STORAGE_KEY = StorageKey.LogStorage;
 export const WS_HISTORY_KEY = StorageKey.WsHistory;
