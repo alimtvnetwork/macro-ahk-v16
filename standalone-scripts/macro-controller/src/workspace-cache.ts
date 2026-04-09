@@ -1,4 +1,4 @@
-import { logError } from './error-utils';
+import { logError, logWarn, logDebug } from './error-utils';
 /**
  * Workspace Cache — localStorage persistence for instant UI on reload.
  *
@@ -26,7 +26,7 @@ function resolveProjectId(): string {
     // Pattern 3: id-preview--{uuid}
     const altMatch = href.match(/id-preview--([a-f0-9-]{36})/i);
     if (altMatch) return altMatch[1];
-  } catch (_e) { console.debug('[RiseupAsia] [resolveProjectId] URL parse failed: ' + (_e instanceof Error ? _e.message : String(_e))); }
+  } catch (_e) { logDebug('resolveProjectId', 'URL parse failed: ' + (_e instanceof Error ? _e.message : String(_e))); }
   return '_default';
 }
 
@@ -93,7 +93,7 @@ export function invalidateCacheOnProjectSwitch(): void {
       // Just update the tracker; each project has its own scoped keys
       localStorage.setItem(WS_LAST_PROJECT_KEY, currentPid);
     }
-  } catch (_e) { console.warn('[RiseupAsia] [detectProjectSwitch] localStorage write failed: ' + (_e instanceof Error ? _e.message : String(_e))); }
+  } catch (_e) { logWarn('invalidateCacheOnProjectSwitch', 'localStorage write failed: ' + (_e instanceof Error ? _e.message : String(_e))); }
 }
 
 /**
@@ -116,5 +116,5 @@ export function migrateLegacyCache(): void {
         localStorage.removeItem('marco_last_workspace_id');
       }
     }
-  } catch (_e) { console.warn('[RiseupAsia] [migrateLegacyCache] localStorage read/write failed: ' + (_e instanceof Error ? _e.message : String(_e))); }
+  } catch (_e) { logWarn('migrateLegacyCache', 'localStorage read/write failed: ' + (_e instanceof Error ? _e.message : String(_e))); }
 }

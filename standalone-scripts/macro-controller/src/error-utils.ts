@@ -67,6 +67,19 @@ export function logDebug(fn: string, msg: string): void {
 }
 
 /**
+ * Structured warn logging — delegates to RiseupAsiaMacroExt.Logger.warn().
+ * Use for recoverable fallbacks where the system continues but something unexpected happened.
+ *
+ * @param fn - Function or module name for context
+ * @param msg - Human-readable warning message
+ */
+export function logWarn(fn: string, msg: string): void {
+  const logger = getLogger();
+  if (logger) { logger.warn(fn, msg); return; }
+  console.warn(prefix(fn) + msg);
+}
+
+/**
  * General-purpose structured console output — delegates to RiseupAsiaMacroExt.Logger.console().
  * Use for runtime observations, data dumps, or verbose tracing.
  *

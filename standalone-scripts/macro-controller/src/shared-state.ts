@@ -16,6 +16,7 @@ import {
   type ElementIds,
 } from './types';
 import { validateConfig, validateTheme, drainValidationWarnings } from './config-validator';
+import { logDebug } from './error-utils';
 
 // ============================================
 // Config: Validated + deep-merged with defaults (Phase 05)
@@ -78,7 +79,7 @@ const TTypo = theme.typography || {};
 // Exported constants
 // ============================================
 export { FILE_NAME } from './constants';
-export const VERSION = '2.125.0';
+export const VERSION = '2.126.0';
 
 // Expose version via RiseupAsiaMacroExt namespace (Issue 78 — no bare window globals)
 try {
@@ -87,7 +88,7 @@ try {
     if (!root.Projects.MacroController.meta) root.Projects.MacroController.meta = {};
     root.Projects.MacroController.meta.version = VERSION;
   }
-} catch (_e) { console.debug('[RiseupAsia] [shared-state] SDK namespace not yet registered — version set at injection time'); }
+} catch (_e) { logDebug('shared-state', 'SDK namespace not yet registered — version set at injection time'); }
 
 // ============================================
 // Panel colors
