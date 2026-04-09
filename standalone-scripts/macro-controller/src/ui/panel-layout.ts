@@ -13,14 +13,14 @@ import { PANEL_DEFAULT_WIDTH, PANEL_DEFAULT_HEIGHT } from '../shared-state';
 // LocalStorage keys for panel state persistence
 // See: spec/17-app-issues/63-button-layout-collapse-reload.md
 // ============================================
-import { LS_PANEL_STATE, LS_PANEL_GEOMETRY, PANEL_EDGE_MARGIN, PANEL_MIN_VISIBLE_HEIGHT, PANEL_MIN_VISIBLE_WIDTH, LS_BACKDROP_OPACITY, ID_MARCO_PANEL_BACKDROP, DEFAULT_BACKDROP_OPACITY } from '../constants';
-
+import { PANEL_EDGE_MARGIN, PANEL_MIN_VISIBLE_HEIGHT, PANEL_MIN_VISIBLE_WIDTH, DEFAULT_BACKDROP_OPACITY } from '../constants';
+import { DomId, StorageKey } from '../types';
 function savePanelState(state: string): void {
-  try { localStorage.setItem(LS_PANEL_STATE, state); } catch (_e) { logSub('Failed to save panel state: ' + (_e instanceof Error ? _e.message : String(_e)), 1); }
+  try { localStorage.setItem(StorageKey.PanelState, state); } catch (_e) { logSub('Failed to save panel state: ' + (_e instanceof Error ? _e.message : String(_e)), 1); }
 }
 
 function loadPanelState(): string {
-  try { return localStorage.getItem(LS_PANEL_STATE) || 'expanded'; } catch (_e) { logSub('Failed to load panel state: ' + (_e instanceof Error ? _e.message : String(_e)), 1); return 'expanded'; }
+  try { return localStorage.getItem(StorageKey.PanelState) || 'expanded'; } catch (_e) { logSub('Failed to load panel state: ' + (_e instanceof Error ? _e.message : String(_e)), 1); return 'expanded'; }
 }
 
 interface PanelGeometry {
@@ -38,13 +38,13 @@ function savePanelGeometry(ui: HTMLElement): void {
       width: ui.style.width || '',
       height: ui.style.height || '',
     };
-    localStorage.setItem(LS_PANEL_GEOMETRY, JSON.stringify(geo));
+    localStorage.setItem(StorageKey.PanelGeometry, JSON.stringify(geo));
   } catch (_e) { logSub('Failed to save panel geometry: ' + (_e instanceof Error ? _e.message : String(_e)), 1); }
 }
 
 function loadPanelGeometry(): PanelGeometry | null {
   try {
-    const raw = localStorage.getItem(LS_PANEL_GEOMETRY);
+    const raw = localStorage.getItem(StorageKey.PanelGeometry);
     if (!raw) return null;
     return JSON.parse(raw) as PanelGeometry;
   } catch (_e) { logSub('Failed to parse panel geometry: ' + (_e instanceof Error ? _e.message : String(_e)), 1); return null; }
@@ -148,7 +148,7 @@ export function createPanelLayoutCtx(ui: HTMLElement, floatW: string, floatSh: s
   };
 }
 
-const BACKDROP_ID = ID_MARCO_PANEL_BACKDROP;
+const BACKDROP_ID = DomId.PanelBackdrop;
 
 export function getBackdropOpacity(): number {
   return DEFAULT_BACKDROP_OPACITY;
@@ -156,7 +156,7 @@ export function getBackdropOpacity(): number {
 
 export function setBackdropOpacity(opacity: number): void {
   const clamped = Math.min(1, Math.max(0, opacity));
-  try { localStorage.setItem(LS_BACKDROP_OPACITY, String(clamped)); } catch (_e) { logSub('Failed to save backdrop opacity: ' + (_e instanceof Error ? _e.message : String(_e)), 1); }
+  try { localStorage.setItem(StorageKey.BackdropOpacity, String(clamped)); } catch (_e) { logSub('Failed to save backdrop opacity: ' + (_e instanceof Error ? _e.message : String(_e)), 1); }
   const backdrop = document.getElementById(BACKDROP_ID);
   if (!backdrop) return;
   if (clamped === 0) {

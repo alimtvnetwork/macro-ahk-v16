@@ -19,8 +19,8 @@ import {
   type ColumnEntry,
 } from './database-schema-editors';
 
-import { ID_MARCO_SCHEMA_LABEL, MACRO_CONTROLLER_NS } from '../constants';
-
+import { MACRO_CONTROLLER_NS } from '../constants';
+import { DomId } from '../types';
 // Re-export for backward compatibility
 export type { ColumnValidation, ForeignKeyDef } from './database-schema-editors';
 
@@ -58,7 +58,7 @@ export function buildSchemaTab(
 
 function buildExistingTablesSection(wrap: HTMLElement): HTMLElement {
   const listSection = el('div', 'marco-schema-section');
-  const listLabel = el('div', ID_MARCO_SCHEMA_LABEL, 'Existing Tables');
+  const listLabel = el('div', DomId.SchemaLabel, 'Existing Tables');
   listSection.appendChild(listLabel);
 
   const tableListElement = el('div', 'marco-schema-table-list');
@@ -82,13 +82,13 @@ function buildCreateTableForm(
   statusBar: HTMLElement,
 ): void {
   const createSection = el('div', 'marco-schema-section');
-  const createLabel = el('div', ID_MARCO_SCHEMA_LABEL, 'Create New Table');
+  const createLabel = el('div', DomId.SchemaLabel, 'Create New Table');
   createSection.appendChild(createLabel);
 
   const nameInput = buildTableNameInput();
   createSection.appendChild(nameInput.row);
 
-  const colsLabel = el('div', ID_MARCO_SCHEMA_LABEL, 'Columns');
+  const colsLabel = el('div', DomId.SchemaLabel, 'Columns');
   colsLabel.style.marginTop = '8px';
   createSection.appendChild(colsLabel);
   createSection.appendChild(colsContainer);

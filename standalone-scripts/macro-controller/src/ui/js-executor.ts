@@ -7,8 +7,8 @@
 import { VERSION, IDS, cPanelFg, cPanelFgDim } from '../shared-state';
 import { log, logSub } from '../logging';
 import { logError } from '../error-utils';
-import { CSS_SPAN_STYLE_COLOR } from '../constants';
-
+import { LOOP_JS_HISTORY_MAX } from '../constants';
+import { CssFragment } from '../types';
 // === Module-level state ===
 const loopJsHistory: Array<{time: string, code: string, success: boolean, result: string}> = [];
 // CQ11: Singleton for JS history navigation index
@@ -25,8 +25,6 @@ class JsHistoryState {
 }
 
 const jsHistoryState = new JsHistoryState();
-import { LOOP_JS_HISTORY_MAX } from '../constants';
-
 export function addLoopJsHistoryEntry(code: string, success: boolean, resultText: string): void {
   const now = new Date();
   const timeStr = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -55,9 +53,9 @@ export function renderLoopJsHistory(): void {
     html += '<div class="loop-js-hist-item" data-hist-idx="' + histIndex + '" style="display:flex;gap:4px;align-items:flex-start;padding:3px 4px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.05);font-size:10px;font-family:monospace;"'
       + ' onmouseover="(this as HTMLElement).style.background=\'rgba(139,92,246,0.15)\'"'
       + ' onmouseout="(this as HTMLElement).style.background=\'transparent\'">'
-      + CSS_SPAN_STYLE_COLOR + statusColor + ';font-size:10px;">' + statusIcon + '</span>'
-      + CSS_SPAN_STYLE_COLOR + cPanelFgDim + ';font-size:9px;min-width:40px;">' + e.time + '</span>'
-      + CSS_SPAN_STYLE_COLOR + cPanelFg + ';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + e.code.substring(0, 60) + '</span>'
+      + CssFragment.SpanStyleColor + statusColor + ';font-size:10px;">' + statusIcon + '</span>'
+      + CssFragment.SpanStyleColor + cPanelFgDim + ';font-size:9px;min-width:40px;">' + e.time + '</span>'
+      + CssFragment.SpanStyleColor + cPanelFg + ';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + e.code.substring(0, 60) + '</span>'
       + '</div>';
   }
   el.innerHTML = html;

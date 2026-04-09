@@ -15,9 +15,8 @@ import { SAMPLE_SCHEMA } from './database-json-types';
 import { applySchema, validateSchema } from './database-json-migrate';
 import { downloadSchemaDocs } from './database-json-docs';
 
-import { ID_MARCO_JSON_BTN, STYLE_ID_DB_JSON } from '../constants';
-
-const STYLE_ID = STYLE_ID_DB_JSON;
+import { DomId, StyleId } from '../types';
+const STYLE_ID = StyleId.DbJson;
 
 /* ------------------------------------------------------------------ */
 /*  Styles                                                             */
@@ -128,18 +127,18 @@ export function buildJsonTab(
   applyBtn.onclick = () => applySchema(editor.value, logEl, statusBar);
   actions.appendChild(applyBtn);
 
-  const validateBtn = el('button', ID_MARCO_JSON_BTN, '✓ Validate');
+  const validateBtn = el('button', DomId.JsonBtn, '✓ Validate');
   validateBtn.onclick = () => validateSchema(editor.value, logEl);
   actions.appendChild(validateBtn);
 
-  const sampleBtn = el('button', ID_MARCO_JSON_BTN, '📋 Load Sample');
+  const sampleBtn = el('button', DomId.JsonBtn, '📋 Load Sample');
   sampleBtn.onclick = () => {
     editor.value = JSON.stringify(SAMPLE_SCHEMA, null, 2);
     appendLog(logEl, 'info', 'Loaded sample schema');
   };
   actions.appendChild(sampleBtn);
 
-  const clearBtn = el('button', ID_MARCO_JSON_BTN, '🗑️ Clear');
+  const clearBtn = el('button', DomId.JsonBtn, '🗑️ Clear');
   clearBtn.onclick = () => { editor.value = ''; logEl.textContent = ''; };
   actions.appendChild(clearBtn);
 

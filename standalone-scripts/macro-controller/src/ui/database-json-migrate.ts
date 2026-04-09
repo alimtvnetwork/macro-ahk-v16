@@ -13,7 +13,6 @@ import type { JsonSchema, JsonMigration } from './database-json-types';
 import { appendLog } from './database-json-tab';
 
 import { MACRO_CONTROLLER_NS } from '../constants';
-
 /* ------------------------------------------------------------------ */
 /*  Validate                                                           */
 /* ------------------------------------------------------------------ */

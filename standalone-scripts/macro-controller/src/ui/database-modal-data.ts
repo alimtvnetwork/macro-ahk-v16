@@ -14,8 +14,8 @@ import type { ExtensionCallbackResponse } from '../types';
 import { buildFilterBar } from './database-data-filter';
 import { escapeHtml, buildPagination, buildDataTableElement } from './database-data-table';
 
-import { MACRO_CONTROLLER_NS, ID_MARCO_DB_EMPTY, DB_PAGE_SIZE } from '../constants';
-
+import { MACRO_CONTROLLER_NS, DB_PAGE_SIZE } from '../constants';
+import { DomId } from '../types';
 const PAGE_SIZE = DB_PAGE_SIZE;
 
 /** Filter state for a single table. */
@@ -100,7 +100,7 @@ function renderTableListError(
 ): void {
   tableList.textContent = '';
   const failDiv = document.createElement('div');
-  failDiv.className = ID_MARCO_DB_EMPTY;
+  failDiv.className = DomId.DbEmpty;
   failDiv.textContent = 'Failed to load';
   tableList.appendChild(failDiv);
   statusBar.textContent = 'Error: ' + (response?.errorMessage || 'unknown');
@@ -112,7 +112,7 @@ function renderEmptyTableList(
 ): void {
   tableList.textContent = '';
   const emptyDiv = document.createElement('div');
-  emptyDiv.className = ID_MARCO_DB_EMPTY;
+  emptyDiv.className = DomId.DbEmpty;
   emptyDiv.style.padding = '12px';
   emptyDiv.textContent = 'No tables found';
   tableList.appendChild(emptyDiv);
@@ -272,7 +272,7 @@ function renderDataError(
 ): void {
   content.textContent = '';
   const errorDiv = document.createElement('div');
-  errorDiv.className = ID_MARCO_DB_EMPTY;
+  errorDiv.className = DomId.DbEmpty;
   errorDiv.textContent = '❌ ' + (response?.errorMessage || 'Failed to load data');
   content.appendChild(errorDiv);
 }
@@ -324,7 +324,7 @@ function renderEmptyTableState(
     : 'Table <b>' + escapeHtml(tableName) + '</b> is empty';
 
   const emptyDiv = document.createElement('div');
-  emptyDiv.className = ID_MARCO_DB_EMPTY;
+  emptyDiv.className = DomId.DbEmpty;
   emptyDiv.innerHTML = emptyMessage;
   content.appendChild(emptyDiv);
   statusBar.textContent = tableName + ' — 0 rows';

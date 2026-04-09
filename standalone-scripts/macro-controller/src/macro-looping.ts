@@ -40,7 +40,7 @@ import { updateWsSelectionUI, triggerLoopMoveFromSelection, setLoopWsNavIndex, p
 import { shouldInject } from './startup-domain-guard';
 import { runIdempotentCheck } from './startup-idempotent-check';
 
-import { LABEL_DOMAIN_GUARD as DOMAIN_GUARD } from './constants';
+import { Label } from './types';
 
 (function macroLoopController() {
   'use strict';
@@ -48,12 +48,12 @@ import { LABEL_DOMAIN_GUARD as DOMAIN_GUARD } from './constants';
   console.log('%c[MacroLoop v' + VERSION + '] IIFE entry — hostname: ' + window.location.hostname + ', href: ' + window.location.href.substring(0, 80), 'color: #a78bfa; font-weight: bold;');
 
   // ── Domain guard ──
-  timingStart(DOMAIN_GUARD, 'Domain Guard');
+  timingStart(Label.DomainGuard, 'Domain Guard');
   if (!shouldInject()) {
-    timingEnd(DOMAIN_GUARD, 'error', 'Injection blocked');
+    timingEnd(Label.DomainGuard, 'error', 'Injection blocked');
     return;
   }
-  timingEnd(DOMAIN_GUARD, 'ok');
+  timingEnd(Label.DomainGuard, 'ok');
 
   // ── Idempotent check (handles re-injection, version mismatch, SPA recovery) ──
   timingStart('idempotent', 'Idempotent Check');

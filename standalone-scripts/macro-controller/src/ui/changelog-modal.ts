@@ -8,7 +8,6 @@ import { log } from '../logging';
 import { cPanelBg, cPanelFg, cPanelText, cPrimary, cSectionBg, cSuccess, lModalRadius, lModalShadow, tFont } from '../shared-state';
 
 import { DATE_CHANGELOG_2026_03_21 as DATE_2026_03_21 } from '../constants';
-
 export interface ChangelogEntry {
   ver: string;
   date: string;

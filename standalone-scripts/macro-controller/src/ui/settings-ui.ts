@@ -41,8 +41,7 @@ import {
   buildConfigDbPanel,
   buildGeneralPanel,
 } from './settings-tab-panels';
-import { CSS_BACKGROUND } from '../constants';
-
+import { CssFragment } from '../types';
 // ============================================
 // Dependencies injected from createUI closure
 // ============================================
@@ -138,7 +137,7 @@ export function showSettingsDialog(deps: SettingsDeps) {
 
 function _buildSettingsDialogShell(tFontSystem: string): HTMLElement {
   const dialog = document.createElement('div');
-  dialog.style.cssText = CSS_BACKGROUND + cPanelBg + ';border:1px solid ' + cPanelBorder + ';border-radius:12px;padding:0;max-width:560px;width:92%;max-height:80vh;display:flex;flex-direction:column;color:' + cPanelText + ';font-family:' + tFontSystem + ';box-shadow:0 25px 60px rgba(0,0,0,0.5);';
+  dialog.style.cssText = CssFragment.Background + cPanelBg + ';border:1px solid ' + cPanelBorder + ';border-radius:12px;padding:0;max-width:560px;width:92%;max-height:80vh;display:flex;flex-direction:column;color:' + cPanelText + ';font-family:' + tFontSystem + ';box-shadow:0 25px 60px rgba(0,0,0,0.5);';
   dialog.className = 'marco-enter';
   dialog.onclick = function(e) { e.stopPropagation(); };
   return dialog;
@@ -197,20 +196,20 @@ function _buildSettingsFooter(btnStyle: string, deps: SettingsDeps, _panels: HTM
 
   const cancelBtn2 = document.createElement('button');
   cancelBtn2.textContent = 'Cancel';
-  cancelBtn2.style.cssText = btnStyle + CSS_BACKGROUND + cNeutral600 + ';color:' + cPanelFg + ';padding:6px 16px;font-size:12px;';
+  cancelBtn2.style.cssText = btnStyle + CssFragment.Background + cNeutral600 + ';color:' + cPanelFg + ';padding:6px 16px;font-size:12px;';
   cancelBtn2.onclick = function() { overlay.remove(); };
 
   const resetBtn = document.createElement('button');
   resetBtn.textContent = '↺ Reset';
   resetBtn.title = 'Reset fields to current running values';
-  resetBtn.style.cssText = btnStyle + CSS_BACKGROUND + cWarning + ';color:#1e1e2e;padding:6px 16px;font-size:12px;';
+  resetBtn.style.cssText = btnStyle + CssFragment.Background + cWarning + ';color:#1e1e2e;padding:6px 16px;font-size:12px;';
   resetBtn.onclick = function() {
     showToast('Fields reset to current values', 'info');
   };
 
   const saveBtn2 = document.createElement('button');
   saveBtn2.textContent = '💾 Save';
-  saveBtn2.style.cssText = btnStyle + CSS_BACKGROUND + cSuccess + ';color:#1e1e2e;padding:6px 20px;font-size:12px;font-weight:600;';
+  saveBtn2.style.cssText = btnStyle + CssFragment.Background + cSuccess + ';color:#1e1e2e;padding:6px 20px;font-size:12px;font-weight:600;';
   saveBtn2.onclick = function() {
     log('Settings saved', 'info');
     showToast('✅ Settings saved', 'info');

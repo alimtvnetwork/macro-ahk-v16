@@ -69,7 +69,8 @@ interface RenamePresetState {
   presets: Record<string, RenamePreset>;
 }
 
-import { LS_RENAME_PRESET_PREFIX as RENAME_PRESET_STORAGE_PREFIX, DEFAULT_PRESET_NAME } from './constants';
+import { DEFAULT_PRESET_NAME } from './constants';
+import { StorageKey } from './types';
 
 export function createDefaultPreset(): RenamePreset {
   const now = Date.now();
@@ -97,7 +98,7 @@ function resolveRenamePresetProjectKey(): string {
 }
 
 function getRenamePresetStorageKey(projectKey: string): string {
-  return RENAME_PRESET_STORAGE_PREFIX + projectKey;
+  return StorageKey.RenamePresetPrefix + projectKey;
 }
 
 function buildDefaultRenamePresetState(): RenamePresetState {

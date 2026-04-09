@@ -24,8 +24,7 @@ import {
   cWarning,
 } from '../shared-state';
 import type { SettingsDeps, MakeFieldFn } from './settings-ui';
-import { CSS_FONT_SIZE_11PX_FONT_WEIGHT_700_COLOR } from '../constants';
-
+import { CssFragment } from '../types';
 // ── Panel Results ──
 
 export interface XPathPanelResult {
@@ -157,7 +156,7 @@ export function buildLoggingPanel(deps: SettingsDeps): LoggingPanelResult {
   };
 
   const masterTitle = document.createElement('div');
-  masterTitle.style.cssText = CSS_FONT_SIZE_11PX_FONT_WEIGHT_700_COLOR + cSectionHeader + ';margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;';
+  masterTitle.style.cssText = CssFragment.FontSize11pxFontWeight700Color + cSectionHeader + ';margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;';
   masterTitle.textContent = 'Master Controls';
   panel.appendChild(masterTitle);
 
@@ -176,7 +175,7 @@ export function buildLoggingPanel(deps: SettingsDeps): LoggingPanelResult {
   });
 
   const levelTitle = document.createElement('div');
-  levelTitle.style.cssText = CSS_FONT_SIZE_11PX_FONT_WEIGHT_700_COLOR + cSectionHeader + ';margin-top:14px;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;';
+  levelTitle.style.cssText = CssFragment.FontSize11pxFontWeight700Color + cSectionHeader + ';margin-top:14px;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;';
   levelTitle.textContent = 'Log Levels';
   panel.appendChild(levelTitle);
 
@@ -257,7 +256,7 @@ function renderConfigSection(
   configInputs: ConfigDbPanelResult['configInputs'],
 ): void {
   const sectionTitle = document.createElement('div');
-  sectionTitle.style.cssText = CSS_FONT_SIZE_11PX_FONT_WEIGHT_700_COLOR + cSectionHeader + ';margin-top:12px;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;';
+  sectionTitle.style.cssText = CssFragment.FontSize11pxFontWeight700Color + cSectionHeader + ';margin-top:12px;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;';
   sectionTitle.textContent = sectionName;
   panel.appendChild(sectionTitle);
 

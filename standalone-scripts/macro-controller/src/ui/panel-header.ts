@@ -31,8 +31,7 @@ import { destroyPanel, updateUI } from './ui-updaters';
 import type { PanelBuilderDeps } from './panel-builder';
 import type { PanelLayoutCtx } from './panel-layout';
 import { logError } from '../error-utils';
-import { CSS_FONT_SIZE } from '../constants';
-
+import { CssFragment } from '../types';
 // ============================================
 // Return type for buildTitleRow
 // ============================================
@@ -71,7 +70,7 @@ function _buildTitleElements(deps: PanelBuilderDeps, plCtx: PanelLayoutCtx) {
   const wsNameEl = buildWorkspaceNameBadge(deps);
 
   const versionSpan = document.createElement('span');
-  versionSpan.style.cssText = CSS_FONT_SIZE + tFontTiny + ';color:' + cPrimaryLight + ';margin-right:4px;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;';
+  versionSpan.style.cssText = CssFragment.FontSize + tFontTiny + ';color:' + cPrimaryLight + ';margin-right:4px;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;';
   versionSpan.textContent = 'v' + VERSION;
   versionSpan.title = 'Click to see About info';
   versionSpan.onclick = function(e: Event) { e.stopPropagation(); showAboutModal(); };
@@ -79,14 +78,14 @@ function _buildTitleElements(deps: PanelBuilderDeps, plCtx: PanelLayoutCtx) {
   const authBadge = buildAuthBadge();
 
   const panelToggleSpan = document.createElement('span');
-  panelToggleSpan.style.cssText = CSS_FONT_SIZE + tFontTiny + ';color:' + cNeutral500 + ';cursor:pointer;margin-right:4px;';
+  panelToggleSpan.style.cssText = CssFragment.FontSize + tFontTiny + ';color:' + cNeutral500 + ';cursor:pointer;margin-right:4px;';
   panelToggleSpan.textContent = plCtx.panelState === 'minimized' ? '[ + ]' : '[ - ]';
   panelToggleSpan.title = 'Minimize / Expand panel';
   panelToggleSpan.onclick = function(e: Event) { e.stopPropagation(); toggleMinimize(plCtx); };
   plCtx.panelToggleSpan = panelToggleSpan;
 
   const hideBtn = document.createElement('span');
-  hideBtn.style.cssText = CSS_FONT_SIZE + tFontTiny + ';color:' + cNeutral500 + ';cursor:pointer;';
+  hideBtn.style.cssText = CssFragment.FontSize + tFontTiny + ';color:' + cNeutral500 + ';cursor:pointer;';
   hideBtn.textContent = '[ x ]';
   hideBtn.title = 'Close and fully remove controller (re-inject to restore)';
   hideBtn.onclick = function(e: Event) { e.stopPropagation(); destroyPanel(); };
@@ -131,7 +130,7 @@ function _assembleTitleRow(titleRow: HTMLElement, els: Record<string, HTMLElemen
 function buildWorkspaceNameBadge(deps: PanelBuilderDeps): HTMLElement {
   const wsNameEl = document.createElement('div');
   wsNameEl.id = 'loop-title-ws-name';
-  wsNameEl.style.cssText = CSS_FONT_SIZE + tFontTiny + ';color:#fbbf24;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;cursor:pointer;border-bottom:1px dotted rgba(251,191,36,0.4);transition:color 0.15s;margin-right:4px;';
+  wsNameEl.style.cssText = CssFragment.FontSize + tFontTiny + ';color:#fbbf24;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;cursor:pointer;border-bottom:1px dotted rgba(251,191,36,0.4);transition:color 0.15s;margin-right:4px;';
   wsNameEl.title = 'Workspace name — click to re-detect';
 
   const wsName = state.workspaceName

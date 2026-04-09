@@ -82,7 +82,6 @@ function extractTitleFromMarkdown(markdown: string): string {
 /* ------------------------------------------------------------------ */
 
 import { SAVE_PROMPT_XPATH } from '../constants';
-
 const SAVE_PROMPT_CSS_FALLBACKS = [
   'form div[class*="flex"] > div[type="button"]',
   'main form div:last-child > div:last-child',

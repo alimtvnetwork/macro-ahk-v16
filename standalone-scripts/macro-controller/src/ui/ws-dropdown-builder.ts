@@ -19,8 +19,7 @@ import { resolveToken } from '../auth';
 import type { RenameHistoryEntry, UndoRenameResults } from '../types';
 import { logError } from '../error-utils';
 
-import { ID_LOOP_WS_LIST, ATTR_DATA_ACTIVE } from '../constants';
-
+import { DataAttr, DomId } from '../types';
 export interface WsDropdownDeps {
   populateLoopWorkspaceDropdown: () => void;
   updateWsSelectionUI: () => void;
@@ -49,7 +48,7 @@ export interface WsDropdownResult {
 
 /** Scroll to and highlight the current workspace item in the list. */
 function scrollToCurrentItem(setLoopWsNavIndex: (v: number) => void, label: string): void {
-  const listEl = document.getElementById(ID_LOOP_WS_LIST);
+  const listEl = document.getElementById(DomId.LoopWsList);
   if (!listEl) return;
   const currentItem = listEl.querySelector('.loop-ws-item[data-ws-current="true"]');
   if (currentItem) {
@@ -105,7 +104,7 @@ export function buildWsDropdownSection(deps: WsDropdownDeps): WsDropdownResult {
   const wsSearchInput = _buildWsSearchInput(populateLoopWorkspaceDropdown, setLoopWsNavIndex, getLoopWsNavIndex, triggerLoopMoveFromSelection);
 
   const wsList = document.createElement('div');
-  wsList.id = ID_LOOP_WS_LIST;
+  wsList.id = DomId.LoopWsList;
   wsList.style.cssText = 'max-height:160px;overflow-y:auto;border:1px solid ' + cPrimaryBorderA + ';border-radius:3px;background:rgba(0,0,0,.3);';
   wsList.appendChild(createWorkspaceListSkeleton());
 
@@ -317,11 +316,11 @@ function _buildToggleFilterBtn(
   btn.textContent = icon;
   btn.title = title;
   btn.style.cssText = 'padding:1px 5px;background:' + bgOff + ';color:' + color + ';border:1px solid ' + bgOn + ';border-radius:3px;font-size:9px;cursor:pointer;';
-  btn.setAttribute(ATTR_DATA_ACTIVE, 'false');
+  btn.setAttribute(DataAttr.Active, 'false');
   btn.onclick = function(e: Event) {
     e.preventDefault(); e.stopPropagation();
-    const isActive = (this as HTMLElement).getAttribute(ATTR_DATA_ACTIVE) === 'true';
-    (this as HTMLElement).setAttribute(ATTR_DATA_ACTIVE, isActive ? 'false' : 'true');
+    const isActive = (this as HTMLElement).getAttribute(DataAttr.Active) === 'true';
+    (this as HTMLElement).setAttribute(DataAttr.Active, isActive ? 'false' : 'true');
     (this as HTMLElement).style.background = !isActive ? bgOn : bgInactive;
     (this as HTMLElement).style.fontWeight = !isActive ? '700' : 'normal';
     populate();
@@ -345,7 +344,7 @@ function _buildWsSearchInput(
   wsSearchInput.onblur = function() { (this as HTMLElement).style.borderColor = cPrimary; };
   wsSearchInput.oninput = function() { populateLoopWorkspaceDropdown(); };
   wsSearchInput.onkeydown = function(e: KeyboardEvent) {
-    const listEl = document.getElementById(ID_LOOP_WS_LIST);
+    const listEl = document.getElementById(DomId.LoopWsList);
     if (!listEl) return;
     const items = listEl.querySelectorAll('.loop-ws-item');
     if (items.length === 0) return;

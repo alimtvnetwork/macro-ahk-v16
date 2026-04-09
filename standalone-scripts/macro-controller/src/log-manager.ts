@@ -35,8 +35,8 @@ export interface LogManagerConfig {
   levels: Record<string, boolean>;
 }
 
-import { LS_LOG_MANAGER_CONFIG } from './constants';
-const STORAGE_KEY = LS_LOG_MANAGER_CONFIG;
+import { StorageKey } from './types';
+const STORAGE_KEY = StorageKey.LogManagerConfig;
 
 const DEFAULT_CONFIG: LogManagerConfig = {
   enabled: true,

@@ -36,7 +36,11 @@ export function setActivityLogVisible(v: boolean): void { activityLogState.visib
 /** @deprecated Use getActivityLogVisible(). Kept for backward compat. */
 export { activityLogState };
 export const activityLogLines: ActivityLogEntry[] = [];
-export { MAX_ACTIVITY_LINES as maxActivityLines, CREDIT_API_BASE, CREDIT_CACHE_TTL_S } from './constants';
+import { ApiPath, DomId } from './types';
+import { MAX_ACTIVITY_LINES, CREDIT_CACHE_TTL_S } from './constants';
+export { CREDIT_CACHE_TTL_S };
+export const maxActivityLines = MAX_ACTIVITY_LINES;
+export const CREDIT_API_BASE = ApiPath.CreditApiBase;
 
 export const loopCreditState: LoopCreditState = {
   lastCheckedAt: null,
@@ -84,6 +88,7 @@ export function setLoopWsLastCheckedIdx(v: number): void { wsSelectionState.last
 // ============================================
 export { SESSION_BRIDGE_KEYS } from './constants';
 
+
 class SessionBridgeState {
   private _source = '';
 
@@ -103,7 +108,7 @@ export function setLastSessionBridgeSource(v: string): void { sessionBridgeState
 // ============================================
 // Toast constants (legacy — now delegated to SDK marco.notify)
 // ============================================
-export { ID_TOAST_CONTAINER as toastContainerId } from './constants';
+export const toastContainerId = DomId.ToastContainer;
 
 // ============================================
 // Controller State (Step 2i: moved from macro-looping.ts IIFE)

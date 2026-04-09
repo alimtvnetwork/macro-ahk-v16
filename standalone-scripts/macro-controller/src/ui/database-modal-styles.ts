@@ -25,8 +25,8 @@ import {
   lModalShadow,
 } from '../shared-state';
 
-import { STYLE_ID_DB_MODAL } from '../constants';
-const STYLE_ID = STYLE_ID_DB_MODAL;
+import { StyleId } from '../types';
+const STYLE_ID = StyleId.DbModal;
 
 /** Inject scoped CSS for the database modal (idempotent). */
 export function injectDatabaseStyles(): void {

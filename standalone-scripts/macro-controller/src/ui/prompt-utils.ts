@@ -76,13 +76,13 @@ export function parseWithRecovery(content: string): unknown {
 
 // ── Toast notification system (solid dark minimal, left accent bar, stacking max 3) ──
 
-import { ID_TOAST_STACK as TOAST_CONTAINER_ID, TOAST_MAX_STACK } from '../constants';
-
+import { TOAST_MAX_STACK } from '../constants';
+import { DomId } from '../types';
 function _getOrCreateToastContainer(): HTMLElement {
-  let container = document.getElementById(TOAST_CONTAINER_ID);
+  let container = document.getElementById(DomId.ToastStack);
   if (!container) {
     container = document.createElement('div');
-    container.id = TOAST_CONTAINER_ID;
+    container.id = DomId.ToastStack;
     container.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);' +
       'display:flex;flex-direction:column-reverse;gap:6px;z-index:1000000;pointer-events:none;';
     document.body.appendChild(container);

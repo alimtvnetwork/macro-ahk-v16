@@ -32,7 +32,8 @@ import { showWsContextMenu } from './ws-context-menu';
 import { logError } from './error-utils';
 
 // ── Centralized constants ──
-import { ATTR_DATA_ACTIVE, ID_LOOP_WS_SELECTED, ATTR_SELECTED_ID, ATTR_WS_ID, ATTR_WS_NAME, ATTR_WS_CURRENT, SEL_LOOP_WS_ITEM } from './constants';
+import { SEL_LOOP_WS_ITEM } from './constants';
+import { DataAttr, DomId } from './types';
 
 // ============================================
 // CQ11/CQ17: Encapsulated view-filter state
@@ -163,8 +164,8 @@ function readFilterState(filter: string): WsFilterState {
   return {
     filter,
     freeOnly: viewState().getFreeOnly(),
-    rolloverOnly: rolloverEl?.getAttribute(ATTR_DATA_ACTIVE) === 'true',
-    billingOnly: billingEl?.getAttribute(ATTR_DATA_ACTIVE) === 'true',
+    rolloverOnly: rolloverEl?.getAttribute(DataAttr.Active) === 'true',
+    billingOnly: billingEl?.getAttribute(DataAttr.Active) === 'true',
     minCredits: minEl ? parseInt((minEl as HTMLInputElement).value, 10) || 0 : 0,
   };
 }
@@ -237,16 +238,16 @@ function buildWsRow(
   const limitInt = Math.round(ws.limit || 0);
   const emoji = wsStatusEmoji(isCurrent, available, limitInt);
   const wsId = String(ws.id || (ws.raw && ws.raw.id) || '');
-  const selEl = document.getElementById(ID_LOOP_WS_SELECTED);
-  const isSel = selEl ? selEl.getAttribute(ATTR_SELECTED_ID) === wsId : false;
+  const selEl = document.getElementById(DomId.LoopWsSelected);
+  const isSel = selEl ? selEl.getAttribute(DataAttr.SelectedId) === wsId : false;
   const isChecked = !!getLoopWsCheckedIds()[wsId];
   const tooltip = buildLoopTooltipText(ws).replace(/"/g, '&quot;');
 
   const row = document.createElement('div');
   row.className = 'loop-ws-item';
-  row.setAttribute(ATTR_WS_ID, wsId);
-  row.setAttribute(ATTR_WS_NAME, ws.fullName || ws.name);
-  row.setAttribute(ATTR_WS_CURRENT, isCurrent ? 'true' : 'false');
+  row.setAttribute(DataAttr.WsId, wsId);
+  row.setAttribute(DataAttr.WsName, ws.fullName || ws.name);
+  row.setAttribute(DataAttr.WsCurrent, isCurrent ? 'true' : 'false');
   row.setAttribute('data-ws-idx', String(count));
   row.setAttribute('data-ws-raw-idx', String(wsIndex));
   row.title = tooltip;
@@ -368,14 +369,14 @@ function _createClickHandler(): (e: MouseEvent) => void {
       e.preventDefault();
       e.stopPropagation();
       handleWsCheckboxClick(
-        item.getAttribute(ATTR_WS_ID) || '',
+        item.getAttribute(DataAttr.WsId) || '',
         parseInt(item.getAttribute('data-ws-raw-idx') || '0', 10),
         e.shiftKey,
       );
       return;
     }
     setLoopWsNavIndex(parseInt(item.getAttribute('data-ws-idx') || '0', 10));
-    log('Selected workspace: ' + item.getAttribute(ATTR_WS_NAME), 'success');
+    log('Selected workspace: ' + item.getAttribute(DataAttr.WsName), 'success');
   };
 }
 
@@ -385,12 +386,12 @@ function _createDblClickHandler(): (e: MouseEvent) => void {
     if (!item) return;
     e.preventDefault();
     e.stopPropagation();
-    if (item.getAttribute(ATTR_WS_CURRENT) === 'true') {
-      log('Double-click on current workspace "' + item.getAttribute(ATTR_WS_NAME) + '" — no move needed', 'warn');
+    if (item.getAttribute(DataAttr.WsCurrent) === 'true') {
+      log('Double-click on current workspace "' + item.getAttribute(DataAttr.WsName) + '" — no move needed', 'warn');
       return;
     }
-    log('Double-click move -> ' + item.getAttribute(ATTR_WS_NAME) + ' (id=' + item.getAttribute(ATTR_WS_ID) + ')', 'delegate');
-    moveToWorkspace(item.getAttribute(ATTR_WS_ID) || '', item.getAttribute(ATTR_WS_NAME) || '');
+    log('Double-click move -> ' + item.getAttribute(DataAttr.WsName) + ' (id=' + item.getAttribute(DataAttr.WsId) + ')', 'delegate');
+    moveToWorkspace(item.getAttribute(DataAttr.WsId) || '', item.getAttribute(DataAttr.WsName) || '');
   };
 }
 
@@ -401,8 +402,8 @@ function _createCtxHandler(): (e: MouseEvent) => void {
     e.preventDefault();
     e.stopPropagation();
     showWsContextMenu(
-      item.getAttribute(ATTR_WS_ID) || '',
-      item.getAttribute(ATTR_WS_NAME) || '',
+      item.getAttribute(DataAttr.WsId) || '',
+      item.getAttribute(DataAttr.WsName) || '',
       e.clientX, e.clientY,
     );
   };
@@ -411,10 +412,10 @@ function _createCtxHandler(): (e: MouseEvent) => void {
 function _createHoverHandler(): (e: MouseEvent) => void {
   return function (e: MouseEvent) {
     const item = (e.target as HTMLElement).closest(SEL_LOOP_WS_ITEM) as HTMLElement | null;
-    if (!item || item.getAttribute(ATTR_WS_CURRENT) === 'true') return;
-    const selEl = document.getElementById(ID_LOOP_WS_SELECTED);
-    const selId = selEl ? selEl.getAttribute(ATTR_SELECTED_ID) : '';
-    const itemId = item.getAttribute(ATTR_WS_ID);
+    if (!item || item.getAttribute(DataAttr.WsCurrent) === 'true') return;
+    const selEl = document.getElementById(DomId.LoopWsSelected);
+    const selId = selEl ? selEl.getAttribute(DataAttr.SelectedId) : '';
+    const itemId = item.getAttribute(DataAttr.WsId);
     if (selId && selId === itemId) return;
     item.style.background = 'rgba(59,130,246,0.15)';
   };
@@ -423,10 +424,10 @@ function _createHoverHandler(): (e: MouseEvent) => void {
 function _createOutHandler(): (e: MouseEvent) => void {
   return function (e: MouseEvent) {
     const item = (e.target as HTMLElement).closest(SEL_LOOP_WS_ITEM) as HTMLElement | null;
-    if (!item || item.getAttribute(ATTR_WS_CURRENT) === 'true') return;
-    const selEl = document.getElementById(ID_LOOP_WS_SELECTED);
-    const selId = selEl ? selEl.getAttribute(ATTR_SELECTED_ID) : '';
-    const itemId = item.getAttribute(ATTR_WS_ID);
+    if (!item || item.getAttribute(DataAttr.WsCurrent) === 'true') return;
+    const selEl = document.getElementById(DomId.LoopWsSelected);
+    const selId = selEl ? selEl.getAttribute(DataAttr.SelectedId) : '';
+    const itemId = item.getAttribute(DataAttr.WsId);
     if (selId && selId === itemId) return;
     item.style.background = 'transparent';
   };
@@ -519,8 +520,8 @@ export function populateLoopWorkspaceDropdown(): void {
     loopCreditState.lastCheckedAt || 0,
     viewState().getFreeOnly() ? 1 : 0,
     viewState().getCompactMode() ? 1 : 0,
-    rolloverEl ? rolloverEl.getAttribute(ATTR_DATA_ACTIVE) : '',
-    billingEl ? billingEl.getAttribute(ATTR_DATA_ACTIVE) : '',
+    rolloverEl ? rolloverEl.getAttribute(DataAttr.Active) : '',
+    billingEl ? billingEl.getAttribute(DataAttr.Active) : '',
     minCreditsEl ? (minCreditsEl as HTMLInputElement).value : '',
     checkedCount,
   ].join('|');

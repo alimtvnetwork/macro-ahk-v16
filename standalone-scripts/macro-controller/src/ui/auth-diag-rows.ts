@@ -19,8 +19,7 @@ import {
 } from './auth-jwt-utils';
 import type { AuthDiagDeps } from './section-auth-diag';
 import { logError } from '../error-utils';
-import { CSS_ROW_DIAG as ROW_CSS } from '../constants';
-
+import { CssFragment } from '../types';
 // ── Diagnostic Row Elements ──
 
 export interface DiagRowElements {
@@ -37,7 +36,7 @@ export function buildDiagRow(
   skeletonHeight: string,
 ): DiagRowElements {
   const row = document.createElement('div');
-  row.style.cssText = ROW_CSS;
+  row.style.cssText = CssFragment.RowDiag;
 
   const iconEl = document.createElement('span');
   iconEl.style.cssText = 'font-size:11px;';
@@ -230,7 +229,7 @@ export function updateWsCacheRow(wsCacheRow: DiagRowElements): void {
 
 export function buildProjectIdRow(dimStyle: string, valStyle: string): HTMLElement {
   const pidRow = document.createElement('div');
-  pidRow.style.cssText = ROW_CSS;
+  pidRow.style.cssText = CssFragment.RowDiag;
 
   const pidIcon = document.createElement('span');
   pidIcon.style.cssText = 'font-size:11px;';

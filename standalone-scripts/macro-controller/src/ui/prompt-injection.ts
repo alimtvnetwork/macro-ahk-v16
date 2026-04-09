@@ -4,7 +4,7 @@
  * Phase 5D split from ui/prompt-manager.ts.
  * See: spec/04-macro-controller/ts-migration-v2/05-module-splitting.md
  */
-import { CSS_BORDER_PRIMARY, CSS_BORDER_PRIMARY_STRONG, CSS_BORDER_SOLID, CSS_LABEL_BLOCK, CSS_LABEL_SUFFIX, CSS_BORDER_RADIUS_COLOR } from '../constants';
+import { CssFragment } from '../types';
 import { log } from '../logging';
 import { logError } from '../error-utils';
 import { cPanelBg, cPanelBgAlt, cPanelFg, cPanelFgDim, cPrimary, cPrimaryLight, cPrimaryBorderA } from '../shared-state';
@@ -50,7 +50,7 @@ function handleFile(file: File, refs: FileHandlerRefs): void {
     }
     refs.dropZone.style.borderColor = '#16a34a';
     refs.dropZone.innerHTML = '✅ Loaded: <b>' + file.name + '</b> (' + content.length + ' chars)';
-    setTimeout(function() { refs.dropZone.style.borderColor = CSS_BORDER_PRIMARY; }, 2000);
+    setTimeout(function() { refs.dropZone.style.borderColor = CssFragment.BorderPrimary; }, 2000);
     log('File loaded into prompt editor: ' + file.name, 'success');
   };
   reader.readAsText(file);
@@ -83,7 +83,7 @@ export function openPromptCreationModal(_ctx: PromptContext, _taskNextDeps: Task
   overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:1000010;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif;';
 
   const modal = document.createElement('div');
-  modal.style.cssText = 'background:' + cPanelBg + CSS_BORDER_SOLID + cPrimary + ';border-radius:12px;width:520px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.8);';
+  modal.style.cssText = 'background:' + cPanelBg + CssFragment.BorderSolid + cPrimary + ';border-radius:12px;width:520px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.8);';
 
   // Header
   const headerEl = document.createElement('div');
@@ -141,27 +141,27 @@ function _buildPromptModalBody(initialData: Record<string, unknown>): PromptBody
 function _buildTitleAndContent(body: HTMLElement, initialData: Record<string, unknown>): { titleInput: HTMLInputElement; contentArea: HTMLTextAreaElement; charCount: HTMLElement } {
   const titleLabel = document.createElement('label');
   titleLabel.textContent = 'Prompt Title';
-  titleLabel.style.cssText = CSS_LABEL_BLOCK + cPrimaryLight + CSS_LABEL_SUFFIX;
+  titleLabel.style.cssText = CssFragment.LabelBlock + cPrimaryLight + CssFragment.LabelSuffix;
   body.appendChild(titleLabel);
   const titleInput = document.createElement('input');
   titleInput.type = 'text';
   titleInput.placeholder = 'e.g. Code Review Prompt';
   titleInput.value = (initialData.name as string) || '';
-  titleInput.style.cssText = 'width:100%;padding:8px 12px;background:' + cPanelBg + CSS_BORDER_SOLID + cPrimaryBorderA + CSS_BORDER_RADIUS_COLOR + cPanelFg + ';font-size:13px;margin-bottom:12px;outline:none;box-sizing:border-box;';
+  titleInput.style.cssText = 'width:100%;padding:8px 12px;background:' + cPanelBg + CssFragment.BorderSolid + cPrimaryBorderA + CssFragment.BorderRadiusColor + cPanelFg + ';font-size:13px;margin-bottom:12px;outline:none;box-sizing:border-box;';
   titleInput.onfocus = function() { (this as HTMLElement).style.borderColor = cPrimary; };
-  titleInput.onblur = function() { (this as HTMLElement).style.borderColor = CSS_BORDER_PRIMARY_STRONG; };
+  titleInput.onblur = function() { (this as HTMLElement).style.borderColor = CssFragment.BorderPrimaryStrong; };
   body.appendChild(titleInput);
 
   const contentLabel = document.createElement('label');
   contentLabel.textContent = 'Prompt Content (Markdown supported)';
-  contentLabel.style.cssText = CSS_LABEL_BLOCK + cPrimaryLight + CSS_LABEL_SUFFIX;
+  contentLabel.style.cssText = CssFragment.LabelBlock + cPrimaryLight + CssFragment.LabelSuffix;
   body.appendChild(contentLabel);
   const contentArea = document.createElement('textarea');
   contentArea.placeholder = 'Enter your prompt text here…\n\nSupports {{date}}, {{time}} variables.';
   contentArea.value = (initialData.text as string) || '';
-  contentArea.style.cssText = 'width:100%;height:200px;padding:10px 12px;background:' + cPanelBg + CSS_BORDER_SOLID + cPrimaryBorderA + CSS_BORDER_RADIUS_COLOR + cPanelFg + ';font-size:12px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;resize:vertical;outline:none;box-sizing:border-box;line-height:1.5;';
+  contentArea.style.cssText = 'width:100%;height:200px;padding:10px 12px;background:' + cPanelBg + CssFragment.BorderSolid + cPrimaryBorderA + CssFragment.BorderRadiusColor + cPanelFg + ';font-size:12px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;resize:vertical;outline:none;box-sizing:border-box;line-height:1.5;';
   contentArea.onfocus = function() { (this as HTMLElement).style.borderColor = cPrimary; };
-  contentArea.onblur = function() { (this as HTMLElement).style.borderColor = CSS_BORDER_PRIMARY_STRONG; };
+  contentArea.onblur = function() { (this as HTMLElement).style.borderColor = CssFragment.BorderPrimaryStrong; };
   body.appendChild(contentArea);
 
   const charCount = document.createElement('div');
@@ -184,10 +184,10 @@ function _buildFileDropZone(body: HTMLElement, contentArea: HTMLTextAreaElement,
   const fileRefs: FileHandlerRefs = { contentArea, charCount, titleInput, dropZone };
   fileInput.onchange = function() { handleFile(fileInput.files![0], fileRefs); };
   dropZone.addEventListener('dragover', function(e: Event) { e.preventDefault(); e.stopPropagation(); (this as HTMLElement).style.borderColor = cPrimary; (this as HTMLElement).style.background = 'rgba(124,58,237,0.1)'; });
-  dropZone.addEventListener('dragleave', function(e: Event) { e.preventDefault(); (this as HTMLElement).style.borderColor = CSS_BORDER_PRIMARY; (this as HTMLElement).style.background = 'transparent'; });
+  dropZone.addEventListener('dragleave', function(e: Event) { e.preventDefault(); (this as HTMLElement).style.borderColor = CssFragment.BorderPrimary; (this as HTMLElement).style.background = 'transparent'; });
   dropZone.addEventListener('drop', function(e: DragEvent) {
     e.preventDefault(); e.stopPropagation();
-    (this as HTMLElement).style.borderColor = CSS_BORDER_PRIMARY; (this as HTMLElement).style.background = 'transparent';
+    (this as HTMLElement).style.borderColor = CssFragment.BorderPrimary; (this as HTMLElement).style.background = 'transparent';
     if (e.dataTransfer && e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0], fileRefs);
   });
   body.appendChild(dropZone);
@@ -215,7 +215,7 @@ function _buildVariableReference(body: HTMLElement): void {
 function _buildCategorySelect(initialData: Record<string, unknown>): { catWrap: HTMLElement; catSelect: HTMLSelectElement; catCustomInput: HTMLInputElement } {
   const catLabel = document.createElement('label');
   catLabel.textContent = 'Category (optional)';
-  catLabel.style.cssText = CSS_LABEL_BLOCK + cPrimaryLight + CSS_LABEL_SUFFIX;
+  catLabel.style.cssText = CssFragment.LabelBlock + cPrimaryLight + CssFragment.LabelSuffix;
 
   const promptsCfg = getPromptsConfig();
   const existingEntries = promptsCfg.entries || [];
@@ -231,9 +231,9 @@ function _buildCategorySelect(initialData: Record<string, unknown>): { catWrap: 
   catWrap.appendChild(catLabel);
 
   const catSelect = document.createElement('select');
-  catSelect.style.cssText = 'width:100%;padding:8px 12px;background:' + cPanelBg + CSS_BORDER_SOLID + cPrimaryBorderA + CSS_BORDER_RADIUS_COLOR + cPanelFg + ';font-size:13px;outline:none;box-sizing:border-box;appearance:auto;cursor:pointer;';
+  catSelect.style.cssText = 'width:100%;padding:8px 12px;background:' + cPanelBg + CssFragment.BorderSolid + cPrimaryBorderA + CssFragment.BorderRadiusColor + cPanelFg + ';font-size:13px;outline:none;box-sizing:border-box;appearance:auto;cursor:pointer;';
   catSelect.onfocus = function() { (this as HTMLElement).style.borderColor = cPrimary; };
-  catSelect.onblur = function() { (this as HTMLElement).style.borderColor = CSS_BORDER_PRIMARY_STRONG; };
+  catSelect.onblur = function() { (this as HTMLElement).style.borderColor = CssFragment.BorderPrimaryStrong; };
 
   const noneOpt = document.createElement('option');
   noneOpt.value = ''; noneOpt.textContent = '— No category —';
@@ -250,9 +250,9 @@ function _buildCategorySelect(initialData: Record<string, unknown>): { catWrap: 
   const catCustomInput = document.createElement('input');
   catCustomInput.type = 'text';
   catCustomInput.placeholder = 'Type custom category name…';
-  catCustomInput.style.cssText = 'display:none;width:100%;padding:8px 12px;background:' + cPanelBg + CSS_BORDER_SOLID + cPrimaryBorderA + CSS_BORDER_RADIUS_COLOR + cPanelFg + ';font-size:13px;outline:none;box-sizing:border-box;margin-top:6px;';
+  catCustomInput.style.cssText = 'display:none;width:100%;padding:8px 12px;background:' + cPanelBg + CssFragment.BorderSolid + cPrimaryBorderA + CssFragment.BorderRadiusColor + cPanelFg + ';font-size:13px;outline:none;box-sizing:border-box;margin-top:6px;';
   catCustomInput.onfocus = function() { (this as HTMLElement).style.borderColor = cPrimary; };
-  catCustomInput.onblur = function() { (this as HTMLElement).style.borderColor = CSS_BORDER_PRIMARY_STRONG; };
+  catCustomInput.onblur = function() { (this as HTMLElement).style.borderColor = CssFragment.BorderPrimaryStrong; };
 
   catSelect.onchange = function() {
     catCustomInput.style.display = catSelect.value === '__custom__' ? 'block' : 'none';
@@ -287,7 +287,7 @@ function _buildPromptModalFooter(
   // Paste Test button
   const testBtn = document.createElement('button');
   testBtn.textContent = '📋 Paste Test';
-  testBtn.style.cssText = 'padding:8px 14px;background:' + cPanelBgAlt + CSS_BORDER_SOLID + cPrimaryBorderA + ';border-radius:6px;color:#c4b5fd;font-size:12px;cursor:pointer;';
+  testBtn.style.cssText = 'padding:8px 14px;background:' + cPanelBgAlt + CssFragment.BorderSolid + cPrimaryBorderA + ';border-radius:6px;color:#c4b5fd;font-size:12px;cursor:pointer;';
   testBtn.onmouseover = function() { (this as HTMLElement).style.background = '#2d3348'; };
   testBtn.onmouseout = function() { (this as HTMLElement).style.background = '#252a36'; };
   testBtn.onclick = function() {

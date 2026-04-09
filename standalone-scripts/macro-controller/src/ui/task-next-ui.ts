@@ -12,8 +12,7 @@ import { showPasteToast, pasteIntoEditor } from './prompt-utils';
 
 import { cPanelBg, cPanelFg, cPrimary, cPrimaryLight } from '../shared-state';
 import { logError } from '../error-utils';
-import { LABEL_NEXT_TASKS as NEXT_TASKS } from '../constants';
-
+import { Label } from '../types';
 /** Settings shape for Task Next */
 export interface TaskNextSettings {
   [key: string]: TaskNextSettingValue;
@@ -40,7 +39,7 @@ export const taskNextState: {
     retryCount: 3,
     retryDelayMs: 1000,
     buttonXPath: '/html/body/div[3]/div/div[2]/main/div/div/div[1]/div/div[2]/div/form/div[2]/div/button[2]',
-    promptSlug: NEXT_TASKS
+    promptSlug: Label.NextTasks
   },
   running: false,
   cancelled: false,
@@ -79,7 +78,7 @@ export function saveTaskNextSettings(deps: TaskNextDeps) {
 export function findNextTasksPrompt(deps: TaskNextDeps) {
   const promptsCfg = deps.getPromptsConfig();
   const entries = promptsCfg.entries || [];
-  const targetSlug = taskNextState.settings.promptSlug || NEXT_TASKS;
+  const targetSlug = taskNextState.settings.promptSlug || Label.NextTasks;
 
   // Diagnostic: log slug/id of every entry to confirm fields survived the pipeline
   const slugMap = entries.map(function(e) { return e.name + ' → slug=' + (e.slug || '⚠️ MISSING') + ', id=' + (e.id || '—'); });
@@ -393,7 +392,7 @@ export function openTaskNextSettingsModal(deps: TaskNextDeps) {
     taskNextState.settings.retryCount = parseInt(inputs.retryCount.value) || 3;
     taskNextState.settings.retryDelayMs = parseInt(inputs.retryDelayMs.value) || 1000;
     taskNextState.settings.buttonXPath = inputs.buttonXPath.value || taskNextState.settings.buttonXPath;
-    taskNextState.settings.promptSlug = inputs.promptSlug.value || NEXT_TASKS;
+    taskNextState.settings.promptSlug = inputs.promptSlug.value || Label.NextTasks;
     saveTaskNextSettings(deps);
     overlay.remove();
     showPasteToast('✅ Task Next settings saved', false);

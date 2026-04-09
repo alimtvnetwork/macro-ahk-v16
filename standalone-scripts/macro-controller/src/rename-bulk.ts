@@ -28,7 +28,8 @@ interface RenameHistoryEntry {
 
 // ── Constants ──
 
-import { RENAME_DEFAULT_DELAY_MS, RENAME_MIN_DELAY_MS, RENAME_MAX_DELAY_MS, RENAME_OP_WINDOW, RENAME_HISTORY_MAX, RENAME_MAX_CONSECUTIVE_FAILURES, LS_RENAME_HISTORY } from './constants';
+import { RENAME_DEFAULT_DELAY_MS, RENAME_MIN_DELAY_MS, RENAME_MAX_DELAY_MS, RENAME_OP_WINDOW, RENAME_HISTORY_MAX, RENAME_MAX_CONSECUTIVE_FAILURES } from './constants';
+import { StorageKey } from './types';
 const DEFAULT_DELAY_MS = RENAME_DEFAULT_DELAY_MS;
 const MIN_DELAY_MS = RENAME_MIN_DELAY_MS;
 const MAX_DELAY_MS = RENAME_MAX_DELAY_MS;
@@ -118,7 +119,7 @@ export class BulkRenameManager {
 
   private restoreHistory(): void {
     try {
-      const saved = localStorage.getItem(LS_RENAME_HISTORY);
+      const saved = localStorage.getItem(StorageKey.RenameHistory);
       const hasSaved = saved !== null;
 
       if (hasSaved) {
@@ -132,7 +133,7 @@ export class BulkRenameManager {
 
   private persistHistory(): void {
     try {
-      localStorage.setItem(LS_RENAME_HISTORY, JSON.stringify(this.history));
+      localStorage.setItem(StorageKey.RenameHistory, JSON.stringify(this.history));
     } catch (_e: unknown) {
       log('[Rename] Failed to persist undo history: ' + (_e instanceof Error ? _e.message : String(_e)), 'warn');
     }

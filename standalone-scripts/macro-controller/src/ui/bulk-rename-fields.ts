@@ -25,8 +25,7 @@ import {
   refreshBearerTokenFromBestSource,
   getLastTokenSource,
 } from '../auth';
-import { CSS_BORDER_RADIUS_3PX_BACKGROUND } from '../constants';
-
+import { CssFragment } from '../types';
 // ── Types ──
 
 export interface InputRowResult {
@@ -63,7 +62,7 @@ export function buildPresetRow(
 
   const select = document.createElement('select');
   select.id = 'rename-preset-select';
-  select.style.cssText = 'flex:1;padding:3px 5px;border:1px solid ' + cInputBorder + CSS_BORDER_RADIUS_3PX_BACKGROUND + cInputBg + ';color:' + cInputFg + ';font-size:10px;outline:none;font-family:monospace;cursor:pointer;';
+  select.style.cssText = 'flex:1;padding:3px 5px;border:1px solid ' + cInputBorder + CssFragment.BorderRadius3pxBackground + cInputBg + ';color:' + cInputFg + ';font-size:10px;outline:none;font-family:monospace;cursor:pointer;';
 
   for (const name of presetNames) {
     const opt = document.createElement('option');
@@ -145,7 +144,7 @@ export function buildInputRow(
   input.type = 'text';
   input.id = inputId;
   input.placeholder = placeholder;
-  input.style.cssText = 'flex:1;padding:3px 5px;border:1px solid ' + cInputBorder + CSS_BORDER_RADIUS_3PX_BACKGROUND + cInputBg + ';color:' + cInputFg + ';font-size:10px;outline:none;font-family:monospace;';
+  input.style.cssText = 'flex:1;padding:3px 5px;border:1px solid ' + cInputBorder + CssFragment.BorderRadius3pxBackground + cInputBg + ';color:' + cInputFg + ';font-size:10px;outline:none;font-family:monospace;';
   row.appendChild(input);
   return { row, input, cb };
 }
@@ -162,7 +161,7 @@ export function buildTemplateRow(): { row: HTMLElement; input: HTMLInputElement 
   input.type = 'text';
   input.id = 'rename-template';
   input.placeholder = 'e.g. Exp $$$$$ D3  or  P## or  Item***';
-  input.style.cssText = 'flex:1;padding:3px 5px;border:1px solid ' + cInputBorder + CSS_BORDER_RADIUS_3PX_BACKGROUND + cInputBg + ';color:' + cInputFg + ';font-size:10px;outline:none;font-family:monospace;';
+  input.style.cssText = 'flex:1;padding:3px 5px;border:1px solid ' + cInputBorder + CssFragment.BorderRadius3pxBackground + cInputBg + ';color:' + cInputFg + ';font-size:10px;outline:none;font-family:monospace;';
   row.appendChild(lbl);
   row.appendChild(input);
   return { row, input };
@@ -176,7 +175,7 @@ export function buildStartNumInput(
   value: number,
   color: string,
 ): string {
-  return '<label style="display:flex;align-items:center;gap:3px;font-size:9px;color:' + color + ';">' + symbol + ' <input type="number" id="' + id + '" value="' + value + '" min="0" style="width:50px;padding:2px 4px;border:1px solid ' + cPrimary + CSS_BORDER_RADIUS_3PX_BACKGROUND + cPanelBg + ';color:' + color + ';font-size:9px;font-family:monospace;"></label>';
+  return '<label style="display:flex;align-items:center;gap:3px;font-size:9px;color:' + color + ';">' + symbol + ' <input type="number" id="' + id + '" value="' + value + '" min="0" style="width:50px;padding:2px 4px;border:1px solid ' + cPrimary + CssFragment.BorderRadius3pxBackground + cPanelBg + ';color:' + color + ';font-size:9px;font-family:monospace;"></label>';
 }
 
 // ── Token Row ──

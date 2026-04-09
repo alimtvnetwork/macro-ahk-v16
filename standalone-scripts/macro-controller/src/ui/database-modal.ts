@@ -13,12 +13,11 @@ import { buildJsonTab } from './database-json-tab';
 import { log } from '../logging';
 import { injectDatabaseStyles } from './database-modal-styles';
 import { loadTables } from './database-modal-data';
-import { ID_DATABASE_MODAL as MODAL_ID } from '../constants';
-
+import { DomId } from '../types';
 /** Open (or toggle) the database browser modal. */
 // eslint-disable-next-line max-lines-per-function
 export function showDatabaseModal(): void {
-  const existing = document.getElementById(MODAL_ID);
+  const existing = document.getElementById(DomId.DatabaseModal);
   const isAlreadyOpen = existing !== null;
 
   if (isAlreadyOpen) {
@@ -91,7 +90,7 @@ export function showDatabaseModal(): void {
 
 function createOverlay(): HTMLElement {
   const overlay = document.createElement('div');
-  overlay.id = MODAL_ID;
+  overlay.id = DomId.DatabaseModal;
   overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);z-index:2147483647;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);';
   overlay.onclick = (event) => {
     const isBackdropClick = event.target === overlay;

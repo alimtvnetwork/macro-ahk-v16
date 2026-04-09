@@ -22,7 +22,6 @@ import { resolveAutoAttachConfig, runAutoAttachGroup } from './auto-attach';
 import { logError } from '../error-utils';
 
 import { SECTION_DIVIDER } from '../constants';
-
 export interface MenuBuilderDeps {
   btnStyle: string;
   startLoop: (dir: string) => void;

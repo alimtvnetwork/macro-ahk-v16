@@ -20,7 +20,8 @@ import { checkSystemBusy, closeProjectDialog, ensureProjectDialogOpen, isUserTyp
 import { CONFIG, WS_HISTORY_MAX_ENTRIES, loopCreditState, state } from './shared-state';
 import { logError } from './error-utils';
 
-import { LABEL_IGNORING_API_SET as MSG_IGNORING_API_SET } from './constants';
+import { WORKSPACE_OBSERVER_MAX_RETRIES } from './constants';
+import { Label } from './types';
 
 function mc() { return MacroController.getInstance(); }
 
@@ -60,7 +61,7 @@ function tryApplyWorkspaceName(name: string, source: string): boolean {
     return false;
   }
   if (state.workspaceFromApi) {
-    logSub(source + ' returned "' + name + MSG_IGNORING_API_SET + state.workspaceName, 1);
+    logSub(source + ' returned "' + name + Label.IgnoringApiSet + state.workspaceName, 1);
     return true; // accepted but not changed
   }
   if (name !== state.workspaceName) {
@@ -192,7 +193,6 @@ export function fetchWorkspaceNameFromNav(): boolean {
 //   Before: 2 module-level `let` vars (workspaceObserverInstance, workspaceObserverRetryCount).
 //   After:  `WorkspaceObserverState` singleton class with private fields.
 // ============================================
-import { WORKSPACE_OBSERVER_MAX_RETRIES } from './constants';
 
 class WorkspaceObserverState {
   private _instance: MutationObserver | null = null;
@@ -290,7 +290,7 @@ function applyInitialObserverName(name: string): void {
   if (!isKnownWorkspaceName(name)) {
     logSub('Observer init: "' + name + '" not a known workspace — skipping (API will detect)', 1);
   } else if (state.workspaceFromApi) {
-    logSub('Observer init: "' + name + MSG_IGNORING_API_SET + state.workspaceName, 1);
+    logSub('Observer init: "' + name + Label.IgnoringApiSet + state.workspaceName, 1);
   } else {
     const oldName = state.workspaceName;
     state.workspaceName = name;
@@ -318,7 +318,7 @@ function handleObserverMutation(navEl: Node | Element): void {
     return;
   }
   if (state.workspaceFromApi) {
-    logSub('Observer mutation: "' + newName + MSG_IGNORING_API_SET + state.workspaceName, 1);
+    logSub('Observer mutation: "' + newName + Label.IgnoringApiSet + state.workspaceName, 1);
     return;
   }
   if (newName && newName !== state.workspaceName) {

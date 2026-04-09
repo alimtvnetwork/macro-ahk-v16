@@ -9,7 +9,6 @@
 
 import { loadTableData } from './database-modal-data';
 import { DB_PAGE_SIZE as PAGE_SIZE } from '../constants';
-
 // ── Helpers ──
 
 export function escapeHtml(text: string): string {

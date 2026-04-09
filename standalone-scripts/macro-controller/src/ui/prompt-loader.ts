@@ -20,7 +20,6 @@ import { normalizePromptEntries } from './prompt-utils';
 import { logError } from '../error-utils';
 import { showToast } from '../toast';
 import { DEFAULT_PASTE_XPATH } from '../constants';
-
 /** Editable prompt — a PromptEntry with an optional DB id. */
 export interface EditablePrompt extends PromptEntry {
   id?: string;
