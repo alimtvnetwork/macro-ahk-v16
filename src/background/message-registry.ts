@@ -247,6 +247,7 @@ import {
     handleImportLibrary,
     handleGetAssetVersions,
     handleRollbackAssetVersion,
+    handleCascadeGroupSettings,
 } from "./handlers/library-handler";
 
 /** Handler function that takes message and sender. */
@@ -494,4 +495,5 @@ export const HANDLER_REGISTRY = new Map<MessageType, MessageHandler>([
     [MessageType.LIBRARY_IMPORT, async (msg) => handleImportLibrary(msg)],
     [MessageType.LIBRARY_GET_VERSIONS, async (msg) => handleGetAssetVersions(msg)],
     [MessageType.LIBRARY_ROLLBACK_VERSION, async (msg) => handleRollbackAssetVersion(msg)],
+    [MessageType.LIBRARY_CASCADE_GROUP_SETTINGS, async (msg) => handleCascadeGroupSettings(msg)],
 ]);

@@ -253,6 +253,7 @@ export enum MessageType {
     LIBRARY_IMPORT = "LIBRARY_IMPORT",
     LIBRARY_GET_VERSIONS = "LIBRARY_GET_VERSIONS",
     LIBRARY_ROLLBACK_VERSION = "LIBRARY_ROLLBACK_VERSION",
+    LIBRARY_CASCADE_GROUP_SETTINGS = "LIBRARY_CASCADE_GROUP_SETTINGS",
 }
 
 /* ------------------------------------------------------------------ */

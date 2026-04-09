@@ -44,6 +44,7 @@ import {
   UserMinus,
   Loader2,
   ArrowLeft,
+  ArrowDownToLine,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -94,7 +95,7 @@ function GroupFormDialog({ open, onOpenChange, onSaved, editGroup }: GroupFormDi
     }
     setSaving(true);
     try {
-      await sendMessage({
+      const result = await sendMessage<{ groupId: number; cascadedCount: number }>({
         type: "LIBRARY_SAVE_GROUP" as never,
         group: {
           ...(isEdit ? { Id: editGroup!.Id } : {}),
@@ -102,7 +103,10 @@ function GroupFormDialog({ open, onOpenChange, onSaved, editGroup }: GroupFormDi
           SharedSettingsJson: settings.trim() || null,
         },
       } as never);
-      toast.success(isEdit ? `Group "${name}" updated` : `Group "${name}" created`);
+      const cascadeMsg = result.cascadedCount > 0
+        ? ` — settings pushed to ${result.cascadedCount} project(s)`
+        : "";
+      toast.success((isEdit ? `Group "${name}" updated` : `Group "${name}" created`) + cascadeMsg);
       onOpenChange(false);
       onSaved();
     } catch (err) {
@@ -179,6 +183,7 @@ function GroupDetailPanel({ group, onBack, onRefresh }: GroupDetailPanelProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [removeMember, setRemoveMember] = useState<ProjectGroupMember | null>(null);
+  const [cascading, setCascading] = useState(false);
 
   const loadMembers = useCallback(async () => {
     setLoading(true);
@@ -251,6 +256,25 @@ function GroupDetailPanel({ group, onBack, onRefresh }: GroupDetailPanelProps) {
     }
   }, [group, onBack, onRefresh]);
 
+  const handleCascade = useCallback(async () => {
+    setCascading(true);
+    try {
+      const result = await sendMessage<{ cascadedCount: number }>({
+        type: "LIBRARY_CASCADE_GROUP_SETTINGS" as never,
+        groupId: group.Id,
+      } as never);
+      if (result.cascadedCount > 0) {
+        toast.success(`Settings pushed to ${result.cascadedCount} project(s)`);
+      } else {
+        toast.info("No members to cascade to, or no settings configured");
+      }
+    } catch (err) {
+      toast.error("Cascade failed: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setCascading(false);
+    }
+  }, [group.Id]);
+
   let parsedSettings: Record<string, unknown> | null = null;
   if (group.SharedSettingsJson) {
     try { parsedSettings = JSON.parse(group.SharedSettingsJson); } catch { /* ignore */ }
@@ -290,7 +314,19 @@ function GroupDetailPanel({ group, onBack, onRefresh }: GroupDetailPanelProps) {
       {parsedSettings && (
         <Card className="border-border/60 bg-card/50">
           <CardContent className="p-4">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Shared Settings</h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Shared Settings</h3>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 text-[11px] gap-1"
+                onClick={handleCascade}
+                disabled={cascading || members.length === 0}
+              >
+                {cascading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowDownToLine className="h-3 w-3" />}
+                Push to {members.length} project(s)
+              </Button>
+            </div>
             <pre className="text-xs font-mono bg-muted/30 rounded p-3 overflow-x-auto">
               {JSON.stringify(parsedSettings, null, 2)}
             </pre>

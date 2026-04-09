@@ -410,7 +410,7 @@ export async function handleGetProjectGroups(): Promise<{ groups: ProjectGroup[]
     return { groups };
 }
 
-export async function handleSaveProjectGroup(msg: unknown): Promise<{ groupId: number }> {
+export async function handleSaveProjectGroup(msg: unknown): Promise<{ groupId: number; cascadedCount: number }> {
     const { group } = msg as { group: Partial<ProjectGroup> & { Name: string } };
     const db = getDb();
 
@@ -420,7 +420,11 @@ export async function handleSaveProjectGroup(msg: unknown): Promise<{ groupId: n
             [group.Name, group.SharedSettingsJson ?? null, group.Id],
         );
         markDirty();
-        return { groupId: group.Id };
+        // Auto-cascade settings to members on update
+        const cascadedCount = group.SharedSettingsJson
+            ? cascadeSettingsToMembers(db, group.Id, group.SharedSettingsJson)
+            : 0;
+        return { groupId: group.Id, cascadedCount };
     }
 
     db.run(
@@ -430,7 +434,7 @@ export async function handleSaveProjectGroup(msg: unknown): Promise<{ groupId: n
     const idResult = db.exec(SQL_LAST_INSERT_ROWID);
     const newId = idResult[0].values[0][0] as number;
     markDirty();
-    return { groupId: newId };
+    return { groupId: newId, cascadedCount: 0 };
 }
 
 export async function handleDeleteProjectGroup(msg: unknown): Promise<{ isOk: true }> {
@@ -477,6 +481,71 @@ export async function handleRemoveGroupMember(msg: unknown): Promise<{ isOk: tru
     db.run("DELETE FROM ProjectGroupMember WHERE GroupId = ? AND ProjectId = ?", [groupId, projectId]);
     markDirty();
     return { isOk: true };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Settings Cascade                                                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Write each key from SharedSettingsJson into ProjectKv for all member projects.
+ * Keys are prefixed with "group:" to distinguish from project-local settings.
+ */
+function cascadeSettingsToMembers(db: ReturnType<typeof getDb>, groupId: number, settingsJson: string): number {
+    let parsed: Record<string, unknown>;
+    try {
+        parsed = JSON.parse(settingsJson);
+    } catch {
+        console.warn(`[library] Cannot parse SharedSettingsJson for group ${groupId} — skipping cascade`);
+        return 0;
+    }
+
+    // Get all member project IDs
+    const memberStmt = db.prepare("SELECT ProjectId FROM ProjectGroupMember WHERE GroupId = ?");
+    memberStmt.bind([groupId]);
+    const projectIds: number[] = [];
+    while (memberStmt.step()) {
+        projectIds.push(memberStmt.get()[0] as number);
+    }
+    memberStmt.free();
+
+    if (projectIds.length === 0) return 0;
+
+    const entries = Object.entries(parsed);
+    for (const projectId of projectIds) {
+        for (const [key, value] of entries) {
+            const kvKey = `group:${key}`;
+            const kvValue = typeof value === "string" ? value : JSON.stringify(value);
+            db.run(
+                `INSERT OR REPLACE INTO ProjectKv (ProjectId, Key, Value, UpdatedAt) VALUES (?, ?, ?, datetime('now'))`,
+                [String(projectId), kvKey, kvValue],
+            );
+        }
+    }
+
+    markDirty();
+    return projectIds.length;
+}
+
+/**
+ * Manual cascade trigger — push current group settings to all members.
+ */
+export async function handleCascadeGroupSettings(msg: unknown): Promise<{ cascadedCount: number }> {
+    const { groupId } = msg as { groupId: number };
+    const db = getDb();
+
+    const result = db.exec("SELECT SharedSettingsJson FROM ProjectGroup WHERE Id = ?", [groupId]);
+    if (result.length === 0 || result[0].values.length === 0) {
+        throw new Error(`[library] Group ${groupId} not found\n  Path: src/background/handlers/library-handler.ts\n  Missing: ProjectGroup row\n  Reason: groupId does not exist in ProjectGroup table`);
+    }
+
+    const settingsJson = result[0].values[0][0] as string | null;
+    if (!settingsJson) {
+        return { cascadedCount: 0 };
+    }
+
+    const cascadedCount = cascadeSettingsToMembers(db, groupId, settingsJson);
+    return { cascadedCount };
 }
 
 /* ------------------------------------------------------------------ */
