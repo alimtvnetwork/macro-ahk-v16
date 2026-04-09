@@ -87,6 +87,20 @@ No exceptions — all `.md` files use lowercase with hyphens:
 
 `LICENSE` (no extension) remains uppercase by convention.
 
+### Enforcement Rules
+
+1. **CI gate** — Any PR introducing an uppercase `.md` filename MUST be blocked. Validate with:
+   ```bash
+   find . -name '*.md' -not -path './node_modules/*' -not -path './.git/*' | grep '[A-Z]' && echo "FAIL: Uppercase .md files found" && exit 1
+   ```
+2. **Pre-commit hook** — Run the same check locally before commit to catch violations early.
+3. **Rename, don't alias** — When converting existing uppercase files, use `git mv` to preserve history. Never create lowercase copies alongside uppercase originals.
+4. **Reference update required** — After renaming, grep the entire repo for old references and update them:
+   ```bash
+   grep -r "README\.md\|CHANGELOG\.md\|CONTRIBUTING\.md" --include="*.md" --include="*.yml" --include="*.ts" --include="*.json" .
+   ```
+5. **Exceptions** — Only `LICENSE` (no `.md` extension) is exempt. No other uppercase document files are permitted.
+
 ---
 
 ## Forbidden Patterns (All Languages)
