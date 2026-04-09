@@ -1,4 +1,6 @@
 import { useState, useCallback } from "react";
+import type { LibraryLinkMap } from "@/hooks/use-library-link-map";
+import { SyncBadge } from "./LibraryView";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +55,7 @@ interface Props {
   availableConfigs: StoredConfig[];
   selectedScripts: ScriptBinding[];
   onChange: (scripts: ScriptBinding[]) => void;
+  linkMap?: LibraryLinkMap;
 }
 
 /* ------------------------------------------------------------------ */
@@ -68,12 +71,13 @@ interface ScriptEntryCardProps {
   onRemove: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
+  linkMap?: LibraryLinkMap;
 }
 
 // eslint-disable-next-line max-lines-per-function
 function ScriptEntryCard({
   binding, index, totalCount, availableConfigs,
-  onUpdate, onRemove, onMoveUp, onMoveDown,
+  onUpdate, onRemove, onMoveUp, onMoveDown, linkMap,
 }: ScriptEntryCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState("js");
@@ -182,6 +186,12 @@ function ScriptEntryCard({
             <Badge variant="outline" className="text-[9px] shrink-0">
               {binding.configBindings.length} config{binding.configBindings.length !== 1 ? "s" : ""}
             </Badge>
+          )}
+          {linkMap?.has(binding.scriptName) && (
+            <SyncBadge
+              state={linkMap.get(binding.scriptName)!.state}
+              pinnedVersion={linkMap.get(binding.scriptName)!.pinnedVersion}
+            />
           )}
           <Button
             type="button"
@@ -333,7 +343,7 @@ function ScriptEntryCard({
 /* ------------------------------------------------------------------ */
 
 // eslint-disable-next-line max-lines-per-function
-export function ProjectScriptSelector({ availableScripts, availableConfigs, selectedScripts, onChange }: Props) {
+export function ProjectScriptSelector({ availableScripts, availableConfigs, selectedScripts, onChange, linkMap }: Props) {
   const [showPicker, setShowPicker] = useState(false);
 
   const handleAddFromLibrary = (scriptId: string) => {
@@ -501,6 +511,7 @@ export function ProjectScriptSelector({ availableScripts, availableConfigs, sele
           onRemove={() => handleRemove(binding.scriptId)}
           onMoveUp={() => handleMove(binding.scriptId, -1)}
           onMoveDown={() => handleMove(binding.scriptId, 1)}
+          linkMap={linkMap}
         />
       ))}
     </div>

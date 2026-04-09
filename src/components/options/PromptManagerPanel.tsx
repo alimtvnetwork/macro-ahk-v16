@@ -6,6 +6,8 @@
 
 import { useState, useRef } from "react";
 import { usePrompts, type PromptEntry } from "@/hooks/use-prompts";
+import { useLibraryLinkMap, type LibraryAssetSet } from "@/hooks/use-library-link-map";
+import { SyncBadge } from "./LibraryView";
 import { exportPromptsAsSqliteZip, importPromptsFromSqliteZip, mergePromptsFromSqliteZip } from "@/lib/sqlite-bundle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -227,10 +229,11 @@ interface PromptRowProps {
     onMoveDown: (id: string) => void;
     onToggleFavorite: (id: string) => void;
     onView: (p: PromptEntry) => void;
+    libraryAssets?: LibraryAssetSet;
 }
 
 // eslint-disable-next-line max-lines-per-function
-function PromptRow({ prompt, index, total, onEdit, onDelete, onMoveUp, onMoveDown, onToggleFavorite, onView }: PromptRowProps) {
+function PromptRow({ prompt, index, total, onEdit, onDelete, onMoveUp, onMoveDown, onToggleFavorite, onView, libraryAssets }: PromptRowProps) {
     const isDefault = prompt.isDefault === true;
     const isFav = prompt.isFavorite === true;
 
@@ -292,6 +295,9 @@ function PromptRow({ prompt, index, total, onEdit, onDelete, onMoveUp, onMoveDow
                             {prompt.category}
                         </Badge>
                     )}
+                    {prompt.slug && libraryAssets?.has(prompt.slug) && (
+                        <SyncBadge state="synced" />
+                    )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{prompt.text}</p>
             </div>
@@ -343,6 +349,7 @@ export function PromptManagerPanel() {
         prompts, categories, categoryFilter, setCategoryFilter,
         loading, fatalError, refresh, save, remove, reorder, toggleFavorite, reseedDefaults,
     } = usePrompts();
+    const { assetSlugs: libraryAssets } = useLibraryLinkMap();
     const [editingPrompt, setEditingPrompt] = useState<Partial<PromptEntry> | null>(null);
     const [isAdding, setIsAdding] = useState(false);
     const [viewingPrompt, setViewingPrompt] = useState<PromptEntry | null>(null);
@@ -620,6 +627,7 @@ export function PromptManagerPanel() {
                                     setIsAdding(false);
                                     setViewingPrompt(prompt);
                                 }}
+                                libraryAssets={libraryAssets}
                             />
                         ))
                     )}
