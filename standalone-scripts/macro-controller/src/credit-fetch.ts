@@ -25,7 +25,7 @@ import { parseLoopApiResponse, syncCreditStateFromApi } from './credit-parser';
 import { logError } from './error-utils';
 
 const API_USER_WORKSPACES = '/user/workspaces';
-const NS_UPDATEAUTHDIAG = '_internal.updateAuthDiag';
+
 
 function mc() { return MacroController.getInstance(); }
 
