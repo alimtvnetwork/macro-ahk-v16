@@ -1,4 +1,5 @@
 import { cCbAvail, cCbBilling, cCbBonus, cCbDaily, cCbEmpty, cCbRollover, cLogInfo, cPrimaryLight, creditBarWidthPx, tFont, tFontSm, trSlow } from './shared-state';
+import { CSS_SPAN_COLOR, CSS_BAR_SEGMENT_TAIL, CSS_TRANSITION_TAIL, CSS_EASE_CLOSE, CSS_STYLE_WIDTH } from './constants';
 
 /**
  * MacroLoop Controller — Credit Calculation & Rendering Module
@@ -7,12 +8,6 @@ import { cCbAvail, cCbBilling, cCbBonus, cCbDaily, cCbEmpty, cCbRollover, cLogIn
  * Contains: credit math helpers, segment percentages, credit bar HTML renderer.
  * Pure functions with no side effects (except renderCreditBar which reads theme colors).
  */
-// ── Extracted string constants (sonarjs/no-duplicate-string) ──
-const CSS_SPAN_COLOR = '<span style="color:';
-const CSS_BAR_SEGMENT_TAIL = '%;height:100%;background:linear-gradient(90deg,';
-const CSS_TRANSITION_TAIL = ');transition:width ';
-const CSS_EASE_CLOSE = ' ease;"></div>';
-const CSS_STYLE_WIDTH = '" style="width:';
 // ============================================
 // Credit Calculation Helpers (pure functions)
 // ============================================

@@ -19,6 +19,7 @@ import type { TaskNextDeps } from './task-next-ui';
 import { normalizePromptEntries } from './prompt-utils';
 import { logError } from '../error-utils';
 import { showToast } from '../toast';
+import { DEFAULT_PASTE_XPATH } from '../constants';
 
 /** Editable prompt — a PromptEntry with an optional DB id. */
 export interface EditablePrompt extends PromptEntry {
@@ -49,8 +50,6 @@ export const DEFAULT_PROMPTS: PromptEntry[] = [
   { name: 'Next Tasks', text: 'Next,\n\nList out the remaining tasks always, if you finish then in future `next` command, find any remaining tasks from memory and suggest', category: 'automation', slug: 'next-tasks', id: 'default-next-tasks' },
   { name: 'Unit Test Issues V2 Enhanced', text: 'Based on the packages that have low coverage, if a package has more than 1000 lines, then for that specific package we should split it into segments of 200 lines per task.\n\nYou should create a plan where each 200-line segment is treated as one task. Each task should focus on writing meaningful test coverage, including:\n- Branch coverage\n- Logical segment coverage\n- Edge cases\n\nFirst, create a detailed plan outlining:\n- Which packages will be handled\n- How many segments each package will be split into\n- The step-by-step execution plan\n\nEach time I say "next", you should proceed with the next package or segment and work towards achieving 100% code coverage.\n\nYou do not need to ask which package to prioritize. Choose based on logical ordering.\n\nEnsure that tests are written in a way that they are buildable in Go. Even if you cannot run them, ensure correctness through reasoning.\n\nFollow existing test patterns from the testing guideline spec folder.\n\nTesting requirements:\n- Follow AAA pattern (Arrange, Act, Assert)\n- Follow naming conventions (use "Should" style naming)\n- Maintain consistency with existing tests\n\nIf you have any questions or confusion, feel free to ask.\n\nYour task now is to create a detailed execution plan.', category: 'code-coverage', slug: 'unit-test-issues-v2-enhanced', id: 'default-unit-test-issues-v2-enhanced' },
 ];
-
-export const DEFAULT_PASTE_XPATH = '/html/body/div[3]/div/div[2]/main/div/div/div[1]/div/div[2]/div/form/div[3]/div/div/div/div';
 
 // ============================================
 // PromptLoaderState — encapsulated module state (CQ11, CQ17)

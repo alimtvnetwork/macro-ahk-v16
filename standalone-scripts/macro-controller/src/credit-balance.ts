@@ -37,7 +37,7 @@ export const BALANCE_CONFIG: CreditBalanceConfig = {
 // ============================================
 // CreditBalanceState — encapsulated module state (CQ11, CQ17)
 // ============================================
-const MIN_CALL_GAP_MS = 10_000;
+import { MIN_CREDIT_CALL_GAP_MS as MIN_CALL_GAP_MS } from './constants';
 
 class CreditBalanceState {
   private _lastBalanceCallAt = 0;

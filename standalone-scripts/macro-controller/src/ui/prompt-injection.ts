@@ -4,15 +4,7 @@
  * Phase 5D split from ui/prompt-manager.ts.
  * See: spec/04-macro-controller/ts-migration-v2/05-module-splitting.md
  */
-// ── Extracted string constants (sonarjs/no-duplicate-string) ──
-const CSS_BORDER_PRIMARY = 'rgba(124,58,237,0.3)';
-const CSS_BORDER_PRIMARY_STRONG = 'rgba(124,58,237,0.4)';
-const CSS_BORDER_SOLID = ';border:1px solid ';
-const CSS_LABEL_BLOCK = 'display:block;font-size:11px;color:';
-const CSS_LABEL_SUFFIX = ';margin-bottom:4px;font-weight:600;';
-const CSS_BORDER_RADIUS_COLOR = ';border-radius:6px;color:';
-
-
+import { CSS_BORDER_PRIMARY, CSS_BORDER_PRIMARY_STRONG, CSS_BORDER_SOLID, CSS_LABEL_BLOCK, CSS_LABEL_SUFFIX, CSS_BORDER_RADIUS_COLOR } from '../constants';
 import { log } from '../logging';
 import { logError } from '../error-utils';
 import { cPanelBg, cPanelBgAlt, cPanelFg, cPanelFgDim, cPrimary, cPrimaryLight, cPrimaryBorderA } from '../shared-state';

@@ -24,8 +24,7 @@ import {
   cWarning,
 } from '../shared-state';
 import type { SettingsDeps, MakeFieldFn } from './settings-ui';
-
-const CSS_FONT_SIZE_11PX_FONT_WEIGHT_700_COLOR = 'font-size:11px;font-weight:700;color:';
+import { CSS_FONT_SIZE_11PX_FONT_WEIGHT_700_COLOR } from '../constants';
 
 // ── Panel Results ──
 

@@ -10,8 +10,7 @@
 import { showPasteToast } from './prompt-utils';
 import { runTaskNextLoop, openTaskNextSettingsModal } from './task-next-ui';
 import type { SavePromptDeps } from './save-prompt';
-
-const CSS_RGBA_124_58_237_0_15 = 'rgba(124,58,237,0.15)';
+import { CSS_RGBA_124_58_237_0_15 } from '../constants';
 
 /** Build the Task Next hover submenu and attach it to the dropdown. */
 export function buildTaskNextSubmenu(

@@ -10,8 +10,7 @@
 import { getTimingEntries, getTimingSinceLoadMs } from '../startup-timing';
 import { createSkeletonBar } from './skeleton';
 import { cPanelFgDim } from '../shared-state';
-
-const CSS_FONT_SIZE_9PX_COLOR = 'font-size:9px;color:';
+import { CSS_FONT_SIZE_9PX_COLOR } from '../constants';
 
 const STATUS_COLORS: Record<string, string> = {
   ok: '#4ade80',

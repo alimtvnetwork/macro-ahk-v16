@@ -41,8 +41,7 @@ import {
   buildConfigDbPanel,
   buildGeneralPanel,
 } from './settings-tab-panels';
-
-const CSS_BACKGROUND = 'background:';
+import { CSS_BACKGROUND } from '../constants';
 
 // ============================================
 // Dependencies injected from createUI closure

@@ -69,8 +69,7 @@ interface RenamePresetState {
   presets: Record<string, RenamePreset>;
 }
 
-const RENAME_PRESET_STORAGE_PREFIX = 'MacroController.RenamePresets.';
-const DEFAULT_PRESET_NAME = 'Default';
+import { LS_RENAME_PRESET_PREFIX as RENAME_PRESET_STORAGE_PREFIX, DEFAULT_PRESET_NAME } from './constants';
 
 export function createDefaultPreset(): RenamePreset {
   const now = Date.now();

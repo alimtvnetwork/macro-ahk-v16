@@ -23,8 +23,7 @@ import { MacroController } from './core/MacroController';
 import { CREDIT_API_BASE, loopCreditState } from './shared-state';
 import { parseLoopApiResponse, syncCreditStateFromApi } from './credit-parser';
 import { logError } from './error-utils';
-
-const API_USER_WORKSPACES = '/user/workspaces';
+import { API_USER_WORKSPACES } from './constants';
 
 
 function mc() { return MacroController.getInstance(); }

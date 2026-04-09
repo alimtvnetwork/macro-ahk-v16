@@ -9,8 +9,7 @@
 
 import { activityLogLines, getActivityLogVisible, maxActivityLines, setActivityLogVisible, cLogDefault, cLogError, cLogInfo, cLogSuccess, cLogDebug, cLogWarn, cLogDelegate, cLogCheck, cLogTimestamp, tFont, tFontSm } from './shared-state';
 import type { ActivityLogEntry } from './types';
-
-const CSS_SPAN_STYLE_COLOR = '<span style="color:';
+import { CSS_SPAN_STYLE_COLOR } from './constants';
 
 // CQ11: Encapsulate rendered count in singleton
 class LogRenderState {

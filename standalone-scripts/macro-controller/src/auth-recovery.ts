@@ -159,7 +159,7 @@ const authRecoveryManager = new AuthRecoveryManager();
 // TTL-aware getBearerToken (Phase A: Auth Bridge)
 // ============================================
 
-const DEFAULT_TOKEN_TTL_MS = 120_000;
+import { DEFAULT_TOKEN_TTL_MS } from './constants';
 
 /** Read configured TTL from marco_config_overrides or config JSON. */
 function resolveTokenTtlMs(): number {
