@@ -33,6 +33,7 @@ const PromptChainPanel = lazy(() => import("@/components/options/PromptChainPane
 const UpdaterManagementView = lazy(() => import("@/components/options/UpdaterManagementView").then(m => ({ default: m.UpdaterManagementView })));
 const AutomationView = lazy(() => import("@/components/automation/AutomationView").then(m => ({ default: m.AutomationView })));
 const ActivityLogTimeline = lazy(() => import("@/components/options/ActivityLogTimeline").then(m => ({ default: m.ActivityLogTimeline })));
+const LibraryView = lazy(() => import("@/components/options/LibraryView").then(m => ({ default: m.LibraryView })));
 
 function LazyFallback() {
   return (
