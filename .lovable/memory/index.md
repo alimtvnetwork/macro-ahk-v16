@@ -19,7 +19,7 @@ Dark-only theme enforced — never add light mode or theme toggle.
 Auth token utilities live in SDK (AuthTokenUtils static class on marco.authUtils). Controller delegates to SDK at runtime.
 
 ## Memories
-- [Reliability report v3](mem://workflow/reliability-report-v3) — AI handoff success at 91%, failure map, corrective actions
+- [Reliability report v4](mem://workflow/07-reliability-risk-report-v4) — AI handoff success at 93%, 1,079 tests, all 8 TS migration phases complete, cross-project sync Phase 1 done
 - [Versioning policy](mem://workflow/version-synchronization-v3) — Unified v2.128.0 across manifest, constants.ts, standalone scripts, xpath
 - [Suggestions convention](mem://workflow/suggestions-convention) — Single-file tracker at .lovable/memory/suggestions/
 - [Skipped folders policy](mem://constraints/skipped-folders) — Never edit skipped/ or .release/ folders
