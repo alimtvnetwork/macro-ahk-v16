@@ -442,7 +442,7 @@ function buildTableEntry(
       const colInfo = el('div', 'marco-schema-table-cols',
         columns.map(column => column.Name + ' (' + column.Type + ')').join(', '));
       info.appendChild(colInfo);
-    } catch { /* ignore parse errors */ }
+    } catch (_e) { console.debug('[RiseupAsia] [database-schema-tab] Column JSON parse failed: ' + (_e instanceof Error ? _e.message : String(_e))); }
   }
 
   entry.appendChild(info);

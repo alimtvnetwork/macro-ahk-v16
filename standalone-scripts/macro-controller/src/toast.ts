@@ -171,8 +171,8 @@ class ToastManager {
     for (const listener of this.errorChangeListeners) {
       try {
         listener();
-      } catch {
-        /* ignore listener errors */
+      } catch (_e) {
+        console.debug('[RiseupAsia] [ToastManager] Error change listener threw: ' + (_e instanceof Error ? _e.message : String(_e)));
       }
     }
   }
