@@ -104,30 +104,31 @@ export function findSavePromptContainer(): Element | null {
   return findContainerViaCssFallback();
 }
 
+function tryToolbarButtonFallback(fallbackSelector: string, fallbackIndex: number): Element | null {
+  const toolbarBtn = document.querySelector(fallbackSelector);
+  if (toolbarBtn?.parentElement) {
+    log('Save Prompt: Container found via CSS fallback #' + (fallbackIndex + 1) + ' (parent of toolbar button)', 'check');
+    return toolbarBtn.parentElement;
+  }
+  return null;
+}
+
+function tryDirectFallback(fallbackSelector: string, fallbackIndex: number): Element | null {
+  const element = document.querySelector(fallbackSelector);
+  if (element) {
+    log('Save Prompt: Container found via CSS fallback #' + (fallbackIndex + 1), 'check');
+    return element;
+  }
+  return null;
+}
+
 function findContainerViaCssFallback(): Element | null {
   for (const [fallbackIndex, fallbackSelector] of SAVE_PROMPT_CSS_FALLBACKS.entries()) {
     try {
-      const isToolbarButtonFallback = fallbackIndex === 2;
-
-      if (isToolbarButtonFallback) {
-        const toolbarBtn = document.querySelector(fallbackSelector);
-        const hasParent = toolbarBtn !== null && toolbarBtn.parentElement !== null;
-
-        if (hasParent) {
-          log('Save Prompt: Container found via CSS fallback #' + (fallbackIndex + 1) + ' (parent of toolbar button)', 'check');
-
-          return toolbarBtn!.parentElement;
-        }
-      } else {
-        const element = document.querySelector(fallbackSelector);
-        const isFound = element !== null;
-
-        if (isFound) {
-          log('Save Prompt: Container found via CSS fallback #' + (fallbackIndex + 1), 'check');
-
-          return element;
-        }
-      }
+      const result = fallbackIndex === 2
+        ? tryToolbarButtonFallback(fallbackSelector, fallbackIndex)
+        : tryDirectFallback(fallbackSelector, fallbackIndex);
+      if (result) return result;
     } catch (_e: unknown) { log('Save Prompt: CSS selector error at fallback #' + (fallbackIndex + 1) + ': ' + (_e instanceof Error ? _e.message : String(_e)), 'warn'); }
   }
 
