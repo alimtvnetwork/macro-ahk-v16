@@ -475,10 +475,65 @@ interface AssetDetailPanelProps {
   onBack: () => void;
   onSync: (assetId: number) => void;
   onDelete: (assetId: number) => void;
+  onLinkStateChange: (link: AssetLink, newState: LinkState) => void;
 }
 
-// eslint-disable-next-line max-lines-per-function -- detail panel with meta cards + actions, pure JSX
-function AssetDetailPanel({ asset, links, onBack, onSync, onDelete }: AssetDetailPanelProps) {
+/** Confirmation text per state transition */
+const LINK_STATE_CONFIRM: Record<string, { title: string; desc: string; action: string }> = {
+  "synced→pinned": {
+    title: "Pin this link?",
+    desc: "The project copy will be locked at the current version. Future library updates won't auto-apply — you'll see an \"update available\" badge instead.",
+    action: "Pin",
+  },
+  "synced→detached": {
+    title: "Detach this link?",
+    desc: "The project copy will become fully independent. It will no longer receive updates from the library. This cannot be undone without re-linking.",
+    action: "Detach",
+  },
+  "pinned→synced": {
+    title: "Resume syncing?",
+    desc: "The project copy will be overwritten with the latest library version and will auto-update on future changes.",
+    action: "Resume Sync",
+  },
+  "pinned→detached": {
+    title: "Detach this link?",
+    desc: "The project copy will become fully independent. It will no longer receive updates from the library. This cannot be undone without re-linking.",
+    action: "Detach",
+  },
+  "detached→synced": {
+    title: "Re-sync this link?",
+    desc: "The project copy will be overwritten with the latest library version immediately and will auto-update on future changes.",
+    action: "Sync",
+  },
+  "detached→pinned": {
+    title: "Pin this link?",
+    desc: "The project copy will be pinned to the current library version. It won't auto-update but you can manually pull changes.",
+    action: "Pin",
+  },
+};
+
+/** Available transitions per current state */
+const LINK_STATE_OPTIONS: Record<LinkState, LinkState[]> = {
+  synced: ["pinned", "detached"],
+  pinned: ["synced", "detached"],
+  detached: ["synced", "pinned"],
+};
+
+const LINK_STATE_ICONS: Record<LinkState, typeof RefreshCw> = {
+  synced: RefreshCw,
+  pinned: Pin,
+  detached: Unlink,
+};
+
+// eslint-disable-next-line max-lines-per-function -- detail panel with meta cards + link state toggles + actions
+function AssetDetailPanel({ asset, links, onBack, onSync, onDelete, onLinkStateChange }: AssetDetailPanelProps) {
+  const [confirmState, setConfirmState] = useState<{ link: AssetLink; newState: LinkState } | null>(null);
+
+  const confirmKey = confirmState
+    ? `${confirmState.link.LinkState}→${confirmState.newState}` as const
+    : null;
+  const confirmCfg = confirmKey ? LINK_STATE_CONFIRM[confirmKey] : null;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -511,13 +566,39 @@ function AssetDetailPanel({ asset, links, onBack, onSync, onDelete }: AssetDetai
             {links.length === 0 ? (
               <p className="text-xs text-muted-foreground italic">No projects linked</p>
             ) : (
-              <div className="space-y-1.5">
-                {links.map(link => (
-                  <div key={link.Id} className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Project #{link.ProjectId}</span>
-                    <SyncBadge state={link.LinkState} pinnedVersion={link.PinnedVersion} />
-                  </div>
-                ))}
+              <div className="space-y-2">
+                {links.map(link => {
+                  const options = LINK_STATE_OPTIONS[link.LinkState];
+                  return (
+                    <div key={link.Id} className="flex items-center justify-between text-xs gap-2">
+                      <span className="text-muted-foreground shrink-0">Project #{link.ProjectId}</span>
+                      <div className="flex items-center gap-1.5">
+                        <SyncBadge state={link.LinkState} pinnedVersion={link.PinnedVersion} />
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-5 w-5">
+                              <MoreVertical className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            {options.map(targetState => {
+                              const Icon = LINK_STATE_ICONS[targetState];
+                              return (
+                                <DropdownMenuItem
+                                  key={targetState}
+                                  onClick={() => setConfirmState({ link, newState: targetState })}
+                                >
+                                  <Icon className="h-3.5 w-3.5 mr-2" />
+                                  {targetState === "synced" ? "Sync" : targetState === "pinned" ? "Pin" : "Detach"}
+                                </DropdownMenuItem>
+                              );
+                            })}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -553,6 +634,29 @@ function AssetDetailPanel({ asset, links, onBack, onSync, onDelete }: AssetDetai
           Delete
         </Button>
       </div>
+
+      {/* Link State Change Confirmation Dialog */}
+      <AlertDialog open={!!confirmState} onOpenChange={open => { if (!open) setConfirmState(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmCfg?.title ?? "Change link state?"}</AlertDialogTitle>
+            <AlertDialogDescription>{confirmCfg?.desc ?? ""}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmState) {
+                  onLinkStateChange(confirmState.link, confirmState.newState);
+                  setConfirmState(null);
+                }
+              }}
+            >
+              {confirmCfg?.action ?? "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -674,6 +778,27 @@ export function LibraryView() {
 
   const linksForAsset = (assetId: number) => links.filter(l => l.SharedAssetId === assetId);
 
+  const handleLinkStateChange = useCallback(async (link: AssetLink, newState: LinkState) => {
+    try {
+      await sendMessage({
+        type: "LIBRARY_SAVE_LINK" as never,
+        link: {
+          Id: link.Id,
+          SharedAssetId: link.SharedAssetId,
+          ProjectId: link.ProjectId,
+          LinkState: newState,
+          PinnedVersion: newState === "pinned" ? (selectedAsset?.Version ?? link.PinnedVersion) : null,
+          LocalOverrideJson: link.LocalOverrideJson,
+        },
+      } as never);
+      const labels: Record<LinkState, string> = { synced: "Synced", pinned: "Pinned", detached: "Detached" };
+      toast.success(`Project #${link.ProjectId} → ${labels[newState]}`);
+      loadData();
+    } catch (err) {
+      toast.error("State change failed: " + (err instanceof Error ? err.message : String(err)));
+    }
+  }, [loadData, selectedAsset]);
+
   if (selectedAsset) {
     return (
       <AssetDetailPanel
@@ -682,6 +807,7 @@ export function LibraryView() {
         onBack={() => setSelectedAsset(null)}
         onSync={handleSync}
         onDelete={handleDelete}
+        onLinkStateChange={handleLinkStateChange}
       />
     );
   }
