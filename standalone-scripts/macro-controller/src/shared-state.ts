@@ -293,7 +293,11 @@ export const autoAttachTiming = autoAttachCfg.timing || {};
 export const autoAttachGroups = autoAttachCfg.groups || [];
 
 // Storage constants — centralized in constants.ts
-export { LOG_STORAGE_KEY, WS_HISTORY_KEY, WS_SHARED_KEY, LOG_MAX_ENTRIES, WS_HISTORY_MAX_ENTRIES, BLOATED_KEY_PATTERNS } from './constants';
+export { StorageKey } from './types';
+export const LOG_STORAGE_KEY = StorageKey.LogStorage;
+export const WS_HISTORY_KEY = StorageKey.WsHistory;
+export const WS_SHARED_KEY = StorageKey.WsShared;
+export { LOG_MAX_ENTRIES, WS_HISTORY_MAX_ENTRIES, BLOATED_KEY_PATTERNS } from './constants';
 
 // ============================================
 // Runtime state — re-exported from shared-state-runtime.ts (Phase 5 split)
