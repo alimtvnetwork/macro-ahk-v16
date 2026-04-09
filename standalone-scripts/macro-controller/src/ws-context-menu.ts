@@ -130,8 +130,8 @@ export function startInlineRename(
             populateLoopWorkspaceDropdown();
             fetchLoopCreditsWithDetect(false);
           })
-          .catch(function () {
-            logError('wsContextMenu', 'Workspace context action failed', function);
+          .catch(function (e: unknown) {
+            logError('wsContextMenu', 'Workspace context action failed', e);
             showToast('❌ Workspace context action failed', 'error');
             populateLoopWorkspaceDropdown();
           });

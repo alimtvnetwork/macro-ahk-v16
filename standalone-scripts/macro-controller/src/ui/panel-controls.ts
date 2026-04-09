@@ -320,8 +320,8 @@ function buildPromptsDropdown(_deps: PanelBuilderDeps, btnStyle: string): Prompt
         promptsDropdown.appendChild(createPromptsListSkeleton());
         loadPromptsFromJson().then(function(_loaded: PromptEntry[] | null) {
           renderPromptsDropdown(promptCtx, taskNextDeps);
-        }).catch(function() {
-          logError('loadPrompts', 'Failed to load prompts from JSON', function);
+        }).catch(function(e: unknown) {
+          logError('loadPrompts', 'Failed to load prompts from JSON', e);
           showToast('❌ Failed to load prompts from JSON', 'error');
           // Show error state if load completely fails
           promptsDropdown.innerHTML = '';
