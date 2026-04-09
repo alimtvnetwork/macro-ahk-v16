@@ -35,7 +35,7 @@ import { CreditManager } from './core/CreditManager';
 import { LoopEngine } from './core/LoopEngine';
 import { UIManager } from './core/UIManager';
 import { WorkspaceManager } from './core/WorkspaceManager';
-import { dualWrite, dualWriteAll, initNamespace } from './api-namespace';
+import { nsWrite, initNamespace } from './api-namespace';
 import { updateWsSelectionUI, triggerLoopMoveFromSelection, setLoopWsNavIndex, populateLoopWorkspaceDropdown, renderBulkRenameDialog, getLoopWsCompactMode, setLoopWsCompactMode, getLoopWsFreeOnly, setLoopWsFreeOnly, getLoopWsNavIndex } from './ws-selection-ui';
 import { shouldInject } from './startup-domain-guard';
 import { runIdempotentCheck } from './startup-idempotent-check';

@@ -31,7 +31,7 @@ import { log } from '../logging';
 import { getByXPath } from '../xpath-utils';
 import { pollUntil } from '../async-utils';
 import { getBearerToken, updateAuthBadge } from '../auth';
-import { dualWrite } from '../api-namespace';
+import { nsWrite } from '../api-namespace';
 import { buildHamburgerMenu } from './menu-builder';
 import { createCheckButton } from './check-button';
 import { createCountdownCtx, updateStartStopBtn } from './countdown';
