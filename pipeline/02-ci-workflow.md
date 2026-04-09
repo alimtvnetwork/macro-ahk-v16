@@ -8,17 +8,19 @@
 
 ```
 1. Checkout          → actions/checkout@v4 (fetch-depth: 0)
-2. Setup Node.js     → actions/setup-node@v4 (node 20)
-3. Setup pnpm        → pnpm/action-setup@v4 (pnpm 9)
-4. Install root deps → pnpm install --no-frozen-lockfile
-5. Install ext deps  → cd chrome-extension && pnpm install
-6. Lint              → pnpm run lint
-7. Test              → pnpm run test
-8. Build SDK         → pnpm run build:sdk
-9. Build XPath       → pnpm run build:xpath
-10. Build Controller → pnpm run build:macro-controller
-11. Build Extension  → pnpm run build:extension
-12. Summary          → echo status
+2. Enforce lowercase → find + grep — block uppercase .md filenames
+3. Setup Node.js     → actions/setup-node@v4 (node 20)
+4. Setup pnpm        → pnpm/action-setup@v4 (pnpm 9)
+5. Install root deps → pnpm install --no-frozen-lockfile
+6. Install ext deps  → cd chrome-extension && pnpm install
+7. Lint (root)       → pnpm run lint (ESLint 9 flat config)
+8. Lint (extension)  → cd chrome-extension && pnpm run lint
+9. Test              → pnpm run test
+10. Build SDK        → pnpm run build:sdk
+11. Build XPath      → pnpm run build:xpath
+12. Build Controller → pnpm run build:macro-controller
+13. Build Extension  → pnpm run build:extension
+14. Summary          → echo status
 ```
 
 ## Concurrency Strategy
