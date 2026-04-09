@@ -193,6 +193,20 @@ function applyV6Down(_logsDb: SqlJsDatabase, _errorsDb: SqlJsDatabase): void {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Migration v7 — Cross-Project Sync Tables                           */
+/*  See: spec/13-features/cross-project-sync.md                        */
+/* ------------------------------------------------------------------ */
+
+function applyV7Up(logsDb: SqlJsDatabase, _errorsDb: SqlJsDatabase): void {
+    runIgnoringDuplicates(logsDb, getV7Statements());
+    console.log("[migration] v7: Created Cross-Project Sync tables (SharedAsset, AssetLink, ProjectGroup, ProjectGroupMember)");
+}
+
+function applyV7Down(_logsDb: SqlJsDatabase, _errorsDb: SqlJsDatabase): void {
+    // No-op — DROP TABLE is destructive
+}
+
+/* ------------------------------------------------------------------ */
 /*  Runner                                                             */
 /* ------------------------------------------------------------------ */
 
