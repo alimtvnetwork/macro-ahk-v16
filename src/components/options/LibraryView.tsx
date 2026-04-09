@@ -639,6 +639,14 @@ function AssetDetailPanel({ asset, links, onBack, onSync, onDelete, onLinkStateC
         </Button>
       </div>
 
+      {/* Version History */}
+      <VersionHistory
+        assetId={asset.Id}
+        currentHash={asset.ContentHash}
+        currentVersion={asset.Version}
+        onRollback={onRefresh}
+      />
+
       {/* Link State Change Confirmation Dialog */}
       <AlertDialog open={!!confirmState} onOpenChange={open => { if (!open) setConfirmState(null); }}>
         <AlertDialogContent>
