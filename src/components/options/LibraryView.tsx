@@ -477,6 +477,7 @@ interface AssetDetailPanelProps {
   onDelete: (assetId: number) => void;
 }
 
+// eslint-disable-next-line max-lines-per-function -- detail panel with meta cards + actions, pure JSX
 function AssetDetailPanel({ asset, links, onBack, onSync, onDelete }: AssetDetailPanelProps) {
   return (
     <div className="space-y-6">
