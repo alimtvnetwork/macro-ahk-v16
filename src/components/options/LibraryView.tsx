@@ -588,7 +588,11 @@ function AssetDetailPanel({ asset, links, onBack, onSync, onDelete, onLinkStateC
                     <div key={link.Id} className="flex items-center justify-between text-xs gap-2">
                       <span className="text-muted-foreground shrink-0">Project #{link.ProjectId}</span>
                       <div className="flex items-center gap-1.5">
-                        <SyncBadge state={link.LinkState} pinnedVersion={link.PinnedVersion} />
+                        <SyncBadge
+                          state={link.LinkState}
+                          pinnedVersion={link.PinnedVersion}
+                          updateAvailable={link.LinkState === "pinned" && link.PinnedVersion !== null && link.PinnedVersion !== asset.Version}
+                        />
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-5 w-5">
