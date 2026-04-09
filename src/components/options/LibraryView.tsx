@@ -69,6 +69,7 @@ import {
   Zap,
   Settings2,
   Users,
+  ArrowUpCircle,
 } from "lucide-react";
 import { ProjectGroupPanel } from "./ProjectGroupPanel";
 import { VersionHistory } from "./VersionHistory";
