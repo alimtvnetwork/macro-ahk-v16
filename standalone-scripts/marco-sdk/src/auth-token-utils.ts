@@ -107,7 +107,6 @@ export class AuthTokenUtils {
      * @param onFound - Optional callback when a token is found (key, tokenLength).
      * @param onScanError - Optional callback when scan fails.
      */
-    // eslint-disable-next-line sonarjs/cognitive-complexity -- multi-stage localStorage scan with error recovery
     static scanSupabaseLocalStorage(
         onFound?: (key: string, tokenLength: number) => void,
         onScanError?: (error: unknown) => void,

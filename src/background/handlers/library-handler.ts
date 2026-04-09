@@ -514,8 +514,6 @@ export async function handleExportLibrary(): Promise<{ bundle: LibraryExport }> 
         },
     };
 }
-    };
-}
 
 interface ImportResult {
     imported: number;
