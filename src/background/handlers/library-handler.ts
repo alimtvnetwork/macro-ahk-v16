@@ -117,6 +117,16 @@ export async function handleGetSharedAsset(msg: unknown): Promise<{ asset: Share
     return { asset };
 }
 
+/**
+ * Record a version snapshot in AssetVersion table.
+ */
+function snapshotVersion(db: ReturnType<typeof getDb>, assetId: number, version: string, contentJson: string, contentHash: string, changedBy = "user"): void {
+    db.run(
+        `INSERT INTO AssetVersion (SharedAssetId, Version, ContentJson, ContentHash, ChangedBy) VALUES (?, ?, ?, ?, ?)`,
+        [assetId, version, contentJson, contentHash, changedBy],
+    );
+}
+
 export async function handleSaveSharedAsset(msg: unknown): Promise<{ assetId: number }> {
     const { asset } = msg as { asset: Partial<SharedAsset> & { Name: string; Type: AssetType; ContentJson: string; Slug: string } };
     const db = getDb();
@@ -124,7 +134,8 @@ export async function handleSaveSharedAsset(msg: unknown): Promise<{ assetId: nu
     const version = asset.Version ?? "1.0.0";
 
     if (asset.Id) {
-        // Update existing
+        // Update existing — snapshot before overwriting
+        snapshotVersion(db, asset.Id, version, asset.ContentJson, contentHash);
         db.run(
             `UPDATE SharedAsset SET Name = ?, Type = ?, ContentJson = ?, ContentHash = ?, Version = ?, Slug = ?, UpdatedAt = datetime('now') WHERE Id = ?`,
             [asset.Name, asset.Type, asset.ContentJson, contentHash, version, asset.Slug, asset.Id],
@@ -140,6 +151,8 @@ export async function handleSaveSharedAsset(msg: unknown): Promise<{ assetId: nu
     );
     const idResult = db.exec(SQL_LAST_INSERT_ROWID);
     const newId = idResult[0].values[0][0] as number;
+    // Snapshot initial version
+    snapshotVersion(db, newId, version, asset.ContentJson, contentHash, "create");
     markDirty();
     return { assetId: newId };
 }
