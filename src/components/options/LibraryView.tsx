@@ -71,6 +71,7 @@ import {
   Users,
 } from "lucide-react";
 import { ProjectGroupPanel } from "./ProjectGroupPanel";
+import { VersionHistory } from "./VersionHistory";
 import { toast } from "sonner";
 
 /* ------------------------------------------------------------------ */
@@ -478,6 +479,7 @@ interface AssetDetailPanelProps {
   onSync: (assetId: number) => void;
   onDelete: (assetId: number) => void;
   onLinkStateChange: (link: AssetLink, newState: LinkState) => void;
+  onRefresh: () => void;
 }
 
 /** Confirmation text per state transition */
@@ -528,7 +530,7 @@ const LINK_STATE_ICONS: Record<LinkState, typeof RefreshCw> = {
 };
 
 // eslint-disable-next-line max-lines-per-function -- detail panel with meta cards + link state toggles + actions
-function AssetDetailPanel({ asset, links, onBack, onSync, onDelete, onLinkStateChange }: AssetDetailPanelProps) {
+function AssetDetailPanel({ asset, links, onBack, onSync, onDelete, onLinkStateChange, onRefresh }: AssetDetailPanelProps) {
   const [confirmState, setConfirmState] = useState<{ link: AssetLink; newState: LinkState } | null>(null);
 
   const confirmKey = confirmState
@@ -636,6 +638,14 @@ function AssetDetailPanel({ asset, links, onBack, onSync, onDelete, onLinkStateC
           Delete
         </Button>
       </div>
+
+      {/* Version History */}
+      <VersionHistory
+        assetId={asset.Id}
+        currentHash={asset.ContentHash}
+        currentVersion={asset.Version}
+        onRollback={onRefresh}
+      />
 
       {/* Link State Change Confirmation Dialog */}
       <AlertDialog open={!!confirmState} onOpenChange={open => { if (!open) setConfirmState(null); }}>
@@ -811,6 +821,7 @@ export function LibraryView() {
         onSync={handleSync}
         onDelete={handleDelete}
         onLinkStateChange={handleLinkStateChange}
+        onRefresh={loadData}
       />
     );
   }

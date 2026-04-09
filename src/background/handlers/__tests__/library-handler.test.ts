@@ -28,6 +28,7 @@ import {
   ASSET_LINK_SCHEMA,
   PROJECT_GROUP_SCHEMA,
   PROJECT_GROUP_MEMBER_SCHEMA,
+  ASSET_VERSION_SCHEMA,
 } from "../../db-schemas";
 
 let db: SqlJsDatabase;
@@ -38,6 +39,7 @@ function createSchema(database: SqlJsDatabase): void {
     ASSET_LINK_SCHEMA,
     PROJECT_GROUP_SCHEMA,
     PROJECT_GROUP_MEMBER_SCHEMA,
+    ASSET_VERSION_SCHEMA,
   ].join("\n");
 
   const statements = allSql

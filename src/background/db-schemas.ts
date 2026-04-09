@@ -507,6 +507,24 @@ CREATE INDEX IF NOT EXISTS IdxGroupMemberProject ON ProjectGroupMember(ProjectId
 /*  Combined                                                           */
 /* ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ */
+/*  AssetVersion (logs.db) — Version History for Cross-Project Sync    */
+/* ------------------------------------------------------------------ */
+
+export const ASSET_VERSION_SCHEMA = `
+CREATE TABLE IF NOT EXISTS AssetVersion (
+    Id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    SharedAssetId INTEGER NOT NULL REFERENCES SharedAsset(Id) ON DELETE CASCADE,
+    Version       TEXT NOT NULL,
+    ContentJson   TEXT NOT NULL,
+    ContentHash   TEXT NOT NULL,
+    ChangedBy     TEXT DEFAULT 'user',
+    CreatedAt     TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS IdxAssetVersionAsset ON AssetVersion(SharedAssetId);
+CREATE INDEX IF NOT EXISTS IdxAssetVersionCreated ON AssetVersion(SharedAssetId, CreatedAt DESC);
+`;
+
 export const FULL_LOGS_SCHEMA =
     SESSIONS_SCHEMA +
     LOGS_SCHEMA +
@@ -530,4 +548,5 @@ export const FULL_LOGS_SCHEMA =
     SHARED_ASSET_SCHEMA +
     ASSET_LINK_SCHEMA +
     PROJECT_GROUP_SCHEMA +
-    PROJECT_GROUP_MEMBER_SCHEMA;
+    PROJECT_GROUP_MEMBER_SCHEMA +
+    ASSET_VERSION_SCHEMA;

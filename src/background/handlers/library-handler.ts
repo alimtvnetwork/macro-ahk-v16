@@ -52,6 +52,16 @@ export interface SharedAsset {
     UpdatedAt: string;
 }
 
+export interface AssetVersion {
+    Id: number;
+    SharedAssetId: number;
+    Version: string;
+    ContentJson: string;
+    ContentHash: string;
+    ChangedBy: string;
+    CreatedAt: string;
+}
+
 export interface AssetLink {
     Id: number;
     SharedAssetId: number;
@@ -107,6 +117,16 @@ export async function handleGetSharedAsset(msg: unknown): Promise<{ asset: Share
     return { asset };
 }
 
+/**
+ * Record a version snapshot in AssetVersion table.
+ */
+function snapshotVersion(db: ReturnType<typeof getDb>, assetId: number, version: string, contentJson: string, contentHash: string, changedBy = "user"): void {
+    db.run(
+        `INSERT INTO AssetVersion (SharedAssetId, Version, ContentJson, ContentHash, ChangedBy) VALUES (?, ?, ?, ?, ?)`,
+        [assetId, version, contentJson, contentHash, changedBy],
+    );
+}
+
 export async function handleSaveSharedAsset(msg: unknown): Promise<{ assetId: number }> {
     const { asset } = msg as { asset: Partial<SharedAsset> & { Name: string; Type: AssetType; ContentJson: string; Slug: string } };
     const db = getDb();
@@ -114,7 +134,8 @@ export async function handleSaveSharedAsset(msg: unknown): Promise<{ assetId: nu
     const version = asset.Version ?? "1.0.0";
 
     if (asset.Id) {
-        // Update existing
+        // Update existing — snapshot before overwriting
+        snapshotVersion(db, asset.Id, version, asset.ContentJson, contentHash);
         db.run(
             `UPDATE SharedAsset SET Name = ?, Type = ?, ContentJson = ?, ContentHash = ?, Version = ?, Slug = ?, UpdatedAt = datetime('now') WHERE Id = ?`,
             [asset.Name, asset.Type, asset.ContentJson, contentHash, version, asset.Slug, asset.Id],
@@ -130,6 +151,8 @@ export async function handleSaveSharedAsset(msg: unknown): Promise<{ assetId: nu
     );
     const idResult = db.exec(SQL_LAST_INSERT_ROWID);
     const newId = idResult[0].values[0][0] as number;
+    // Snapshot initial version
+    snapshotVersion(db, newId, version, asset.ContentJson, contentHash, "create");
     markDirty();
     return { assetId: newId };
 }
@@ -296,6 +319,7 @@ export async function handlePromoteAsset(msg: unknown): Promise<{
         );
         const idResult = db.exec(SQL_LAST_INSERT_ROWID);
         const newId = idResult[0].values[0][0] as number;
+        snapshotVersion(db, newId, "1.0.0", contentJson, hash, "promote");
         markDirty();
         return { action: "created", assetId: newId };
     }
@@ -326,6 +350,9 @@ export async function handleReplaceLibraryAsset(msg: unknown): Promise<{ isOk: t
     const params = name
         ? [contentJson, hash, newVersion, name, assetId]
         : [contentJson, hash, newVersion, assetId];
+
+    // Snapshot the new version
+    snapshotVersion(db, assetId, newVersion, contentJson, hash, "replace");
 
     db.run(
         `UPDATE SharedAsset SET ContentJson = ?, ContentHash = ?, Version = ?${nameSql}, UpdatedAt = datetime('now') WHERE Id = ?`,
@@ -450,6 +477,58 @@ export async function handleRemoveGroupMember(msg: unknown): Promise<{ isOk: tru
     db.run("DELETE FROM ProjectGroupMember WHERE GroupId = ? AND ProjectId = ?", [groupId, projectId]);
     markDirty();
     return { isOk: true };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Version History                                                    */
+/* ------------------------------------------------------------------ */
+
+export async function handleGetAssetVersions(msg: unknown): Promise<{ versions: AssetVersion[] }> {
+    const { assetId } = msg as { assetId: number };
+    const db = getDb();
+    const stmt = db.prepare("SELECT * FROM AssetVersion WHERE SharedAssetId = ? ORDER BY CreatedAt DESC");
+    stmt.bind([assetId]);
+    const versions: AssetVersion[] = [];
+    while (stmt.step()) {
+        versions.push(stmt.getAsObject() as unknown as AssetVersion);
+    }
+    stmt.free();
+    return { versions };
+}
+
+export async function handleRollbackAssetVersion(msg: unknown): Promise<{ isOk: true; rolledBackTo: string }> {
+    const { assetId, versionId } = msg as { assetId: number; versionId: number };
+    const db = getDb();
+
+    // Get the target version's content
+    const versionResult = db.exec(
+        "SELECT Version, ContentJson, ContentHash FROM AssetVersion WHERE Id = ? AND SharedAssetId = ?",
+        [versionId, assetId],
+    );
+    if (versionResult.length === 0 || versionResult[0].values.length === 0) {
+        throw new Error(`[library] Version ${versionId} not found for asset ${assetId}\n  Path: src/background/handlers/library-handler.ts\n  Missing: AssetVersion row\n  Reason: versionId does not exist or belongs to different asset`);
+    }
+
+    const [targetVersion, contentJson, contentHash] = versionResult[0].values[0] as [string, string, string];
+
+    // Get current version for snapshot
+    const currentResult = db.exec("SELECT Version, ContentJson, ContentHash FROM SharedAsset WHERE Id = ?", [assetId]);
+    if (currentResult.length > 0 && currentResult[0].values.length > 0) {
+        const [curVer, curJson, curHash] = currentResult[0].values[0] as [string, string, string];
+        // Snapshot current state before rollback
+        snapshotVersion(db, assetId, curVer, curJson, curHash, "pre-rollback");
+    }
+
+    // Apply the rollback
+    const newVersion = bumpMinor(targetVersion);
+    snapshotVersion(db, assetId, newVersion, contentJson, contentHash, "rollback");
+
+    db.run(
+        `UPDATE SharedAsset SET ContentJson = ?, ContentHash = ?, Version = ?, UpdatedAt = datetime('now') WHERE Id = ?`,
+        [contentJson, contentHash, newVersion, assetId],
+    );
+    markDirty();
+    return { isOk: true, rolledBackTo: newVersion };
 }
 
 /* ------------------------------------------------------------------ */

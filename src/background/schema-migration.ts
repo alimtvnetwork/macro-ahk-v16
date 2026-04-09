@@ -27,6 +27,7 @@ import {
 import { getV5Statements } from "./migration-v5-sql";
 import { getV6Statements } from "./migration-v6-sql";
 import { getV7Statements } from "./migration-v7-sql";
+import { getV8Statements } from "./migration-v8-sql";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -53,7 +54,7 @@ export interface MigrationResult {
 /* ------------------------------------------------------------------ */
 
 const SCHEMA_VERSION_KEY = "marco_schema_version";
-const CURRENT_SCHEMA_VERSION = 7;
+const CURRENT_SCHEMA_VERSION = 8;
 
 /* ------------------------------------------------------------------ */
 /*  Migration Registry                                                 */
@@ -95,6 +96,12 @@ const MIGRATIONS: Migration[] = [
         description: "Add SharedAsset, AssetLink, ProjectGroup, ProjectGroupMember tables for Cross-Project Sync",
         up: applyV7Up,
         down: applyV7Down,
+    },
+    {
+        version: 8,
+        description: "Add AssetVersion table for version history tracking",
+        up: applyV8Up,
+        down: applyV8Down,
     },
 ];
 
@@ -203,6 +210,19 @@ function applyV7Up(logsDb: SqlJsDatabase, _errorsDb: SqlJsDatabase): void {
 }
 
 function applyV7Down(_logsDb: SqlJsDatabase, _errorsDb: SqlJsDatabase): void {
+    // No-op — DROP TABLE is destructive
+}
+
+/* ------------------------------------------------------------------ */
+/*  Migration v8 — AssetVersion Table                                  */
+/* ------------------------------------------------------------------ */
+
+function applyV8Up(logsDb: SqlJsDatabase, _errorsDb: SqlJsDatabase): void {
+    runIgnoringDuplicates(logsDb, getV8Statements());
+    console.log("[migration] v8: Created AssetVersion table for version history tracking");
+}
+
+function applyV8Down(_logsDb: SqlJsDatabase, _errorsDb: SqlJsDatabase): void {
     // No-op — DROP TABLE is destructive
 }
 

@@ -251,6 +251,8 @@ export enum MessageType {
     LIBRARY_REMOVE_GROUP_MEMBER = "LIBRARY_REMOVE_GROUP_MEMBER",
     LIBRARY_EXPORT = "LIBRARY_EXPORT",
     LIBRARY_IMPORT = "LIBRARY_IMPORT",
+    LIBRARY_GET_VERSIONS = "LIBRARY_GET_VERSIONS",
+    LIBRARY_ROLLBACK_VERSION = "LIBRARY_ROLLBACK_VERSION",
 }
 
 /* ------------------------------------------------------------------ */

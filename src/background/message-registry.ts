@@ -245,6 +245,8 @@ import {
     handleRemoveGroupMember,
     handleExportLibrary,
     handleImportLibrary,
+    handleGetAssetVersions,
+    handleRollbackAssetVersion,
 } from "./handlers/library-handler";
 
 /** Handler function that takes message and sender. */
@@ -490,4 +492,6 @@ export const HANDLER_REGISTRY = new Map<MessageType, MessageHandler>([
     [MessageType.LIBRARY_REMOVE_GROUP_MEMBER, async (msg) => handleRemoveGroupMember(msg)],
     [MessageType.LIBRARY_EXPORT, async () => handleExportLibrary()],
     [MessageType.LIBRARY_IMPORT, async (msg) => handleImportLibrary(msg)],
+    [MessageType.LIBRARY_GET_VERSIONS, async (msg) => handleGetAssetVersions(msg)],
+    [MessageType.LIBRARY_ROLLBACK_VERSION, async (msg) => handleRollbackAssetVersion(msg)],
 ]);
