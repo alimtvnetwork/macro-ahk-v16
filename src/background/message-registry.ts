@@ -245,6 +245,8 @@ import {
     handleRemoveGroupMember,
     handleExportLibrary,
     handleImportLibrary,
+    handleGetAssetVersions,
+    handleRollbackAssetVersion,
 } from "./handlers/library-handler";
 
 /** Handler function that takes message and sender. */
