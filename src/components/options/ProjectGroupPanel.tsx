@@ -314,7 +314,19 @@ function GroupDetailPanel({ group, onBack, onRefresh }: GroupDetailPanelProps) {
       {parsedSettings && (
         <Card className="border-border/60 bg-card/50">
           <CardContent className="p-4">
-            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Shared Settings</h3>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Shared Settings</h3>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 text-[11px] gap-1"
+                onClick={handleCascade}
+                disabled={cascading || members.length === 0}
+              >
+                {cascading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowDownToLine className="h-3 w-3" />}
+                Push to {members.length} project(s)
+              </Button>
+            </div>
             <pre className="text-xs font-mono bg-muted/30 rounded p-3 overflow-x-auto">
               {JSON.stringify(parsedSettings, null, 2)}
             </pre>
