@@ -778,6 +778,27 @@ export function LibraryView() {
 
   const linksForAsset = (assetId: number) => links.filter(l => l.SharedAssetId === assetId);
 
+  const handleLinkStateChange = useCallback(async (link: AssetLink, newState: LinkState) => {
+    try {
+      await sendMessage({
+        type: "LIBRARY_SAVE_LINK" as never,
+        link: {
+          Id: link.Id,
+          SharedAssetId: link.SharedAssetId,
+          ProjectId: link.ProjectId,
+          LinkState: newState,
+          PinnedVersion: newState === "pinned" ? (selectedAsset?.Version ?? link.PinnedVersion) : null,
+          LocalOverrideJson: link.LocalOverrideJson,
+        },
+      } as never);
+      const labels: Record<LinkState, string> = { synced: "Synced", pinned: "Pinned", detached: "Detached" };
+      toast.success(`Project #${link.ProjectId} → ${labels[newState]}`);
+      loadData();
+    } catch (err) {
+      toast.error("State change failed: " + (err instanceof Error ? err.message : String(err)));
+    }
+  }, [loadData, selectedAsset]);
+
   if (selectedAsset) {
     return (
       <AssetDetailPanel
@@ -786,6 +807,8 @@ export function LibraryView() {
         onBack={() => setSelectedAsset(null)}
         onSync={handleSync}
         onDelete={handleDelete}
+        onLinkStateChange={handleLinkStateChange}
+      />
       />
     );
   }
