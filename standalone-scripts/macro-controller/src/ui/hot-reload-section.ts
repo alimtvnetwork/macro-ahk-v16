@@ -28,9 +28,7 @@ import { sendToExtension } from './prompt-manager';
 import { destroyPanel } from './ui-updaters';
 import { createCollapsibleSection } from './sections';
 import { logError } from '../error-utils';
-
-const CSS_PADDING_2PX_0 = ';padding:2px 0;';
-const CSS_FONT_SIZE = 'font-size:';
+import { CSS_PADDING_2PX_0, CSS_FONT_SIZE } from '../constants';
 
 /* ------------------------------------------------------------------ */
 /*  State preservation keys (spec §State Preservation Keys)           */

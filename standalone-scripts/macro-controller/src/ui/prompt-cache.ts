@@ -9,19 +9,15 @@
 import { log } from '../logging';
 import { logError } from '../error-utils';
 import { showToast } from '../toast';
-
-const DB_NAME = 'marco_prompts_cache';
-const DB_VERSION = 3;
-const STORE_NAME = 'prompts';
-const UI_STORE_NAME = 'ui_snapshots';
-
-// ============================================
-// Cache key constants
-// ============================================
-
-const JSON_COPY_KEY = 'json_copy';
-const HTML_COPY_KEY = 'html_copy';
-const UI_CACHE_KEY = 'dropdown_snapshot';
+import {
+  DB_PROMPTS_CACHE_NAME as DB_NAME,
+  DB_PROMPTS_CACHE_VERSION as DB_VERSION,
+  DB_PROMPTS_STORE as STORE_NAME,
+  DB_PROMPTS_UI_STORE as UI_STORE_NAME,
+  DB_PROMPTS_JSON_COPY_KEY as JSON_COPY_KEY,
+  DB_PROMPTS_HTML_COPY_KEY as HTML_COPY_KEY,
+  DB_PROMPTS_UI_CACHE_KEY as UI_CACHE_KEY,
+} from '../constants';
 
 // ============================================
 // Types

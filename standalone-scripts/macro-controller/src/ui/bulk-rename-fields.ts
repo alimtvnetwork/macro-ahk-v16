@@ -25,8 +25,7 @@ import {
   refreshBearerTokenFromBestSource,
   getLastTokenSource,
 } from '../auth';
-
-const CSS_BORDER_RADIUS_3PX_BACKGROUND = ';border-radius:3px;background:';
+import { CSS_BORDER_RADIUS_3PX_BACKGROUND } from '../constants';
 
 // ── Types ──
 

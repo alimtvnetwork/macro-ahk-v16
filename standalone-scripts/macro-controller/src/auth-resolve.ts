@@ -335,7 +335,7 @@ function logCookieDiagnostics(
 // Token timestamp helpers (Phase A: Auth Bridge)
 // ============================================
 
-const TOKEN_SAVED_AT_KEY = 'marco_token_saved_at';
+import { LS_TOKEN_SAVED_AT as TOKEN_SAVED_AT_KEY } from './constants';
 
 /** Read the timestamp when the token was last persisted. */
 export function getTokenSavedAt(): number {

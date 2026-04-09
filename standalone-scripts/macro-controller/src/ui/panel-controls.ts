@@ -56,9 +56,7 @@ import type { PromptEntry } from '../types';
 import type { TaskNextDeps } from './task-next-ui';
 import { logError } from '../error-utils';
 import { showToast } from '../toast';
-
-const CSS_BACKGROUND = 'background:';
-const CSS_BORDER_1PX_SOLID_RGBA_255_255_255_0_08 = ';border:1px solid rgba(255,255,255,0.08);';
+import { CSS_BACKGROUND, CSS_BORDER_1PX_SOLID_RGBA_255_255_255_0_08 } from '../constants';
 
 // ============================================
 

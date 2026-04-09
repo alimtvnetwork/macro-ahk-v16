@@ -21,12 +21,7 @@ import { showToast, recentErrors, onRecentErrorsChange, formatRequestDetail } fr
 import { createCollapsibleSection } from './sections';
 
 import { CONFIG, IDS, VERSION, cInputBg, cInputBorder, cInputFg, cPanelBgAlt, cPanelFgDim, cPrimary, cPrimaryLight, cSectionHeader, trFast } from '../shared-state';
-
-const CSS_FONT_SIZE_9PX_COLOR = 'font-size:9px;color:';
-const CSS_WIDTH_100_PADDING_3PX_5PX_BORDER_1PX_SOL = 'width:100%;padding:3px 5px;border:1px solid ';
-const CSS_BORDER_RADIUS_3PX_BACKGROUND = ';border-radius:3px;background:';
-import { ID_LOOP_LOG_COUNT } from '../constants';
-const CSS_BRIGHTNESS_1_3 = 'brightness(1.3)';
+import { ID_LOOP_LOG_COUNT, CSS_FONT_SIZE_9PX_COLOR, CSS_WIDTH_100_PADDING_3PX_5PX_BORDER_1PX_SOL, CSS_BORDER_RADIUS_3PX_BACKGROUND, CSS_BRIGHTNESS_1_3 } from '../constants';
 
 export interface ToolsSectionsDeps {
   btnStyle: string;

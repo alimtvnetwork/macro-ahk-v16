@@ -31,8 +31,7 @@ import { destroyPanel, updateUI } from './ui-updaters';
 import type { PanelBuilderDeps } from './panel-builder';
 import type { PanelLayoutCtx } from './panel-layout';
 import { logError } from '../error-utils';
-
-const CSS_FONT_SIZE = 'font-size:';
+import { CSS_FONT_SIZE } from '../constants';
 
 // ============================================
 // Return type for buildTitleRow

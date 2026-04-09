@@ -7,8 +7,7 @@
 import { VERSION, IDS, cPanelFg, cPanelFgDim } from '../shared-state';
 import { log, logSub } from '../logging';
 import { logError } from '../error-utils';
-
-const CSS_SPAN_STYLE_COLOR = '<span style="color:';
+import { CSS_SPAN_STYLE_COLOR } from '../constants';
 
 // === Module-level state ===
 const loopJsHistory: Array<{time: string, code: string, success: boolean, result: string}> = [];

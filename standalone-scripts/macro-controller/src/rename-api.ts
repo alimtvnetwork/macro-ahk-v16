@@ -21,8 +21,7 @@ import { getAuthRecoveryExhausted, setAuthRecoveryExhausted } from './rename-bul
 import type { RenameStrategy } from './types';
 import { delay } from './async-utils';
 import { logError } from './error-utils';
-
-const API_USER_WORKSPACES_ = '/user/workspaces/';
+import { API_USER_WORKSPACES_SLASH as API_USER_WORKSPACES_ } from './constants';
 
 // ============================================
 // Types

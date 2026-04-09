@@ -44,11 +44,15 @@ import type { MarkViewedResponse } from './types';
 import { ensureTokenReady } from './startup-token-gate';
 import { setupPersistenceObserver } from './startup-persistence';
 import { setupGlobalErrorHandlers, setupDiagnosticDump } from './startup-global-handlers';
-
-const PROMPT_PREWARM = 'prompt-prewarm';
-const WS_PREFETCH = 'ws-prefetch';
-const STARTUP_RETRY = 'Startup: Retry #';
-const AUTH_AUTO_RESYNC = 'Auth auto-resync (';
+import {
+  LABEL_PROMPT_PREWARM as PROMPT_PREWARM,
+  LABEL_WS_PREFETCH as WS_PREFETCH,
+  LABEL_STARTUP_RETRY as STARTUP_RETRY,
+  LABEL_AUTH_AUTO_RESYNC as AUTH_AUTO_RESYNC,
+  MAX_SDK_ATTEMPTS,
+  SDK_RETRY_DELAY_MS,
+  MAX_UI_CREATE_RETRIES,
+} from './constants';
 
 // Re-export sub-modules for backward compatibility
 export { setupPersistenceObserver as _setupPersistenceObserver } from './startup-persistence';

@@ -15,8 +15,7 @@ import { VERSION, IDS } from './shared-state';
 import { logSub } from './logging';
 import { nsWrite, nsCallTyped, nsReadTyped } from './api-namespace';
 import { UIManager } from './core/UIManager';
-
-const LOG_MACROLOOP_V = '[MacroLoop v';
+import { LABEL_LOG_MACROLOOP_V as LOG_MACROLOOP_V } from './constants';
 
 type IdempotentResult = 'proceed' | 'abort';
 
