@@ -164,8 +164,6 @@ function _logWorkspaceCacheStatus(): void {
  * then falls back to direct `loadPromptsFromJson()`.
  */
 function _preWarmPrompts(attempt: number): void {
-  const MAX_SDK_ATTEMPTS = 3;
-  const SDK_RETRY_DELAY_MS = 500;
 
   const sdk = (window as unknown as Record<string, unknown>).marco as { prompts?: { preWarm(): Promise<unknown[]> } } | undefined;
 
@@ -285,7 +283,7 @@ function buildUiManagerFromFactory(): UIManager {
 }
 
 function scheduleUiCreationRetry(mc: MacroController, attempt: number): void {
-  const MAX_UI_CREATE_RETRIES = 10;
+  
   if (attempt > MAX_UI_CREATE_RETRIES) {
     logError('Startup', '❌ UIManager recovery exhausted after \' + MAX_UI_CREATE_RETRIES + \' attempts');
     return;
