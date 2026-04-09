@@ -1,0 +1,777 @@
+/**
+ * Marco Extension — Library View (Cross-Project Sync)
+ *
+ * Shared asset library with AssetCard grid, SyncBadge status indicators,
+ * and PromoteDialog for pushing local assets to the library.
+ *
+ * @see spec/13-features/cross-project-sync.md
+ */
+
+import { useState, useEffect, useCallback } from "react";
+import { sendMessage } from "@/lib/message-client";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+  Download,
+  RefreshCw,
+  MoreVertical,
+  Copy,
+  GitFork,
+  Link2,
+  Unlink,
+  Pin,
+  Loader2,
+  Library,
+  FileCode,
+  MessageSquare,
+  Zap,
+  Settings2,
+} from "lucide-react";
+import { toast } from "sonner";
+
+/* ------------------------------------------------------------------ */
+/*  Types                                                              */
+/* ------------------------------------------------------------------ */
+
+type AssetType = "prompt" | "script" | "chain" | "preset";
+type LinkState = "synced" | "pinned" | "detached";
+
+interface SharedAsset {
+  Id: number;
+  Type: AssetType;
+  Name: string;
+  Slug: string;
+  ContentJson: string;
+  ContentHash: string;
+  Version: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+}
+
+interface AssetLink {
+  Id: number;
+  SharedAssetId: number;
+  ProjectId: number;
+  LinkState: LinkState;
+  PinnedVersion: string | null;
+  LocalOverrideJson: string | null;
+  SyncedAt: string;
+}
+
+interface ProjectGroup {
+  Id: number;
+  Name: string;
+  SharedSettingsJson: string | null;
+  CreatedAt: string;
+}
+
+/* ------------------------------------------------------------------ */
+/*  SyncBadge                                                          */
+/* ------------------------------------------------------------------ */
+
+interface SyncBadgeProps {
+  state: LinkState;
+  pinnedVersion?: string | null;
+}
+
+export function SyncBadge({ state, pinnedVersion }: SyncBadgeProps) {
+  const config: Record<LinkState, { label: string; className: string; icon: typeof RefreshCw }> = {
+    synced: {
+      label: "Synced",
+      className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+      icon: RefreshCw,
+    },
+    pinned: {
+      label: pinnedVersion ? `Pinned @ ${pinnedVersion}` : "Pinned",
+      className: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+      icon: Pin,
+    },
+    detached: {
+      label: "Detached",
+      className: "bg-zinc-500/15 text-zinc-400 border-zinc-500/30",
+      icon: Unlink,
+    },
+  };
+
+  const { label, className, icon: Icon } = config[state];
+
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 gap-1 ${className}`}>
+            <Icon className="h-2.5 w-2.5" />
+            {label}
+          </Badge>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          {state === "synced" && "Auto-updates when library version changes"}
+          {state === "pinned" && `Locked to version ${pinnedVersion ?? "unknown"}. Manual update only.`}
+          {state === "detached" && "Independent copy — no longer linked to library"}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  AssetTypeIcon                                                      */
+/* ------------------------------------------------------------------ */
+
+function AssetTypeIcon({ type }: { type: AssetType }) {
+  const icons: Record<AssetType, typeof FileCode> = {
+    prompt: MessageSquare,
+    script: FileCode,
+    chain: Zap,
+    preset: Settings2,
+  };
+  const Icon = icons[type];
+  return <Icon className="h-4 w-4 text-muted-foreground" />;
+}
+
+/* ------------------------------------------------------------------ */
+/*  AssetCard                                                          */
+/* ------------------------------------------------------------------ */
+
+interface AssetCardProps {
+  asset: SharedAsset;
+  links: AssetLink[];
+  onSync: (assetId: number) => void;
+  onDelete: (assetId: number) => void;
+  onViewDetail: (asset: SharedAsset) => void;
+}
+
+export function AssetCard({ asset, links, onSync, onDelete, onViewDetail }: AssetCardProps) {
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const syncedCount = links.filter(l => l.LinkState === "synced").length;
+  const pinnedCount = links.filter(l => l.LinkState === "pinned").length;
+  const totalLinked = links.length;
+
+  return (
+    <>
+      <Card
+        className="group relative border-border/60 bg-card/50 hover:bg-card/80 hover:border-primary/30 transition-all duration-200 cursor-pointer hover:shadow-[0_2px_12px_-4px_hsl(var(--primary)/0.15)]"
+        onClick={() => onViewDetail(asset)}
+      >
+        <CardContent className="p-4 space-y-3">
+          {/* Header row */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <AssetTypeIcon type={asset.Type} />
+              <h3 className="text-sm font-semibold truncate">{asset.Name}</h3>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
+                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={e => { e.stopPropagation(); onSync(asset.Id); }}>
+                  <RefreshCw className="h-3.5 w-3.5 mr-2" />
+                  Sync to projects
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(asset.Slug); toast.success("Slug copied"); }}>
+                  <Copy className="h-3.5 w-3.5 mr-2" />
+                  Copy slug
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive" onClick={e => { e.stopPropagation(); setDeleteOpen(true); }}>
+                  <Trash2 className="h-3.5 w-3.5 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Slug + version */}
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <code className="bg-muted/50 px-1.5 py-0.5 rounded font-mono truncate">{asset.Slug}</code>
+            <Badge variant="outline" className="text-[10px] px-1 py-0">v{asset.Version}</Badge>
+          </div>
+
+          {/* Links summary */}
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Link2 className="h-3 w-3" />
+              {totalLinked} linked
+            </span>
+            {syncedCount > 0 && (
+              <span className="text-emerald-400">{syncedCount} synced</span>
+            )}
+            {pinnedCount > 0 && (
+              <span className="text-amber-400">{pinnedCount} pinned</span>
+            )}
+          </div>
+
+          {/* Type badge */}
+          <div className="flex items-center gap-1.5">
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 capitalize">{asset.Type}</Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{asset.Name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              All synced and pinned links will be detached. Project copies will be preserved as independent assets.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => onDelete(asset.Id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  PromoteDialog                                                      */
+/* ------------------------------------------------------------------ */
+
+interface PromoteDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onPromoted: () => void;
+}
+
+export function PromoteDialog({ open, onOpenChange, onPromoted }: PromoteDialogProps) {
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [type, setType] = useState<AssetType>("prompt");
+  const [content, setContent] = useState("");
+  const [promoting, setPromoting] = useState(false);
+  const [conflict, setConflict] = useState<{ assetId: number; existingVersion: string } | null>(null);
+
+  const resetForm = useCallback(() => {
+    setName("");
+    setSlug("");
+    setType("prompt");
+    setContent("");
+    setConflict(null);
+    setPromoting(false);
+  }, []);
+
+  const handlePromote = useCallback(async () => {
+    if (!name.trim() || !slug.trim() || !content.trim()) {
+      toast.error("Name, slug, and content are required");
+      return;
+    }
+
+    setPromoting(true);
+    try {
+      const result = await sendMessage<{
+        action: "created" | "identical" | "conflict";
+        assetId?: number;
+        existingVersion?: string;
+      }>({
+        type: "LIBRARY_PROMOTE_ASSET" as never,
+        slug: slug.trim(),
+        name: name.trim(),
+        type: type,
+        contentJson: content.trim(),
+      } as never);
+
+      if (result.action === "created") {
+        toast.success(`"${name}" added to library`);
+        resetForm();
+        onOpenChange(false);
+        onPromoted();
+      } else if (result.action === "identical") {
+        toast.info("Asset already exists with identical content");
+        setPromoting(false);
+      } else if (result.action === "conflict") {
+        setConflict({ assetId: result.assetId!, existingVersion: result.existingVersion! });
+        setPromoting(false);
+      }
+    } catch (err) {
+      toast.error("Failed to promote asset: " + (err instanceof Error ? err.message : String(err)));
+      setPromoting(false);
+    }
+  }, [name, slug, type, content, resetForm, onOpenChange, onPromoted]);
+
+  const handleReplace = useCallback(async () => {
+    if (!conflict) return;
+    setPromoting(true);
+    try {
+      await sendMessage({
+        type: "LIBRARY_REPLACE_ASSET" as never,
+        assetId: conflict.assetId,
+        contentJson: content.trim(),
+        name: name.trim(),
+      } as never);
+      toast.success(`"${name}" replaced (new version created)`);
+      resetForm();
+      onOpenChange(false);
+      onPromoted();
+    } catch (err) {
+      toast.error("Replace failed: " + (err instanceof Error ? err.message : String(err)));
+      setPromoting(false);
+    }
+  }, [conflict, content, name, resetForm, onOpenChange, onPromoted]);
+
+  const handleFork = useCallback(async () => {
+    if (!conflict) return;
+    setPromoting(true);
+    try {
+      const result = await sendMessage<{ slug: string }>({
+        type: "LIBRARY_FORK_ASSET" as never,
+        originalSlug: slug.trim(),
+        name: name.trim(),
+        type: type,
+        contentJson: content.trim(),
+      } as never);
+      toast.success(`Forked as "${result.slug}"`);
+      resetForm();
+      onOpenChange(false);
+      onPromoted();
+    } catch (err) {
+      toast.error("Fork failed: " + (err instanceof Error ? err.message : String(err)));
+      setPromoting(false);
+    }
+  }, [conflict, slug, name, type, content, resetForm, onOpenChange, onPromoted]);
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); onOpenChange(v); }}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Upload className="h-4 w-4" />
+            Promote to Library
+          </DialogTitle>
+          <DialogDescription>
+            Push a local asset to the shared library for cross-project reuse.
+          </DialogDescription>
+        </DialogHeader>
+
+        {conflict ? (
+          <div className="space-y-4">
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 space-y-2">
+              <p className="text-sm font-medium text-amber-400">Content Conflict</p>
+              <p className="text-xs text-muted-foreground">
+                An asset with slug <code className="bg-muted px-1 rounded">{slug}</code> already
+                exists at version <strong>{conflict.existingVersion}</strong> with different content.
+              </p>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setConflict(null)} disabled={promoting}>Cancel</Button>
+              <Button variant="secondary" onClick={handleFork} disabled={promoting}>
+                {promoting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <GitFork className="h-3.5 w-3.5 mr-1" />}
+                Fork
+              </Button>
+              <Button onClick={handleReplace} disabled={promoting}>
+                {promoting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <RefreshCw className="h-3.5 w-3.5 mr-1" />}
+                Replace
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Name</Label>
+                <Input value={name} onChange={e => setName(e.target.value)} placeholder="My Prompt" className="h-8 text-sm" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Slug</Label>
+                <Input value={slug} onChange={e => setSlug(e.target.value)} placeholder="my-prompt" className="h-8 text-sm font-mono" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Type</Label>
+              <Select value={type} onValueChange={v => setType(v as AssetType)}>
+                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="prompt">Prompt</SelectItem>
+                  <SelectItem value="script">Script</SelectItem>
+                  <SelectItem value="chain">Chain</SelectItem>
+                  <SelectItem value="preset">Preset</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Content (JSON)</Label>
+              <Textarea
+                value={content}
+                onChange={e => setContent(e.target.value)}
+                placeholder='{"text": "Your prompt content..."}'
+                className="min-h-[120px] font-mono text-xs"
+              />
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button onClick={handlePromote} disabled={promoting || !name.trim() || !slug.trim() || !content.trim()}>
+                {promoting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
+                Promote
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  AssetDetailPanel                                                   */
+/* ------------------------------------------------------------------ */
+
+interface AssetDetailPanelProps {
+  asset: SharedAsset;
+  links: AssetLink[];
+  onBack: () => void;
+  onSync: (assetId: number) => void;
+  onDelete: (assetId: number) => void;
+}
+
+function AssetDetailPanel({ asset, links, onBack, onSync, onDelete }: AssetDetailPanelProps) {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="sm" onClick={onBack} className="text-xs">← Back</Button>
+        <div className="flex items-center gap-2">
+          <AssetTypeIcon type={asset.Type} />
+          <h2 className="text-lg font-bold tracking-tight">{asset.Name}</h2>
+        </div>
+        <Badge variant="outline" className="text-[10px] px-1.5 py-0">v{asset.Version}</Badge>
+      </div>
+
+      {/* Meta */}
+      <div className="grid grid-cols-2 gap-4">
+        <Card className="border-border/60 bg-card/50">
+          <CardContent className="p-4 space-y-2">
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Info</p>
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between"><span className="text-muted-foreground">Slug</span><code className="font-mono">{asset.Slug}</code></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Type</span><span className="capitalize">{asset.Type}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Hash</span><code className="font-mono truncate max-w-[140px]">{asset.ContentHash.slice(0, 12)}…</code></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Created</span><span>{new Date(asset.CreatedAt).toLocaleDateString()}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Updated</span><span>{new Date(asset.UpdatedAt).toLocaleDateString()}</span></div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60 bg-card/50">
+          <CardContent className="p-4 space-y-2">
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Linked Projects</p>
+            {links.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">No projects linked</p>
+            ) : (
+              <div className="space-y-1.5">
+                {links.map(link => (
+                  <div key={link.Id} className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Project #{link.ProjectId}</span>
+                    <SyncBadge state={link.LinkState} pinnedVersion={link.PinnedVersion} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Content preview */}
+      <Card className="border-border/60 bg-card/50">
+        <CardContent className="p-4 space-y-2">
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wider font-medium">Content</p>
+          <ScrollArea className="h-[200px]">
+            <pre className="text-xs font-mono whitespace-pre-wrap text-muted-foreground p-2 bg-muted/30 rounded-md">
+              {(() => {
+                try { return JSON.stringify(JSON.parse(asset.ContentJson), null, 2); } catch { return asset.ContentJson; }
+              })()}
+            </pre>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2">
+        <Button size="sm" variant="outline" onClick={() => onSync(asset.Id)}>
+          <RefreshCw className="h-3.5 w-3.5 mr-1" />
+          Sync to projects
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(asset.ContentJson); toast.success("Content copied"); }}>
+          <Copy className="h-3.5 w-3.5 mr-1" />
+          Copy content
+        </Button>
+        <Button size="sm" variant="destructive" onClick={() => onDelete(asset.Id)}>
+          <Trash2 className="h-3.5 w-3.5 mr-1" />
+          Delete
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  LibraryView (main)                                                 */
+/* ------------------------------------------------------------------ */
+
+// eslint-disable-next-line max-lines-per-function
+export function LibraryView() {
+  const [assets, setAssets] = useState<SharedAsset[]>([]);
+  const [links, setLinks] = useState<AssetLink[]>([]);
+  const [groups, setGroups] = useState<ProjectGroup[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterType, setFilterType] = useState<AssetType | "all">("all");
+  const [promoteOpen, setPromoteOpen] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState<SharedAsset | null>(null);
+  const [importExportLoading, setImportExportLoading] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [assetsRes, linksRes, groupsRes] = await Promise.all([
+        sendMessage<{ assets: SharedAsset[] }>({ type: "LIBRARY_GET_ASSETS" as never }),
+        sendMessage<{ links: AssetLink[] }>({ type: "LIBRARY_GET_LINKS" as never }),
+        sendMessage<{ groups: ProjectGroup[] }>({ type: "LIBRARY_GET_GROUPS" as never }),
+      ]);
+      setAssets(assetsRes.assets ?? []);
+      setLinks(linksRes.links ?? []);
+      setGroups(groupsRes.groups ?? []);
+    } catch (err) {
+      toast.error("Failed to load library: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const handleSync = useCallback(async (assetId: number) => {
+    try {
+      const result = await sendMessage<{ syncedCount: number; pinnedNotified: number }>({
+        type: "LIBRARY_SYNC_ASSET" as never,
+        assetId,
+      } as never);
+      toast.success(`Synced to ${result.syncedCount} project(s). ${result.pinnedNotified} pinned notified.`);
+      loadData();
+    } catch (err) {
+      toast.error("Sync failed: " + (err instanceof Error ? err.message : String(err)));
+    }
+  }, [loadData]);
+
+  const handleDelete = useCallback(async (assetId: number) => {
+    try {
+      const result = await sendMessage<{ detachedCount: number }>({
+        type: "LIBRARY_DELETE_ASSET" as never,
+        assetId,
+      } as never);
+      toast.success(`Deleted. ${result.detachedCount} link(s) detached.`);
+      setSelectedAsset(null);
+      loadData();
+    } catch (err) {
+      toast.error("Delete failed: " + (err instanceof Error ? err.message : String(err)));
+    }
+  }, [loadData]);
+
+  const handleExport = useCallback(async () => {
+    setImportExportLoading(true);
+    try {
+      const result = await sendMessage<{ bundle: unknown }>({ type: "LIBRARY_EXPORT" as never });
+      const blob = new Blob([JSON.stringify(result.bundle, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `marco-library-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Library exported");
+    } catch (err) {
+      toast.error("Export failed: " + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setImportExportLoading(false);
+    }
+  }, []);
+
+  const handleImport = useCallback(async () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      setImportExportLoading(true);
+      try {
+        const text = await file.text();
+        const bundle = JSON.parse(text);
+        const result = await sendMessage<{ imported: number; skipped: number; conflicts: Array<{ slug: string }> }>({
+          type: "LIBRARY_IMPORT" as never,
+          bundle,
+        } as never);
+        toast.success(`Imported ${result.imported}, skipped ${result.skipped}, ${result.conflicts.length} conflict(s)`);
+        loadData();
+      } catch (err) {
+        toast.error("Import failed: " + (err instanceof Error ? err.message : String(err)));
+      } finally {
+        setImportExportLoading(false);
+      }
+    };
+    input.click();
+  }, [loadData]);
+
+  // Filter assets
+  const filtered = assets.filter(a => {
+    if (filterType !== "all" && a.Type !== filterType) return false;
+    if (search && !a.Name.toLowerCase().includes(search.toLowerCase()) && !a.Slug.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  const linksForAsset = (assetId: number) => links.filter(l => l.SharedAssetId === assetId);
+
+  if (selectedAsset) {
+    return (
+      <AssetDetailPanel
+        asset={selectedAsset}
+        links={linksForAsset(selectedAsset.Id)}
+        onBack={() => setSelectedAsset(null)}
+        onSync={handleSync}
+        onDelete={handleDelete}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-bold tracking-tight flex items-center gap-2">
+            <Library className="h-5 w-5" />
+            Shared Library
+          </h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Manage shared assets across projects. {assets.length} asset(s), {groups.length} group(s).
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={handleExport} disabled={importExportLoading}>
+            <Download className="h-3.5 w-3.5 mr-1" />
+            Export
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleImport} disabled={importExportLoading}>
+            <Upload className="h-3.5 w-3.5 mr-1" />
+            Import
+          </Button>
+          <Button size="sm" onClick={() => setPromoteOpen(true)}>
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            Promote
+          </Button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search assets…"
+            className="h-8 text-sm pl-8"
+          />
+        </div>
+        <Tabs value={filterType} onValueChange={v => setFilterType(v as AssetType | "all")}>
+          <TabsList className="h-8">
+            <TabsTrigger value="all" className="text-xs px-2 h-6">All</TabsTrigger>
+            <TabsTrigger value="prompt" className="text-xs px-2 h-6">Prompts</TabsTrigger>
+            <TabsTrigger value="script" className="text-xs px-2 h-6">Scripts</TabsTrigger>
+            <TabsTrigger value="chain" className="text-xs px-2 h-6">Chains</TabsTrigger>
+            <TabsTrigger value="preset" className="text-xs px-2 h-6">Presets</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {/* Content */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span className="text-sm">Loading library…</span>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
+          <Library className="h-10 w-10 opacity-30" />
+          <p className="text-sm">
+            {assets.length === 0
+              ? "No shared assets yet. Promote an asset to get started."
+              : "No assets match your filter."}
+          </p>
+          {assets.length === 0 && (
+            <Button size="sm" variant="outline" onClick={() => setPromoteOpen(true)}>
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Promote first asset
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filtered.map(asset => (
+            <AssetCard
+              key={asset.Id}
+              asset={asset}
+              links={linksForAsset(asset.Id)}
+              onSync={handleSync}
+              onDelete={handleDelete}
+              onViewDetail={setSelectedAsset}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Promote dialog */}
+      <PromoteDialog open={promoteOpen} onOpenChange={setPromoteOpen} onPromoted={loadData} />
+    </div>
+  );
+}
