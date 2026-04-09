@@ -343,7 +343,7 @@ function ScriptEntryCard({
 /* ------------------------------------------------------------------ */
 
 // eslint-disable-next-line max-lines-per-function
-export function ProjectScriptSelector({ availableScripts, availableConfigs, selectedScripts, onChange }: Props) {
+export function ProjectScriptSelector({ availableScripts, availableConfigs, selectedScripts, onChange, linkMap }: Props) {
   const [showPicker, setShowPicker] = useState(false);
 
   const handleAddFromLibrary = (scriptId: string) => {
@@ -511,6 +511,7 @@ export function ProjectScriptSelector({ availableScripts, availableConfigs, sele
           onRemove={() => handleRemove(binding.scriptId)}
           onMoveUp={() => handleMove(binding.scriptId, -1)}
           onMoveDown={() => handleMove(binding.scriptId, 1)}
+          linkMap={linkMap}
         />
       ))}
     </div>
