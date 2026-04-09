@@ -49,7 +49,7 @@ Always — any time the MacroLoop controller displayed credit data.
 
 ### Why the existing spec did not prevent it
 
-The credit formula spec (`JSON-schema.md`) documented the correct formulas but did not specify that ALL credit bar renderings must use the shared helpers. There was no "single source of rendering" requirement.
+The credit formula spec (`json-schema.md`) documented the correct formulas but did not specify that ALL credit bar renderings must use the shared helpers. There was no "single source of rendering" requirement.
 
 ---
 

@@ -1,10 +1,10 @@
 
 
-# SPEC.md Update: Credit Status Checker + MacroLoop Injection Documentation
+# spec.md Update: Credit Status Checker + MacroLoop Injection Documentation
 
 ## Overview
 
-This plan updates `SPEC.md` to document three things:
+This plan updates `spec.md` to document three things:
 1. The MacroLoop injection change (now uses shared InjectJS)
 2. The Credit Status Checker feature (API-first + DOM fallback)
 3. CW seedable config keys and logging requirements
@@ -15,7 +15,7 @@ No code implementation -- spec and documentation only.
 
 ## Phase 1: API Response Schema Summary
 
-Add a new section to SPEC.md documenting the parsed schema from `GET /user/workspaces`.
+Add a new section to spec.md documenting the parsed schema from `GET /user/workspaces`.
 
 **Key fields per workspace object:**
 
@@ -41,9 +41,9 @@ Add a new section to SPEC.md documenting the parsed schema from `GET /user/works
 
 ---
 
-## Phase 2: MacroLoop Injection Update (already partially in SPEC.md)
+## Phase 2: MacroLoop Injection Update (already partially in spec.md)
 
-The current SPEC.md already documents this at lines 265-325. Verify completeness against acceptance criteria:
+The current spec.md already documents this at lines 265-325. Verify completeness against acceptance criteria:
 
 - [x] InjectJS documented as shared mechanism
 - [x] Ctrl+A paste marked as deprecated
@@ -221,7 +221,7 @@ Every status check logs:
 
 ## Technical: Files to Modify
 
-1. **`marco-script-ahk-v4/SPEC.md`** -- Add sections for Credit Status Checker (schema, retrieval flow, UI, config, logging, error codes)
+1. **`marco-script-ahk-v4/spec.md`** -- Add sections for Credit Status Checker (schema, retrieval flow, UI, config, logging, error codes)
 2. **`marco-script-ahk-v4/config.ini`** -- Add `[CreditStatus]` section with new keys and XPaths
 
 No code changes to `combo.js`, `Combo.ahk`, or `MacroLoop.ahk` in this spec-only phase.

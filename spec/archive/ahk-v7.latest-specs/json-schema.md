@@ -1,4 +1,4 @@
-# JSON-schema.md — Automator v7.9.21 Data Reference
+# json-schema.md — Automator v7.9.21 Data Reference
 
 ## 1. API Response Schema
 

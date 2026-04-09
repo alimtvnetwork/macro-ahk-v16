@@ -259,7 +259,7 @@ onClick handler (synchronous, user gesture context):
 ## References
 
 - Current AHK architecture: `spec/03-architecture.md`
-- Current config.ini schema: `marco-script-ahk-v7.latest/specs/JSON-schema.md`
+- Current config.ini schema: `marco-script-ahk-v7.latest/specs/json-schema.md`
 - API reference: `spec/07-data-and-api/data-schema.md`
 - Workspace detection: `spec/10-macro-controller/workspace-management.md`
 - Cookie diagnostic: `combo.js` → `getBearerTokenFromCookie()` function

@@ -411,7 +411,7 @@ All notable changes to the Automator project are documented in this file.
 - **Tooltips & progress bars updated** — Now show correct Total Credits and Available breakdown.
 
 ### Files
-- `combo.js`, `macro-looping.js`, `Automator.ahk`, `GeneralDefaults.ahk`, `config.ini`, `JSON-schema.md`
+- `combo.js`, `macro-looping.js`, `Automator.ahk`, `GeneralDefaults.ahk`, `config.ini`, `json-schema.md`
 
 ---
 
@@ -604,7 +604,7 @@ All notable changes to the Automator project are documented in this file.
 ## v7.6 (2026-02-21)
 
 ### Added
-- **`specs/JSON-schema.md`** — Comprehensive data reference documenting API response schema (`GET /user/workspaces`), internal combo.js data models (`creditState`, `perWorkspace[]`, `comboHistory[]`, `jsHistory[]`), all `config.ini` sections with types/defaults, and the full placeholder injection map.
+- **`specs/json-schema.md`** — Comprehensive data reference documenting API response schema (`GET /user/workspaces`), internal combo.js data models (`creditState`, `perWorkspace[]`, `comboHistory[]`, `jsHistory[]`), all `config.ini` sections with types/defaults, and the full placeholder injection map.
 - **`specs/changelog.md`** — This file; centralizes all version history.
 - **Export Compiled JS** — Tray menu entries ("Export combo.js", "Export macro-looping.js") that resolve all `__PLACEHOLDER__` tokens from config.ini, save the compiled JS to `logs/compiled-<name>.js` with a metadata header, and copy to clipboard for easy paste-into-DevTools debugging.
 - **`Includes/ExportCompiledJS.ahk`** — Generic `SaveCompiledJS(scriptName, compiledJs, sourceFile)` utility + per-script `ExportComboJS()` / `ExportMacroLoopJS()` wrappers.
@@ -616,7 +616,7 @@ All notable changes to the Automator project are documented in this file.
 
 ### Changed
 - Version bump from 7.5.3 → 7.6 across `Automator.ahk`, `GeneralDefaults.ahk`, `config.ini`.
-- **Expanded testing checklist** — Added "DevTools Console Focus (v7.6)" section to `MEMORY.md` with 7 manual test scenarios covering all DevTools tabs (Elements, Network, Sources, Console), rapid double-press, and manual close recovery.
+- **Expanded testing checklist** — Added "DevTools Console Focus (v7.6)" section to `memory.md` with 7 manual test scenarios covering all DevTools tabs (Elements, Network, Sources, Console), rapid double-press, and manual close recovery.
 
 ---
 

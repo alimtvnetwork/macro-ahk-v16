@@ -92,7 +92,7 @@ Do not implement anything. Create or update specifications only. CW means seedab
       3. any pagination, error shapes, or rate-limit indicators
 
 2. Existing spec file(s)
-1. SPEC.md
+1. spec.md
    1. Locate the MacroLoop module section
    2. Locate the injection mechanism description
    3. Locate any ComboSwitch controller description
@@ -109,7 +109,7 @@ Do not implement anything. Create or update specifications only. CW means seedab
    3. how secrets are handled and redacted in logs
 
 ### C) Spec update 1: MacroLoop injection change
-Update SPEC.md to state clearly:
+Update spec.md to state clearly:
 1. MacroLoop injection now uses a shared InjectJS component/module
 2. MacroLoop no longer uses custom Ctrl+A paste injection
 3. The spec must include:
@@ -118,8 +118,8 @@ Update SPEC.md to state clearly:
    3. any migration notes if old flows existed
 
 Acceptance criteria
-1. [ ] SPEC.md explicitly documents InjectJS as the shared injection mechanism
-2. [ ] SPEC.md explicitly marks Ctrl+A paste injection as deprecated or removed
+1. [ ] spec.md explicitly documents InjectJS as the shared injection mechanism
+2. [ ] spec.md explicitly marks Ctrl+A paste injection as deprecated or removed
 3. [ ] Any modules depending on old injection behavior are listed for review
 
 ### D) Spec update 2: ComboSwitch controller UI enhancements
@@ -264,11 +264,11 @@ Definition of done
 1. [ ] response schema summarized in spec text
 2. [ ] fields mapped to UI display fields
 
-Phase 2: SPEC.md MacroLoop injection update
+Phase 2: spec.md MacroLoop injection update
 1. Update MacroLoop section to reflect shared InjectJS usage
 2. Add migration notes from Ctrl+A paste
 Definition of done
-1. [ ] SPEC.md updated with clear injection contract
+1. [ ] spec.md updated with clear injection contract
 
 Phase 3: ComboSwitch controller UI spec
 1. Add fixed placement requirements

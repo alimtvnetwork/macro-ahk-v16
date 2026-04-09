@@ -75,8 +75,8 @@ marco-script-ahk-v7.0/
 │
 ├── specs/                      # 📁 All documentation
 │   ├── readme.md               # This file
-│   ├── SPEC.md                 # Technical specification
-│   ├── MEMORY.md               # AI learning document
+│   ├── spec.md                 # Technical specification
+│   ├── memory.md               # AI learning document
 │   ├── spec-issues-v6.55.md    # v6.55 issue tracker
 │   ├── spec-issues-v6.56.md    # v6.56 issue tracker
 │   ├── spec-issues-v7.4.md     # v7.4 issue tracker

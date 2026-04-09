@@ -51,7 +51,7 @@ User reported that the highlighted section sometimes shows the project name inst
 
 ### Why the existing spec did not prevent it
 
-The spec (`SPEC.md`) did not include any rule requiring DOM-discovered names to be validated against a known workspace list. The "Known-Good State Wins" principle (v7.9.2) protected against API fallbacks clobbering user-driven changes, but did not address DOM observers setting invalid names in the first place.
+The spec (`spec.md`) did not include any rule requiring DOM-discovered names to be validated against a known workspace list. The "Known-Good State Wins" principle (v7.9.2) protected against API fallbacks clobbering user-driven changes, but did not address DOM observers setting invalid names in the first place.
 
 ---
 

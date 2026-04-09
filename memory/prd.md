@@ -118,8 +118,8 @@ Enhance an AutoHotkey (AHK) based automation tool that interacts with the `lovab
 |-- config.ini              # Central configuration for all settings
 |-- combo.js                # Combo switch UI/logic, draggable, hide/minimize, keyboard shortcuts
 |-- macro-looping.js        # MacroLoop v3.0 Delegate mode, draggable, hide/minimize, shortcuts
-|-- SPEC.md                 # Technical specification
-|-- MEMORY.md               # Learning document with design decisions
+|-- spec.md                 # Technical specification
+|-- memory.md               # Learning document with design decisions
 |-- readme.md               # User-facing documentation
 +-- Includes/
     |-- Config.ahk          # Loads settings from config.ini with per-section logging

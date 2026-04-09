@@ -1632,8 +1632,8 @@ RunCombo(direction) {
 ### Documentation Reorganization (v7.0)
 
 All markdown documentation moved from project root to `specs/` subfolder:
-- `specs/SPEC.md` — Technical specification
-- `specs/MEMORY.md` — Learning document
+- `specs/spec.md` — Technical specification
+- `specs/memory.md` — Learning document
 - `specs/readme.md` — Quick start guide
 - `specs/spec-issues-v6.55.md` — v6.55 issue tracker
 - `specs/spec-issues-v6.56.md` — v6.56 issue tracker

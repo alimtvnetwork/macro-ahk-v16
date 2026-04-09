@@ -3,7 +3,7 @@
 **Version**: v7.17
 **Last Updated**: 2026-02-25
 
-For the full detailed schema, see `marco-script-ahk-v7.latest/specs/JSON-schema.md`.
+For the full detailed schema, see `marco-script-ahk-v7.latest/specs/json-schema.md`.
 
 ---
 
@@ -86,6 +86,6 @@ Built during `parseApiResponse()`: `wsById[workspace.id] = perWorkspaceEntry`. U
 
 ## config.ini Reference
 
-See `marco-script-ahk-v7.latest/specs/JSON-schema.md` Section 3 for the complete config.ini schema with all sections, keys, types, and defaults.
+See `marco-script-ahk-v7.latest/specs/json-schema.md` Section 3 for the complete config.ini schema with all sections, keys, types, and defaults.
 
 Key sections: `[Hotkeys]`, `[ComboSwitch.*]`, `[MacroLoop.*]`, `[CreditStatus.*]`, `[AHK.Timing]`, `[General]`

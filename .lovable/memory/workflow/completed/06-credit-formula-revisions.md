@@ -37,8 +37,8 @@ Iterative refinement of credit calculation logic and progress bar visuals across
 - **Fix**: `topup_credits_limit` now correctly parsed from API response
 
 ## Files Changed
-- `combo.js`, `macro-looping.js`, `Automator.ahk`, `GeneralDefaults.ahk`, `config.ini`, `JSON-schema.md`
+- `combo.js`, `macro-looping.js`, `Automator.ahk`, `GeneralDefaults.ahk`, `config.ini`, `json-schema.md`
 
 ## Principles Established
 - **Bar Segment Completeness**: Every credit type in Total Credits formula MUST have a corresponding progress bar segment
-- **Formula Documentation**: Credit formulas must be documented in `specs/JSON-schema.md`
+- **Formula Documentation**: Credit formulas must be documented in `specs/json-schema.md`
