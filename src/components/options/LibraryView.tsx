@@ -185,6 +185,94 @@ interface AssetCardProps {
 
 // eslint-disable-next-line max-lines-per-function -- single card with delete dialog, splitting would reduce cohesion
 export function AssetCard({ asset, links, onSync, onDelete, onViewDetail }: AssetCardProps) {
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const syncedCount = links.filter(l => l.LinkState === "synced").length;
+  const pinnedCount = links.filter(l => l.LinkState === "pinned").length;
+  const totalLinked = links.length;
+
+  return (
+    <>
+      <Card
+        className="group relative border-border/60 bg-card/50 hover:bg-card/80 hover:border-primary/30 transition-all duration-200 cursor-pointer hover:shadow-[0_2px_12px_-4px_hsl(var(--primary)/0.15)]"
+        onClick={() => onViewDetail(asset)}
+      >
+        <CardContent className="p-4 space-y-3">
+          {/* Header row */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <AssetTypeIcon type={asset.Type} />
+              <h3 className="text-sm font-semibold truncate">{asset.Name}</h3>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={e => e.stopPropagation()}>
+                <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={e => { e.stopPropagation(); onSync(asset.Id); }}>
+                  <RefreshCw className="h-3.5 w-3.5 mr-2" />
+                  Sync to projects
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(asset.Slug); toast.success("Slug copied"); }}>
+                  <Copy className="h-3.5 w-3.5 mr-2" />
+                  Copy slug
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive" onClick={e => { e.stopPropagation(); setDeleteOpen(true); }}>
+                  <Trash2 className="h-3.5 w-3.5 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* Slug + version */}
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <code className="bg-muted/50 px-1.5 py-0.5 rounded font-mono truncate">{asset.Slug}</code>
+            <Badge variant="outline" className="text-[10px] px-1 py-0">v{asset.Version}</Badge>
+          </div>
+
+          {/* Links summary */}
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Link2 className="h-3 w-3" />
+              {totalLinked} linked
+            </span>
+            {syncedCount > 0 && (
+              <span className="text-emerald-400">{syncedCount} synced</span>
+            )}
+            {pinnedCount > 0 && (
+              <span className="text-amber-400">{pinnedCount} pinned</span>
+            )}
+          </div>
+
+          {/* Type badge */}
+          <div className="flex items-center gap-1.5">
+            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 capitalize">{asset.Type}</Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{asset.Name}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              All synced and pinned links will be detached. Project copies will be preserved as independent assets.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => onDelete(asset.Id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /*  PromoteDialog                                                      */
