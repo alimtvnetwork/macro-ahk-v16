@@ -20,6 +20,7 @@ import {
 import { readAllProjects, writeAllProjects } from "./handlers/project-helpers";
 import { nowTimestamp } from "../shared/utils";
 import { seedFromManifest } from "./manifest-seeder";
+import { bootReady } from "./boot";
 import {
     handleListUpdaters,
     handleCreateUpdater,
@@ -90,6 +91,8 @@ export async function ensureDefaultProjectSingleScript(): Promise<void> {
 async function handleInstalled(
     details: chrome.runtime.InstalledDetails,
 ): Promise<void> {
+    // Wait for boot to bind DbManager before accessing any handler
+    await bootReady;
     // ✅ 88.3: Invalidate IndexedDB cache on install/update
     try {
         const { invalidateCacheOnDeploy } = await import("./injection-cache");
