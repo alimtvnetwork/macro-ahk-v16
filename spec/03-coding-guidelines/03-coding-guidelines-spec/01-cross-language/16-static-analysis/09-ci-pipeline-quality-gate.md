@@ -440,7 +440,7 @@ Before packaging any release asset, the pipeline MUST verify:
 
 ---
 
-## 10. Integration Checklist
+## 11. Integration Checklist
 
 | # | Task | Status |
 |---|------|--------|
