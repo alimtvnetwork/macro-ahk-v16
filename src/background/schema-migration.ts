@@ -26,6 +26,7 @@ import {
 } from "./migration-v4-sql";
 import { getV5Statements } from "./migration-v5-sql";
 import { getV6Statements } from "./migration-v6-sql";
+import { getV7Statements } from "./migration-v7-sql";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -52,7 +53,7 @@ export interface MigrationResult {
 /* ------------------------------------------------------------------ */
 
 const SCHEMA_VERSION_KEY = "marco_schema_version";
-const CURRENT_SCHEMA_VERSION = 5;
+const CURRENT_SCHEMA_VERSION = 7;
 
 /* ------------------------------------------------------------------ */
 /*  Migration Registry                                                 */
@@ -88,6 +89,12 @@ const MIGRATIONS: Migration[] = [
         description: "Add changelog, caching, auto-check, confirm settings to UpdaterInfo; create UpdateSettings table",
         up: applyV6Up,
         down: applyV6Down,
+    },
+    {
+        version: 7,
+        description: "Add SharedAsset, AssetLink, ProjectGroup, ProjectGroupMember tables for Cross-Project Sync",
+        up: applyV7Up,
+        down: applyV7Down,
     },
 ];
 
@@ -183,6 +190,20 @@ function applyV6Up(logsDb: SqlJsDatabase, _errorsDb: SqlJsDatabase): void {
 
 function applyV6Down(_logsDb: SqlJsDatabase, _errorsDb: SqlJsDatabase): void {
     // No-op — ALTER TABLE ADD COLUMN is not reversible in SQLite
+}
+
+/* ------------------------------------------------------------------ */
+/*  Migration v7 — Cross-Project Sync Tables                           */
+/*  See: spec/13-features/cross-project-sync.md                        */
+/* ------------------------------------------------------------------ */
+
+function applyV7Up(logsDb: SqlJsDatabase, _errorsDb: SqlJsDatabase): void {
+    runIgnoringDuplicates(logsDb, getV7Statements());
+    console.log("[migration] v7: Created Cross-Project Sync tables (SharedAsset, AssetLink, ProjectGroup, ProjectGroupMember)");
+}
+
+function applyV7Down(_logsDb: SqlJsDatabase, _errorsDb: SqlJsDatabase): void {
+    // No-op — DROP TABLE is destructive
 }
 
 /* ------------------------------------------------------------------ */

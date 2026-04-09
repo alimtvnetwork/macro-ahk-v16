@@ -437,6 +437,73 @@ CREATE INDEX IF NOT EXISTS IdxDynLoadStatus    ON DynamicLoadLog(Status);
 `;
 
 /* ------------------------------------------------------------------ */
+/*  SharedAsset (logs.db) — Cross-Project Sync                         */
+/*  See: spec/13-features/cross-project-sync.md                        */
+/* ------------------------------------------------------------------ */
+
+export const SHARED_ASSET_SCHEMA = `
+CREATE TABLE IF NOT EXISTS SharedAsset (
+    Id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    Type        TEXT NOT NULL CHECK(Type IN ('prompt','script','chain','preset')),
+    Name        TEXT NOT NULL,
+    Slug        TEXT UNIQUE NOT NULL,
+    ContentJson TEXT NOT NULL,
+    ContentHash TEXT NOT NULL,
+    Version     TEXT NOT NULL DEFAULT '1.0.0',
+    CreatedAt   TEXT DEFAULT (datetime('now')),
+    UpdatedAt   TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS IdxSharedAssetType ON SharedAsset(Type);
+CREATE INDEX IF NOT EXISTS IdxSharedAssetSlug ON SharedAsset(Slug);
+`;
+
+/* ------------------------------------------------------------------ */
+/*  AssetLink (logs.db) — Cross-Project Sync                           */
+/* ------------------------------------------------------------------ */
+
+export const ASSET_LINK_SCHEMA = `
+CREATE TABLE IF NOT EXISTS AssetLink (
+    Id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    SharedAssetId    INTEGER NOT NULL REFERENCES SharedAsset(Id) ON DELETE CASCADE,
+    ProjectId        INTEGER NOT NULL,
+    LinkState        TEXT NOT NULL DEFAULT 'synced' CHECK(LinkState IN ('synced','pinned','detached')),
+    PinnedVersion    TEXT,
+    LocalOverrideJson TEXT,
+    SyncedAt         TEXT DEFAULT (datetime('now')),
+    UNIQUE(SharedAssetId, ProjectId)
+);
+CREATE INDEX IF NOT EXISTS IdxAssetLinkProject ON AssetLink(ProjectId);
+CREATE INDEX IF NOT EXISTS IdxAssetLinkShared  ON AssetLink(SharedAssetId);
+`;
+
+/* ------------------------------------------------------------------ */
+/*  ProjectGroup (logs.db) — Cross-Project Sync                        */
+/* ------------------------------------------------------------------ */
+
+export const PROJECT_GROUP_SCHEMA = `
+CREATE TABLE IF NOT EXISTS ProjectGroup (
+    Id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name              TEXT NOT NULL,
+    SharedSettingsJson TEXT,
+    CreatedAt         TEXT DEFAULT (datetime('now'))
+);
+`;
+
+/* ------------------------------------------------------------------ */
+/*  ProjectGroupMember (logs.db) — Cross-Project Sync                  */
+/* ------------------------------------------------------------------ */
+
+export const PROJECT_GROUP_MEMBER_SCHEMA = `
+CREATE TABLE IF NOT EXISTS ProjectGroupMember (
+    Id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    GroupId   INTEGER NOT NULL REFERENCES ProjectGroup(Id) ON DELETE CASCADE,
+    ProjectId INTEGER NOT NULL,
+    UNIQUE(GroupId, ProjectId)
+);
+CREATE INDEX IF NOT EXISTS IdxGroupMemberProject ON ProjectGroupMember(ProjectId);
+`;
+
+/* ------------------------------------------------------------------ */
 /*  Combined                                                           */
 /* ------------------------------------------------------------------ */
 
@@ -459,4 +526,8 @@ export const FULL_LOGS_SCHEMA =
     UPDATER_STEPS_SCHEMA +
     DYNAMIC_LOAD_LOG_SCHEMA +
     PROMPTS_DETAILS_VIEW +
-    UPDATER_DETAILS_VIEW;
+    UPDATER_DETAILS_VIEW +
+    SHARED_ASSET_SCHEMA +
+    ASSET_LINK_SCHEMA +
+    PROJECT_GROUP_SCHEMA +
+    PROJECT_GROUP_MEMBER_SCHEMA;
