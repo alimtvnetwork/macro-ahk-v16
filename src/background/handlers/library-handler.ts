@@ -319,6 +319,7 @@ export async function handlePromoteAsset(msg: unknown): Promise<{
         );
         const idResult = db.exec(SQL_LAST_INSERT_ROWID);
         const newId = idResult[0].values[0][0] as number;
+        snapshotVersion(db, newId, "1.0.0", contentJson, hash, "promote");
         markDirty();
         return { action: "created", assetId: newId };
     }
@@ -349,6 +350,9 @@ export async function handleReplaceLibraryAsset(msg: unknown): Promise<{ isOk: t
     const params = name
         ? [contentJson, hash, newVersion, name, assetId]
         : [contentJson, hash, newVersion, assetId];
+
+    // Snapshot the new version
+    snapshotVersion(db, assetId, newVersion, contentJson, hash, "replace");
 
     db.run(
         `UPDATE SharedAsset SET ContentJson = ?, ContentHash = ?, Version = ?${nameSql}, UpdatedAt = datetime('now') WHERE Id = ?`,
