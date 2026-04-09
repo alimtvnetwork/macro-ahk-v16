@@ -651,6 +651,44 @@ function getMockResponse(message: MessagePayload): unknown {
             ],
             healthy: true,
         },
+
+        // ─── Cross-Project Sync (Library) ───
+        LIBRARY_GET_ASSETS: {
+            assets: [
+                { Id: 1, Type: "prompt", Name: "Summarize Article", Slug: "summarize-article", ContentJson: '{"text":"Summarize the following article in 3 bullet points:"}', ContentHash: "a1b2c3d4", Version: "2.1.0", CreatedAt: "2026-03-15T10:00:00Z", UpdatedAt: "2026-04-01T14:30:00Z" },
+                { Id: 2, Type: "script", Name: "Auto-Click Submit", Slug: "auto-click-submit", ContentJson: '{"code":"document.querySelector(\\".submit-btn\\").click()"}', ContentHash: "e5f6a7b8", Version: "1.0.0", CreatedAt: "2026-03-20T09:00:00Z", UpdatedAt: "2026-03-20T09:00:00Z" },
+                { Id: 3, Type: "chain", Name: "Research Pipeline", Slug: "research-pipeline", ContentJson: '{"steps":["summarize","extract-keywords","generate-report"]}', ContentHash: "c9d0e1f2", Version: "1.3.0", CreatedAt: "2026-03-25T12:00:00Z", UpdatedAt: "2026-04-05T08:15:00Z" },
+                { Id: 4, Type: "preset", Name: "Dark Theme Config", Slug: "dark-theme-config", ContentJson: '{"theme":"dark","fontSize":14,"fontFamily":"JetBrains Mono"}', ContentHash: "a3b4c5d6", Version: "1.0.0", CreatedAt: "2026-04-01T10:00:00Z", UpdatedAt: "2026-04-01T10:00:00Z" },
+            ],
+        },
+        LIBRARY_GET_LINKS: {
+            links: [
+                { Id: 1, SharedAssetId: 1, ProjectId: 1, LinkState: "synced", PinnedVersion: null, LocalOverrideJson: null, SyncedAt: "2026-04-01T14:30:00Z" },
+                { Id: 2, SharedAssetId: 1, ProjectId: 2, LinkState: "pinned", PinnedVersion: "2.0.0", LocalOverrideJson: null, SyncedAt: "2026-03-28T10:00:00Z" },
+                { Id: 3, SharedAssetId: 2, ProjectId: 1, LinkState: "synced", PinnedVersion: null, LocalOverrideJson: null, SyncedAt: "2026-03-20T09:00:00Z" },
+                { Id: 4, SharedAssetId: 3, ProjectId: 3, LinkState: "detached", PinnedVersion: null, LocalOverrideJson: '{"steps":["summarize-v2"]}', SyncedAt: "2026-04-02T16:00:00Z" },
+            ],
+        },
+        LIBRARY_GET_GROUPS: {
+            groups: [
+                { Id: 1, Name: "Production Sites", SharedSettingsJson: '{"autoSync":true}', CreatedAt: "2026-03-10T08:00:00Z" },
+                { Id: 2, Name: "Testing", SharedSettingsJson: null, CreatedAt: "2026-03-15T12:00:00Z" },
+            ],
+        },
+        LIBRARY_SYNC_ASSET: { syncedCount: 2, pinnedNotified: 1 },
+        LIBRARY_PROMOTE_ASSET: { action: "created", assetId: 5 },
+        LIBRARY_REPLACE_ASSET: { isOk: true, newVersion: "2.2.0" },
+        LIBRARY_FORK_ASSET: { assetId: 6, slug: "summarize-article-fork" },
+        LIBRARY_DELETE_ASSET: { isOk: true, detachedCount: 1 },
+        LIBRARY_EXPORT: {
+            bundle: {
+                exportVersion: "1.0",
+                exportedAt: new Date().toISOString(),
+                assets: [],
+                groups: [],
+            },
+        },
+        LIBRARY_IMPORT: { imported: 3, skipped: 1, conflicts: [] },
     };
 
     return mocks[message.type] ?? { isOk: true };
