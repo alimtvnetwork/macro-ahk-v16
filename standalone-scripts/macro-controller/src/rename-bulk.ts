@@ -15,6 +15,7 @@ import { renameWorkspace } from './rename-api';
 import type { BulkRenameEntry, BulkRenameResults, RenameStrategy } from './types';
 
 import { MacroController } from './core/MacroController';
+import { logError } from './error-utils';
 
 function mc() { return MacroController.getInstance(); }
 
@@ -275,7 +276,7 @@ export class BulkRenameManager {
       const isCircuitBroken = newFailures >= MAX_CONSECUTIVE_FAILURES;
 
       if (isCircuitBroken) {
-        log('[Rename] ⚡ Circuit breaker: ' + MAX_CONSECUTIVE_FAILURES + ' consecutive failures — auto-stopping', 'error');
+        logError('Rename', '⚡ Circuit breaker: \' + MAX_CONSECUTIVE_FAILURES + \' consecutive failures — auto-stopping');
         showToast('Bulk rename auto-stopped after ' + MAX_CONSECUTIVE_FAILURES + ' consecutive failures', 'error', { noStop: true });
         this.cancelled = true;
       }

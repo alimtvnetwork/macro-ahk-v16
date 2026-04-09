@@ -20,6 +20,7 @@ import { hasForbidden, addForbidden, removeForbidden } from './rename-forbidden-
 import { getAuthRecoveryExhausted, setAuthRecoveryExhausted } from './rename-bulk';
 import type { RenameStrategy } from './types';
 import { delay } from './async-utils';
+import { logError } from './error-utils';
 
 const API_USER_WORKSPACES_ = '/user/workspaces/';
 
@@ -102,7 +103,7 @@ function buildRenameBody(newName: string, includeCreditLimit: boolean): Record<s
 
 function rejectNoBearerToken(wsId: string): Error {
   const msg = 'No bearer token available for rename request';
-  log('[Rename] ' + msg + ' — request blocked', 'error');
+  logError('Rename', '\' + msg + \' — request blocked');
   showToast(msg + '. Please refresh authentication.', 'error', {
     noStop: true,
     requestDetail: { method: 'PUT', url: API_USER_WORKSPACES_ + wsId },

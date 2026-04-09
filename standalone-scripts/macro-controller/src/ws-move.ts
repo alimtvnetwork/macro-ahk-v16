@@ -19,6 +19,7 @@ import { extractProjectIdFromUrl } from './workspace-detection';
 import { showToast } from './toast';
 import { CREDIT_API_BASE, state } from './shared-state';
 import { clearResolvedWorkspace } from './credit-balance';
+import { logError } from './error-utils';
 
 const LOG_SESSIONCHECK = '[SessionCheck/';
 
@@ -191,7 +192,7 @@ function confirmMove(targetWorkspaceName: string): Promise<boolean> {
 // ============================================
 
 function handleMoveNoToken(): void {
-  log('Move aborted: no bearer token available', 'error');
+  logError('Move aborted', 'no bearer token available');
   updateLoopMoveStatus('error', 'Auth token missing');
   showToast('Cannot move workspace: bearer token is missing. Please re-authenticate.', 'error', { noStop: true });
 }

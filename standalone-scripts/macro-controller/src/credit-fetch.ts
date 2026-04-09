@@ -22,6 +22,7 @@ import { MacroController } from './core/MacroController';
 
 import { CREDIT_API_BASE, loopCreditState } from './shared-state';
 import { parseLoopApiResponse, syncCreditStateFromApi } from './credit-parser';
+import { logError } from './error-utils';
 
 const API_USER_WORKSPACES = '/user/workspaces';
 const NS_UPDATEAUTHDIAG = '_internal.updateAuthDiag';
@@ -110,7 +111,7 @@ async function handleAuthRecovery(
   const newToken = await getBearerToken({ force: true });
 
   if (!newToken) {
-    log('Credit API: Auth recovery failed — no retry', 'error');
+    logError('Credit API', 'Auth recovery failed — no retry');
     emitAuthFailureToast(status, statusText);
 
     return null;

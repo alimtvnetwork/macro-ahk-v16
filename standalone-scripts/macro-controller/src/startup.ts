@@ -18,7 +18,7 @@ import { dualWriteAll, nsRead } from './api-namespace';
 import { registerTokenBroadcastListener } from './token-broadcast-listener';
 import { showToast, dismissAllToasts } from './toast';
 import { updateStartupToast } from './startup-toast';
-import { toErrorMessage } from './error-utils';
+import { toErrorMessage , logError } from './error-utils';
 import {
   resolveToken,
   refreshBearerTokenFromBestSource,
@@ -285,7 +285,7 @@ function buildUiManagerFromFactory(): UIManager {
 function scheduleUiCreationRetry(mc: MacroController, attempt: number): void {
   const MAX_UI_CREATE_RETRIES = 10;
   if (attempt > MAX_UI_CREATE_RETRIES) {
-    log('Startup: ❌ UIManager recovery exhausted after ' + MAX_UI_CREATE_RETRIES + ' attempts', 'error');
+    logError('Startup', '❌ UIManager recovery exhausted after \' + MAX_UI_CREATE_RETRIES + \' attempts');
     return;
   }
 
