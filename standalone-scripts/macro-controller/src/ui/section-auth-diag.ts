@@ -61,6 +61,11 @@ interface AuthDiagUpdateCtx {
   wsCacheRow: ReturnType<typeof buildDiagRow>;
   renderWaterfall: () => void;
 }
+/** Check if a bridge error is due to normal MV3 service worker suspension. */
+function _isMv3Suspension(error: string): boolean {
+  const lower = error.toLowerCase();
+  return lower.includes('extension context invalidated') || lower.includes('receiving end does not exist');
+}
 
 function performAuthDiagUpdate(ctx: AuthDiagUpdateCtx): void {
   updateCookieRow(ctx.deps, ctx.cookieRow);
@@ -75,19 +80,28 @@ function performAuthDiagUpdate(ctx: AuthDiagUpdateCtx): void {
   try {
     const diag = window.marco?.auth?.getLastAuthDiag?.();
     if (diag) {
-      const isDegraded = diag.bridgeOutcome === 'timeout' || diag.bridgeOutcome === 'error' || diag.source === 'none';
-      ctx.headerBadge.style.animation = isDegraded ? 'ml-badge-pulse 1.8s ease-in-out infinite' : 'none';
+      const bridgeError = diag.bridgeOutcome === 'error';
+      // Check controller-level bridge outcome for the actual error message
+      const controllerBridge = ctx.deps.getLastBridgeOutcome();
+      const isSuspended = bridgeError && _isMv3Suspension(controllerBridge.error || '');
+      const isDegraded = (diag.bridgeOutcome === 'timeout' || (bridgeError && !isSuspended)) && diag.source !== 'none';
+      const isDown = diag.source === 'none';
+
+      ctx.headerBadge.style.animation = (isDegraded || isDown) ? 'ml-badge-pulse 1.8s ease-in-out infinite' : 'none';
 
       if (diag.bridgeOutcome === 'hit') {
         ctx.headerBadge.textContent = '🟢';
         ctx.headerBadge.title = 'Bridge OK · ' + Math.round(diag.durationMs) + 'ms';
+      } else if (isSuspended && diag.source !== 'none') {
+        ctx.headerBadge.textContent = '🟡';
+        ctx.headerBadge.title = 'Bridge idle (MV3 suspended) · token from ' + diag.source + ' · ' + Math.round(diag.durationMs) + 'ms';
       } else if (diag.bridgeOutcome === 'timeout') {
         ctx.headerBadge.textContent = '🟡';
         ctx.headerBadge.title = 'Bridge timeout · fell back to ' + diag.source + ' · ' + Math.round(diag.durationMs) + 'ms';
-      } else if (diag.bridgeOutcome === 'error') {
+      } else if (bridgeError) {
         ctx.headerBadge.textContent = '🔴';
         ctx.headerBadge.title = 'Bridge error · fell back to ' + diag.source + ' · ' + Math.round(diag.durationMs) + 'ms';
-      } else if (diag.source === 'none') {
+      } else if (isDown) {
         ctx.headerBadge.textContent = '🔴';
         ctx.headerBadge.title = 'No token from any source · ' + Math.round(diag.durationMs) + 'ms';
       }
@@ -95,7 +109,6 @@ function performAuthDiagUpdate(ctx: AuthDiagUpdateCtx): void {
   } catch (e: unknown) {
     logError('renderAuthDiag', 'Auth diagnostics render failed', e);
     showToast('❌ Auth diagnostics render failed', 'error');
-    // SDK not available
   }
 }
 
