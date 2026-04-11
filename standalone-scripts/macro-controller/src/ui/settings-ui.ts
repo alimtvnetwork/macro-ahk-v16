@@ -10,6 +10,8 @@
  * @see spec/04-macro-controller/ts-migration-v2/05-module-splitting.md
  */
 
+import { state } from '../shared-state';
+
 import { taskNextState, saveTaskNextSettings, type TaskNextDeps } from './task-next-ui';
 import type { ExtensionResponse, ResolvedPromptsConfig } from '../types';
 import { updateLogConfig, type LogManagerConfig } from '../log-manager';
@@ -279,6 +281,17 @@ function _saveConfigEdits(configResult: ConfigDbPanelResult, deps: SettingsDeps)
 }
 
 function _saveGeneralSettings(genResult: GeneralPanelResult, deps: SettingsDeps): void {
+  // Save custom display name to state + localStorage
+  const customName = (genResult.inputs.customDisplayName?.value || '').trim();
+  state.customDisplayName = customName;
+  try {
+    if (customName) {
+      localStorage.setItem('marco_custom_display_name', customName);
+    } else {
+      localStorage.removeItem('marco_custom_display_name');
+    }
+  } catch { /* localStorage unavailable */ }
+
   const newChatXPath = genResult.inputs.pasteTargetXPath.value;
   if (newChatXPath) {
     deps.sendToExtension('KV_SET', { key: 'chatbox_xpath_override', value: newChatXPath, projectId: '_global' });
