@@ -75,19 +75,28 @@ function performAuthDiagUpdate(ctx: AuthDiagUpdateCtx): void {
   try {
     const diag = window.marco?.auth?.getLastAuthDiag?.();
     if (diag) {
-      const isDegraded = diag.bridgeOutcome === 'timeout' || diag.bridgeOutcome === 'error' || diag.source === 'none';
-      ctx.headerBadge.style.animation = isDegraded ? 'ml-badge-pulse 1.8s ease-in-out infinite' : 'none';
+      const bridgeError = diag.bridgeOutcome === 'error';
+      const bridgeErrorMsg = typeof diag.bridgeError === 'string' ? diag.bridgeError : '';
+      const isSuspended = bridgeError && _isMv3Suspension(bridgeErrorMsg);
+      const isDegraded = (diag.bridgeOutcome === 'timeout' || (bridgeError && !isSuspended)) && diag.source !== 'none';
+      const isDown = diag.source === 'none';
+
+      ctx.headerBadge.style.animation = (isDegraded || isDown) ? 'ml-badge-pulse 1.8s ease-in-out infinite' : 'none';
 
       if (diag.bridgeOutcome === 'hit') {
         ctx.headerBadge.textContent = '🟢';
         ctx.headerBadge.title = 'Bridge OK · ' + Math.round(diag.durationMs) + 'ms';
+      } else if (isSuspended && diag.source !== 'none') {
+        // MV3 idle but token resolved from another source — not an error
+        ctx.headerBadge.textContent = '🟡';
+        ctx.headerBadge.title = 'Bridge idle (MV3 suspended) · token from ' + diag.source + ' · ' + Math.round(diag.durationMs) + 'ms';
       } else if (diag.bridgeOutcome === 'timeout') {
         ctx.headerBadge.textContent = '🟡';
         ctx.headerBadge.title = 'Bridge timeout · fell back to ' + diag.source + ' · ' + Math.round(diag.durationMs) + 'ms';
-      } else if (diag.bridgeOutcome === 'error') {
+      } else if (bridgeError) {
         ctx.headerBadge.textContent = '🔴';
         ctx.headerBadge.title = 'Bridge error · fell back to ' + diag.source + ' · ' + Math.round(diag.durationMs) + 'ms';
-      } else if (diag.source === 'none') {
+      } else if (isDown) {
         ctx.headerBadge.textContent = '🔴';
         ctx.headerBadge.title = 'No token from any source · ' + Math.round(diag.durationMs) + 'ms';
       }
