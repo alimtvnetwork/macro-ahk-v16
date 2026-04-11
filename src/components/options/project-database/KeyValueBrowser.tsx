@@ -24,7 +24,6 @@ import {
 import { toast } from "sonner";
 import { sendMessage } from "@/lib/message-client";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 interface KeyValueBrowserProps {
   projectSlug: string;
@@ -61,12 +60,12 @@ export function KeyValueBrowser({ projectSlug }: KeyValueBrowserProps) {
     setLoading(true);
     try {
       const result = await sendMessage<{ isOk: boolean; rows?: KvEntry[]; total?: number }>({
-        type: "PROJECT_API" as any,
+        type: "PROJECT_API",
         project: projectSlug,
         method: "GET",
         endpoint: "KeyValueStore",
         params: { limit: 200, offset: 0 },
-      } as any);
+      });
 
       if (result.isOk && result.rows) {
         setEntries(result.rows);
@@ -122,7 +121,7 @@ export function KeyValueBrowser({ projectSlug }: KeyValueBrowserProps) {
       if (editingEntry) {
         // Update existing
         await sendMessage({
-          type: "PROJECT_API" as any,
+          type: "PROJECT_API",
           project: projectSlug,
           method: "PUT",
           endpoint: "KeyValueStore",
@@ -133,12 +132,12 @@ export function KeyValueBrowser({ projectSlug }: KeyValueBrowserProps) {
             Value: formValue,
             ValueType: formType,
           },
-        } as any);
+        });
         toast.success(`Updated "${formKey.trim()}"`);
       } else {
         // Create new
         await sendMessage({
-          type: "PROJECT_API" as any,
+          type: "PROJECT_API",
           project: projectSlug,
           method: "POST",
           endpoint: "KeyValueStore",
@@ -148,7 +147,7 @@ export function KeyValueBrowser({ projectSlug }: KeyValueBrowserProps) {
             Value: formValue,
             ValueType: formType,
           },
-        } as any);
+        });
         toast.success(`Added "${formKey.trim()}"`);
       }
 
@@ -166,12 +165,12 @@ export function KeyValueBrowser({ projectSlug }: KeyValueBrowserProps) {
 
     try {
       await sendMessage({
-        type: "PROJECT_API" as any,
+        type: "PROJECT_API",
         project: projectSlug,
         method: "DELETE",
         endpoint: "KeyValueStore",
         id: entry.Id,
-      } as any);
+      });
       toast.success(`Deleted "${entry.Key}"`);
       void fetchEntries();
     } catch (err) {

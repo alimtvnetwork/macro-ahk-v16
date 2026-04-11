@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- chrome runtime detection via globalThis */
 /**
  * Marco — Platform Adapter Factory
  *
@@ -11,9 +10,18 @@ import type { PlatformAdapter } from "./platform-adapter";
 import { chromeAdapter } from "./chrome-adapter";
 import { previewAdapter } from "./preview-adapter";
 
+/** Chrome extension runtime shape for detection. */
+interface ChromeRuntime {
+    chrome?: {
+        runtime?: {
+            id?: string;
+        };
+    };
+}
+
 /** Detects whether we are running inside a Chrome extension context. */
 function isExtensionContext(): boolean {
-    const win = globalThis as any;
+    const win = globalThis as unknown as ChromeRuntime;
 
     return win.chrome !== undefined
         && win.chrome.runtime !== undefined

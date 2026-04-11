@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, max-lines-per-function -- untyped extension message types */
 /**
  * SchemaTab — Visual Table Builder
  *
@@ -18,7 +17,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Badge } from "@/components/ui/badge";
 import { ColumnEditor, type ColumnDefinition } from "./ColumnEditor";
 import { ValidationRuleEditor, type ValidationRule } from "./ValidationRuleEditor";
-import { ForeignKeyEditor, type ForeignKeyDefinition } from "./ForeignKeyEditor";
+import { ForeignKeyEditor, type ForeignKeyDefinition, type OnDeleteAction } from "./ForeignKeyEditor";
 import { SchemaDiffPreview } from "./SchemaDiffPreview";
 import { SchemaVersionHistory } from "./SchemaVersionHistory";
 import { sendMessage } from "@/lib/message-client";
@@ -110,10 +109,10 @@ export function SchemaTab({ projectSlug, onMigrationComplete }: SchemaTabProps) 
         relations?: Array<{ TableName: string; SourceColumn: string; TargetTable: string; TargetColumn: string; OnDelete?: string }>;
         errorMessage?: string;
       }>({
-        type: "GENERATE_SCHEMA_DOCS" as any,
+        type: "GENERATE_SCHEMA_DOCS",
         project: projectSlug,
         format: "meta",
-      } as any);
+      });
 
       if (!resp.isOk) {
         toast.error(resp.errorMessage || "Failed to load schema");
@@ -148,7 +147,7 @@ export function SchemaTab({ projectSlug, onMigrationComplete }: SchemaTabProps) 
             sourceColumn: r.SourceColumn,
             targetTable: r.TargetTable,
             targetColumn: r.TargetColumn || "Id",
-            onDelete: (r.OnDelete as any) || "CASCADE",
+            onDelete: ((r.OnDelete) || "CASCADE") as OnDeleteAction,
           })),
         isOpen: false,
       }));
@@ -203,7 +202,7 @@ export function SchemaTab({ projectSlug, onMigrationComplete }: SchemaTabProps) 
           toast.error("Invalid schema file");
           return;
         }
-        const imported: TableDefinition[] = data.tables.map((t: any) => ({
+        const imported: TableDefinition[] = data.tables.map((t: Record<string, unknown>) => ({
           name: t.name ?? "",
           description: t.description ?? "",
           columns: Array.isArray(t.columns) ? t.columns : [{ name: "", type: "TEXT" }],
@@ -272,10 +271,10 @@ export function SchemaTab({ projectSlug, onMigrationComplete }: SchemaTabProps) 
       };
 
       const result = await sendMessage<ApplyResult>({
-        type: "APPLY_JSON_SCHEMA" as any,
+        type: "APPLY_JSON_SCHEMA",
         project: projectSlug,
         schema: JSON.stringify(schema),
-      } as any);
+      });
 
       setLastResult(result);
 
@@ -418,11 +417,11 @@ export function SchemaTab({ projectSlug, onMigrationComplete }: SchemaTabProps) 
             currentTables={tables.map(({ isOpen, ...rest }) => rest)}
             onRestore={(restored) => {
               setTables(
-                (restored as any[]).map((t) => ({
-                  name: t.name ?? "",
-                  description: t.description ?? "",
-                  columns: Array.isArray(t.columns) ? t.columns : [],
-                  relations: Array.isArray(t.relations) ? t.relations : [],
+                (restored as Array<Record<string, unknown>>).map((t) => ({
+                  name: String(t.name ?? ""),
+                  description: String(t.description ?? ""),
+                  columns: Array.isArray(t.columns) ? t.columns as ColumnWithValidation[] : [],
+                  relations: Array.isArray(t.relations) ? t.relations as ForeignKeyDefinition[] : [],
                   isOpen: false,
                 })),
               );

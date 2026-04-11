@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- untyped extension message types */
 /**
  * SchemaDiffPreview — Shows what will change before applying schema
  *
@@ -50,10 +49,10 @@ export function SchemaDiffPreview({ projectSlug, pendingTables }: SchemaDiffPrev
         tables?: Array<{ Name: string }>;
         columns?: Array<{ TableName: string; Name: string; Type: string }>;
       }>({
-        type: "GENERATE_SCHEMA_DOCS" as any,
+        type: "GENERATE_SCHEMA_DOCS",
         project: projectSlug,
         format: "meta",
-      } as any);
+      });
 
       const existingTables = resp.tables ?? [];
       const existingCols = resp.columns ?? [];

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- untyped extension message types */
 /**
  * JsonSchemaTab — Issue 85
  *
@@ -206,10 +205,10 @@ export function JsonSchemaTab({ projectSlug, onMigrationComplete }: Props) {
         relations?: Array<{ SourceTable: string; SourceColumn: string; TargetTable: string; TargetColumn?: string; OnDelete?: string }>;
         errorMessage?: string;
       }>({
-        type: "GENERATE_SCHEMA_DOCS" as any,
+        type: "GENERATE_SCHEMA_DOCS",
         project: projectSlug,
         format: "meta",
-      } as any);
+      });
 
       if (!result.isOk || !result.tables?.length) {
         toast.info("No tables found in MetaTables. Apply a schema first.");
@@ -282,10 +281,10 @@ export function JsonSchemaTab({ projectSlug, onMigrationComplete }: Props) {
         relations?: Array<{ SourceTable: string; SourceColumn: string; TargetTable: string; TargetColumn?: string; OnDelete?: string }>;
         errorMessage?: string;
       }>({
-        type: "GENERATE_SCHEMA_DOCS" as any,
+        type: "GENERATE_SCHEMA_DOCS",
         project: projectSlug,
         format: "meta",
-      } as any);
+      });
 
       if (!result.isOk || !result.tables?.length) {
         setDbSchemaJson(JSON.stringify({ version: "1.0.0", tables: [] }, null, 2));
@@ -380,10 +379,10 @@ export function JsonSchemaTab({ projectSlug, onMigrationComplete }: Props) {
 
     try {
       const result = await sendMessage<{ isOk: boolean; result?: MigrationResult; errorMessage?: string }>({
-        type: "APPLY_JSON_SCHEMA" as any,
+        type: "APPLY_JSON_SCHEMA",
         project: projectSlug,
         schema: validation.schema,
-      } as any);
+      });
 
       if (result.isOk && result.result) {
         setLastResult(result.result);
@@ -413,10 +412,10 @@ export function JsonSchemaTab({ projectSlug, onMigrationComplete }: Props) {
     setGeneratingDocs(true);
     try {
       const result = await sendMessage<{ isOk: boolean; markdown?: string; prisma?: string; errorMessage?: string }>({
-        type: "GENERATE_SCHEMA_DOCS" as any,
+        type: "GENERATE_SCHEMA_DOCS",
         project: projectSlug,
         format,
-      } as any);
+      });
 
       if (result.isOk) {
         setDocsOutput({ markdown: result.markdown, prisma: result.prisma });

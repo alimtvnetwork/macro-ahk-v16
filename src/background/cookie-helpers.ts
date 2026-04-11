@@ -5,9 +5,8 @@
  * Runs in the extension service worker (excluded from tsconfig.app.json).
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function _chr(): any { return globalThis.chrome as any; }
-/* eslint-enable @typescript-eslint/no-explicit-any */
+import { getChromeRef } from "./chrome-ref";
+function _chr() { return getChromeRef(); }
 
 interface ChromeCookie {
     value: string;
@@ -52,7 +51,7 @@ export async function readCookieFromCandidates(
 
     for (const url of candidateUrls) {
         try {
-            const cookie: ChromeCookie | null = await _chr().cookies.get({ url, name: cookieName });
+            const cookie: ChromeCookie | null = await _chr().cookies!.get({ url, name: cookieName });
 
             if (cookie !== null) {
                 return cookie;

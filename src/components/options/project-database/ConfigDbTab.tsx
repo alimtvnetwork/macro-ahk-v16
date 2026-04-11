@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, max-lines-per-function -- untyped extension message types */
 /**
  * ConfigDbTab — ProjectConfig inline editor
  *
@@ -41,9 +40,9 @@ export function ConfigDbTab({ projectSlug }: ConfigDbTabProps) {
     setLoading(true);
     try {
       const resp = await sendMessage<{ isOk: boolean; rows?: ConfigRow[]; errorMessage?: string }>({
-        type: "PROJECT_CONFIG_READ" as any,
+        type: "PROJECT_CONFIG_READ",
         project: projectSlug,
-      } as any);
+      });
       if (resp.isOk && resp.rows) {
         setRows(resp.rows);
         setEdits({});
@@ -71,12 +70,12 @@ export function ConfigDbTab({ projectSlug }: ConfigDbTabProps) {
     setSaving(ek);
     try {
       const resp = await sendMessage<{ isOk: boolean; errorMessage?: string }>({
-        type: "PROJECT_CONFIG_UPDATE" as any,
+        type: "PROJECT_CONFIG_UPDATE",
         project: projectSlug,
         section: row.Section,
         key: row.Key,
         value: newValue,
-      } as any);
+      });
       if (resp.isOk) {
         toast.success(`Updated ${row.Section}.${row.Key}`);
         setEdits((prev) => {
@@ -110,12 +109,12 @@ export function ConfigDbTab({ projectSlug }: ConfigDbTabProps) {
       const [section, key] = ek.split("::");
       try {
         const resp = await sendMessage<{ isOk: boolean }>({
-          type: "PROJECT_CONFIG_UPDATE" as any,
+          type: "PROJECT_CONFIG_UPDATE",
           project: projectSlug,
           section,
           key,
           value: val,
-        } as any);
+        });
         if (resp.isOk) saved++;
         else failed++;
       } catch {
@@ -136,9 +135,9 @@ export function ConfigDbTab({ projectSlug }: ConfigDbTabProps) {
     setLoading(true);
     try {
       const resp = await sendMessage<{ isOk: boolean; errorMessage?: string }>({
-        type: "PROJECT_CONFIG_RECONSTRUCT" as any,
+        type: "PROJECT_CONFIG_RECONSTRUCT",
         project: projectSlug,
-      } as any);
+      });
       if (resp.isOk) {
         toast.success("Config reconstructed from source");
         void load();

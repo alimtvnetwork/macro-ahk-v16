@@ -6,7 +6,6 @@
  * the full definitions; this file prevents TS errors in preview.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-namespace */
 
 export {};
@@ -15,13 +14,13 @@ declare global {
     namespace chrome {
         namespace runtime {
             const id: string | undefined;
-            function sendMessage(message: any): Promise<any>;
+            function sendMessage(message: Record<string, unknown>): Promise<unknown>;
             function getURL(path: string): string;
         }
         namespace storage {
             namespace local {
-                function get(key: string): Promise<Record<string, any>>;
-                function set(items: Record<string, any>): Promise<void>;
+                function get(key: string): Promise<Record<string, unknown>>;
+                function set(items: Record<string, unknown>): Promise<void>;
                 function remove(key: string): Promise<void>;
             }
         }

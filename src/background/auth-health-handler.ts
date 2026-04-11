@@ -58,10 +58,9 @@ const PLATFORM_TAB_PATTERNS = [
     "https://*.lovableproject.com/*",
 ] as const;
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Chrome extension APIs — typed at runtime, excluded from tsconfig.app.json
-const _chrome = globalThis.chrome as any;
-/* eslint-enable @typescript-eslint/no-explicit-any */
+import { getChromeRef } from "./chrome-ref";
+// Chrome extension APIs — typed via shared ChromeRef
+const _chrome = getChromeRef();
 
 /* ------------------------------------------------------------------ */
 /*  Public API                                                         */
@@ -78,7 +77,7 @@ export async function buildAuthHealthResponse(): Promise<AuthHealthResponse> {
     let tabUrl: string | null = null;
     let projectId: string | null = null;
     try {
-        const [tab] = await _chrome.tabs.query({ active: true, currentWindow: true });
+        const [tab] = await _chrome.tabs!.query({ active: true, currentWindow: true });
         tabUrl = tab?.url ?? null;
         projectId = extractProjectId(tabUrl);
     } catch { /* ignore */ }
@@ -113,7 +112,7 @@ export async function buildAuthHealthResponse(): Promise<AuthHealthResponse> {
         for (const tab of tabs) {
             if (typeof tab.id !== "number") continue;
             try {
-                const result = await _chrome.scripting.executeScript({
+                const result = await _chrome.scripting!.executeScript({
                     target: { tabId: tab.id },
                     world: "MAIN",
                     func: (): string | null => {
@@ -182,7 +181,7 @@ export async function buildAuthHealthResponse(): Promise<AuthHealthResponse> {
     // ── Strategy 5: Cross-tab session cookie scan ──
     const s5 = await timedStrategy("Cross-tab cookie scan", 5, async () => {
         try {
-            const cookies = await _chrome.cookies.getAll({ domain: "lovable.dev" });
+            const cookies = await _chrome.cookies!.getAll({ domain: "lovable.dev" });
             const sessionCookie = (cookies as Array<{ name: string; domain: string; expirationDate?: number }>).find(
                 (c) => c.name.includes("session") || c.name.includes("auth"),
             );
@@ -264,7 +263,7 @@ async function getActivePlatformTabs(): Promise<PlatformTab[]> {
     const results: PlatformTab[] = [];
     for (const pattern of PLATFORM_TAB_PATTERNS) {
         try {
-            const tabs = await _chrome.tabs.query({ url: pattern });
+            const tabs = await _chrome.tabs!.query({ url: pattern });
             if (Array.isArray(tabs)) results.push(...tabs);
         } catch { /* ignore */ }
     }

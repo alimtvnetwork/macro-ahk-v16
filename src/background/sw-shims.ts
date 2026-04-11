@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- DOM shims for service workers require dynamic global assignment */
 /**
  * Service Worker Global Shims
  *
@@ -12,8 +11,35 @@
 const noop = () => {};
 const emptyNodeList: never[] = [];
 
+/** Typed accessor for assigning to globalThis in a service worker context. */
+const _g = globalThis as unknown as Record<string, unknown>;
+
+interface ShimElement {
+    style: Record<string, unknown>;
+    dataset: Record<string, unknown>;
+    classList: { add: () => void; remove: () => void; toggle: () => void; contains: () => boolean };
+    setAttribute: () => void;
+    getAttribute: () => null;
+    removeAttribute: () => void;
+    appendChild: () => void;
+    removeChild: () => void;
+    insertBefore: () => void;
+    remove: () => void;
+    addEventListener: () => void;
+    removeEventListener: () => void;
+    dispatchEvent: () => boolean;
+    getBoundingClientRect: () => { top: number; left: number; right: number; bottom: number; width: number; height: number };
+    relList: { supports: () => boolean; add: () => void; remove: () => void; contains: () => boolean };
+    children: never[];
+    childNodes: never[];
+    parentNode: null;
+    innerHTML: string;
+    textContent: string;
+    tagName: string;
+}
+
 // eslint-disable-next-line max-lines-per-function
-function makeElement(): any {
+function makeElement(): ShimElement {
     return {
         style: {},
         dataset: {},
@@ -60,7 +86,7 @@ function shimWindow(): void {
     if (typeof window !== "undefined") {
         return;
     }
-    (globalThis as any).window = globalThis;
+    _g.window = globalThis;
 }
 
 function shimDocument(): void {
@@ -71,7 +97,7 @@ function shimDocument(): void {
     const headEl = makeElement();
     const bodyEl = makeElement();
 
-    (globalThis as any).document = {
+    _g.document = {
         currentScript: null,
         documentElement: makeElement(),
         head: headEl,
@@ -92,20 +118,20 @@ function shimDocument(): void {
         addEventListener: noop,
         removeEventListener: noop,
         dispatchEvent: () => true,
-        adoptNode: (n: any) => n,
-        importNode: (n: any) => n,
+        adoptNode: (n: unknown) => n,
+        importNode: (n: unknown) => n,
     };
 }
 
 function shimDomClasses(): void {
     if (typeof HTMLElement === "undefined") {
-        (globalThis as any).HTMLElement = class HTMLElement {};
+        _g.HTMLElement = class HTMLElement {};
     }
     if (typeof Element === "undefined") {
-        (globalThis as any).Element = class Element {};
+        _g.Element = class Element {};
     }
     if (typeof Node === "undefined") {
-        (globalThis as any).Node = class Node {};
+        _g.Node = class Node {};
     }
 }
 
@@ -113,7 +139,7 @@ function shimNavigator(): void {
     if (typeof navigator !== "undefined") {
         return;
     }
-    (globalThis as any).navigator = {
+    _g.navigator = {
         userAgent: "service-worker",
         platform: "service-worker",
         language: "en",
@@ -126,7 +152,7 @@ function shimNavigator(): void {
 function shimStorage(): void {
     if (typeof localStorage === "undefined") {
         const store = new Map<string, string>();
-        (globalThis as any).localStorage = {
+        _g.localStorage = {
             getItem: (k: string) => store.get(k) ?? null,
             setItem: (k: string, v: string) => store.set(k, v),
             removeItem: (k: string) => store.delete(k),
@@ -137,7 +163,7 @@ function shimStorage(): void {
     }
     if (typeof sessionStorage === "undefined") {
         const store = new Map<string, string>();
-        (globalThis as any).sessionStorage = {
+        _g.sessionStorage = {
             getItem: (k: string) => store.get(k) ?? null,
             setItem: (k: string, v: string) => store.set(k, v),
             removeItem: (k: string) => store.delete(k),
@@ -150,21 +176,21 @@ function shimStorage(): void {
 
 function shimObservers(): void {
     if (typeof MutationObserver === "undefined") {
-        (globalThis as any).MutationObserver = class MutationObserver {
+        _g.MutationObserver = class MutationObserver {
             observe() {}
             disconnect() {}
             takeRecords() { return []; }
         };
     }
     if (typeof IntersectionObserver === "undefined") {
-        (globalThis as any).IntersectionObserver = class IntersectionObserver {
+        _g.IntersectionObserver = class IntersectionObserver {
             observe() {}
             unobserve() {}
             disconnect() {}
         };
     }
     if (typeof ResizeObserver === "undefined") {
-        (globalThis as any).ResizeObserver = class ResizeObserver {
+        _g.ResizeObserver = class ResizeObserver {
             observe() {}
             unobserve() {}
             disconnect() {}
@@ -174,33 +200,33 @@ function shimObservers(): void {
 
 function shimMiscApis(): void {
     if (typeof requestAnimationFrame === "undefined") {
-        (globalThis as any).requestAnimationFrame = (cb: (...args: unknown[]) => void) => setTimeout(cb, 0);
-        (globalThis as any).cancelAnimationFrame = (id: number) => clearTimeout(id);
+        _g.requestAnimationFrame = (cb: (...args: unknown[]) => void) => setTimeout(cb, 0);
+        _g.cancelAnimationFrame = (id: number) => clearTimeout(id);
     }
     if (typeof CustomEvent === "undefined") {
-        (globalThis as any).CustomEvent = class CustomEvent extends Event {
-            detail: any;
-            constructor(type: string, params?: any) {
+        _g.CustomEvent = class ShimCustomEvent extends Event {
+            detail: unknown;
+            constructor(type: string, params?: { detail?: unknown }) {
                 super(type);
                 this.detail = params?.detail ?? null;
             }
         };
     }
     if (typeof DOMParser === "undefined") {
-        (globalThis as any).DOMParser = class DOMParser {
-            parseFromString() { return (globalThis as any).document; }
+        _g.DOMParser = class DOMParser {
+            parseFromString() { return _g.document; }
         };
     }
     if (typeof XMLSerializer === "undefined") {
-        (globalThis as any).XMLSerializer = class XMLSerializer {
+        _g.XMLSerializer = class XMLSerializer {
             serializeToString() { return ""; }
         };
     }
     if (typeof getComputedStyle === "undefined") {
-        (globalThis as any).getComputedStyle = () => new Proxy({}, { get: () => "" });
+        _g.getComputedStyle = () => new Proxy({}, { get: () => "" });
     }
     if (typeof matchMedia === "undefined") {
-        (globalThis as any).matchMedia = () => ({
+        _g.matchMedia = () => ({
             matches: false,
             media: "",
             addEventListener: noop,
