@@ -61,6 +61,11 @@ interface AuthDiagUpdateCtx {
   wsCacheRow: ReturnType<typeof buildDiagRow>;
   renderWaterfall: () => void;
 }
+/** Check if a bridge error is due to normal MV3 service worker suspension. */
+function _isMv3Suspension(error: string): boolean {
+  const lower = error.toLowerCase();
+  return lower.includes('extension context invalidated') || lower.includes('receiving end does not exist');
+}
 
 function performAuthDiagUpdate(ctx: AuthDiagUpdateCtx): void {
   updateCookieRow(ctx.deps, ctx.cookieRow);
