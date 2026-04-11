@@ -53,7 +53,7 @@ export default tseslint.config(
   {
     files: ["standalone-scripts/**/*.{ts,tsx}"],
     rules: {
-      "@typescript-eslint/no-explicit-any": "off",
+      // no-explicit-any enforced here too — no exceptions
     },
   },
   {
