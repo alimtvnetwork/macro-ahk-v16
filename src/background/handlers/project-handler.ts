@@ -278,7 +278,7 @@ async function clearActiveIfDeleted(
 async function seedBoundConfigs(project: StoredProject): Promise<void> {
     const projectScripts = project.scripts ?? [];
     const bindingIds = projectScripts
-        .map((s: any) => s.configBinding)
+        .map((s: { configBinding?: string }) => s.configBinding)
         .filter(Boolean);
 
     if (bindingIds.length === 0) return;

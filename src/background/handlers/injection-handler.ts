@@ -902,7 +902,7 @@ async function injectProjectNamespaces(tabId: number, allProjects: StoredProject
     }
 
     // ✅ 15.3: Read all configs ONCE before the loop
-    let allConfigs: any[] = [];
+    let allConfigs: Array<Record<string, unknown>> = [];
     try {
         const configResult = await chrome.storage.local.get(STORAGE_KEY_ALL_CONFIGS);
         allConfigs = Array.isArray(configResult[STORAGE_KEY_ALL_CONFIGS])
@@ -1288,7 +1288,7 @@ async function showInjectionToastInTab(
                 if (loader) { loader.style.opacity = "0"; loader.style.transform = "translateY(8px) scale(0.96)"; setTimeout(() => loader.remove(), 300); }
 
                 // Try SDK toast first
-                const m = (window as any).marco;
+                const m = (window as unknown as Record<string, Record<string, ((...args: unknown[]) => void)>>).marco;
                 if (m?.notify?.success) {
                     try { m.notify.success(msg, { duration: 4000 }); return; } catch { /* fall through */ }
                 }
@@ -1395,7 +1395,7 @@ async function showInjectionFailureToastInTab(
                 if (loader) { loader.style.opacity = "0"; loader.style.transform = "translateY(8px) scale(0.96)"; setTimeout(() => loader.remove(), 300); }
 
                 // Try SDK toast first
-                const m = (window as any).marco;
+                const m = (window as unknown as Record<string, Record<string, ((...args: unknown[]) => void)>>).marco;
                 if (m?.notify?.error) {
                     try { m.notify.error(msg, { duration: 6000 }); return; } catch { /* fall through */ }
                 }
@@ -1503,10 +1503,11 @@ async function verifyPostInjectionGlobals(tabId: number): Promise<void> {
                 const win = window as unknown as Record<string, unknown>;
                 const marcoSdk = typeof win.marco === "object" && win.marco !== null;
                 const extRoot = typeof win.RiseupAsiaMacroExt === "object" && win.RiseupAsiaMacroExt !== null;
-                const mcClass = typeof (win as any).MacroController === "function";
+                const mcClass = typeof (win as Record<string, unknown>).MacroController === "function";
+                const extRootObj = win.RiseupAsiaMacroExt as Record<string, Record<string, Record<string, Record<string, unknown>>>> | undefined;
                 const mcInstance = !!(
                     extRoot &&
-                    (win.RiseupAsiaMacroExt as any)?.Projects?.MacroController?.api?.mc
+                    extRootObj?.Projects?.MacroController?.api?.mc
                 );
                 const uiContainer = !!document.getElementById("macro-loop-container");
                 const markerEl = !!document.querySelector("[data-marco-injected]");
