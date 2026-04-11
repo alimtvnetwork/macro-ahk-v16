@@ -27,7 +27,6 @@ import {
   type NamespaceDatabaseRequest,
 } from "@/types/default-databases";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 interface CreateDatabaseFormProps {
   projectSlug: string;
@@ -83,17 +82,17 @@ export function CreateDatabaseForm({
       // Create via PROJECT_DB_CREATE_TABLE for KV/Config kinds
       if (extraSchema) {
         await sendMessage({
-          type: "PROJECT_API" as any,
+          type: "PROJECT_API",
           project: projectSlug,
           method: "SCHEMA",
           endpoint: "execRaw",
           params: { sql: extraSchema },
-        } as any);
+        });
       }
 
       // Register in ProjectDatabases
       await sendMessage({
-        type: "PROJECT_API" as any,
+        type: "PROJECT_API",
         project: projectSlug,
         method: "POST",
         endpoint: "ProjectDatabases",
@@ -104,7 +103,7 @@ export function CreateDatabaseForm({
           IsDefault: 0,
           Description: request.description ?? null,
         },
-      } as any);
+      });
 
       const kindLabel = DATABASE_KINDS.find((k) => k.id === kindNum)?.name ?? "Unknown";
       toast.success(`Database "${request.databaseName}" (${kindLabel}) created in ${request.namespace}`);

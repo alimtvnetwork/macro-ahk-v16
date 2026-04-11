@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, max-lines-per-function -- untyped extension message types */
 /**
  * SchemaTab — Visual Table Builder
  *
@@ -110,10 +109,10 @@ export function SchemaTab({ projectSlug, onMigrationComplete }: SchemaTabProps) 
         relations?: Array<{ TableName: string; SourceColumn: string; TargetTable: string; TargetColumn: string; OnDelete?: string }>;
         errorMessage?: string;
       }>({
-        type: "GENERATE_SCHEMA_DOCS" as any,
+        type: "GENERATE_SCHEMA_DOCS",
         project: projectSlug,
         format: "meta",
-      } as any);
+      });
 
       if (!resp.isOk) {
         toast.error(resp.errorMessage || "Failed to load schema");
@@ -148,7 +147,7 @@ export function SchemaTab({ projectSlug, onMigrationComplete }: SchemaTabProps) 
             sourceColumn: r.SourceColumn,
             targetTable: r.TargetTable,
             targetColumn: r.TargetColumn || "Id",
-            onDelete: (r.OnDelete as any) || "CASCADE",
+            onDelete: (r.OnDelete) || "CASCADE",
           })),
         isOpen: false,
       }));
@@ -272,10 +271,10 @@ export function SchemaTab({ projectSlug, onMigrationComplete }: SchemaTabProps) 
       };
 
       const result = await sendMessage<ApplyResult>({
-        type: "APPLY_JSON_SCHEMA" as any,
+        type: "APPLY_JSON_SCHEMA",
         project: projectSlug,
         schema: JSON.stringify(schema),
-      } as any);
+      });
 
       setLastResult(result);
 

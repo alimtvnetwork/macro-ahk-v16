@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- untyped extension message types */
 /**
  * Marco Extension — Project Database Panel
  *
@@ -95,7 +94,7 @@ export function ProjectDatabasePanel({ projectId, projectSlug }: ProjectDatabase
         method: "GET",
         endpoint: "ProjectDatabases",
         params: { limit: 100, offset: 0 },
-      } as any);
+      });
       if (result.isOk && result.rows) {
         const userCreated = result.rows.filter((r) => r.IsDefault !== 1).length;
         setUserDbCount(userCreated);
@@ -208,10 +207,10 @@ export function ProjectDatabasePanel({ projectId, projectSlug }: ProjectDatabase
     setDownloadingDocs(true);
     try {
       const result = await sendMessage<{ isOk: boolean; markdown?: string; prisma?: string; errorMessage?: string }>({
-        type: "GENERATE_SCHEMA_DOCS" as any,
+        type: "GENERATE_SCHEMA_DOCS",
         project: projectSlug,
         format,
-      } as any);
+      });
 
       if (!result.isOk) {
         toast.error(result.errorMessage || "Failed to generate docs");

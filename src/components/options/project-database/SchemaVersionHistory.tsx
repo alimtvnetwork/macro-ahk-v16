@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any -- untyped extension message types */
 /**
  * SchemaVersionHistory — Schema version tracking and rollback
  *
@@ -47,10 +46,10 @@ export function SchemaVersionHistory({
     setLoading(true);
     try {
       const resp = await sendMessage<{ isOk: boolean; value?: string }>({
-        type: "KV_GET" as any,
+        type: "KV_GET",
         project: projectSlug,
         key: KV_KEY,
-      } as any);
+      });
       if (resp.isOk && resp.value) {
         try {
           const parsed = JSON.parse(resp.value);
@@ -90,11 +89,11 @@ export function SchemaVersionHistory({
 
     try {
       await sendMessage({
-        type: "KV_SET" as any,
+        type: "KV_SET",
         project: projectSlug,
         key: KV_KEY,
         value: JSON.stringify(updated),
-      } as any);
+      });
       setVersions(updated);
       toast.success(`Saved as ${snapshot.label}`);
     } catch (err) {
@@ -106,11 +105,11 @@ export function SchemaVersionHistory({
     const updated = versions.filter((v) => v.id !== id);
     try {
       await sendMessage({
-        type: "KV_SET" as any,
+        type: "KV_SET",
         project: projectSlug,
         key: KV_KEY,
         value: JSON.stringify(updated),
-      } as any);
+      });
       setVersions(updated);
       toast.success("Version deleted");
     } catch {

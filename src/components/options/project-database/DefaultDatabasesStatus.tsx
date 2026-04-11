@@ -17,7 +17,6 @@ import { sendMessage } from "@/lib/message-client";
 import { DEFAULT_PROJECT_DATABASES } from "@/types/default-databases";
 import { KeyValueBrowser } from "./KeyValueBrowser";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
 interface DefaultDatabasesStatusProps {
   projectSlug: string;
@@ -59,12 +58,12 @@ export function DefaultDatabasesStatus({ projectSlug }: DefaultDatabasesStatusPr
 
       try {
         const result = await sendMessage<{ isOk: boolean; rows?: unknown[]; total?: number }>({
-          type: "PROJECT_API" as any,
+          type: "PROJECT_API",
           project: projectSlug,
           method: "GET",
           endpoint: tableName,
           params: { limit: 1, offset: 0 },
-        } as any);
+        });
 
         updated.push({
           name: def.databaseName,
