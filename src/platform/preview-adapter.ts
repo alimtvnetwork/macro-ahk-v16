@@ -19,7 +19,7 @@ import type {
 /*  In-Memory Storage                                                  */
 /* ------------------------------------------------------------------ */
 
-const memoryStore = new Map<string, unknown>();
+const memoryStore = new Map<string, string | number | boolean | null | object>();
 
 /* ------------------------------------------------------------------ */
 /*  Mutable Mock Error/Log State                                       */
