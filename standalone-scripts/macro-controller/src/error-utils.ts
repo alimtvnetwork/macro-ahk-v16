@@ -14,8 +14,7 @@
  *
  * This is the ONLY function allowed to accept a generic error type.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function toErrorMessage<TError extends any>(e: TError): string {
+export function toErrorMessage(e: Error | string | null | undefined): string {
   if (e instanceof Error) {
     return e.message;
   }
@@ -43,8 +42,7 @@ export function toErrorMessage<TError extends any>(e: TError): string {
  * @param msg - Human-readable error description
  * @param error - Optional caught error value (stack trace extracted if Error)
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function logError<TError extends any>(fn: string, msg: string, error?: TError): void {
+export function logError(fn: string, msg: string, error?: Error | string): void {
   try {
     const logger = (typeof RiseupAsiaMacroExt !== 'undefined') ? RiseupAsiaMacroExt?.Logger : undefined;
     if (logger) {
