@@ -1,14 +1,18 @@
+import type { SqlValue } from "@/background/handlers/handler-types";
+
 declare module "sql.js" {
+  export type { SqlValue };
+
   export interface Statement {
-    run(params?: unknown[]): void;
-    bind(params?: unknown[]): boolean;
+    run(params?: SqlValue[]): void;
+    bind(params?: SqlValue[]): boolean;
     step(): boolean;
-    getAsObject(): Record<string, unknown>;
+    getAsObject(): Record<string, SqlValue>;
     free(): void;
   }
 
   export interface Database {
-    run(sql: string, params?: unknown[]): Database;
+    run(sql: string, params?: SqlValue[]): Database;
     exec(sql: string): QueryExecResult[];
     prepare(sql: string): Statement;
     close(): void;
@@ -17,7 +21,7 @@ declare module "sql.js" {
 
   export interface QueryExecResult {
     columns: string[];
-    values: unknown[][];
+    values: SqlValue[][];
   }
 
   export interface SqlJsStatic {
