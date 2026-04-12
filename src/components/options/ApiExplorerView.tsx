@@ -11,3 +11,5 @@ export function ApiExplorerView() {
     </div>
   );
 }
+
+export default ApiExplorerView;

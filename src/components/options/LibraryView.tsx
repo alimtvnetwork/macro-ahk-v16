@@ -1078,3 +1078,5 @@ export function LibraryView() {
     </div>
   );
 }
+
+export default LibraryView;
