@@ -5,25 +5,17 @@
  * in both the Chrome extension and the browser preview.
  */
 
-/** Primitive values allowed in message payloads and storage. */
-export type SerializableValue =
-    | string
-    | number
-    | boolean
-    | null
-    | SerializableValue[]
-    | { [key: string]: SerializableValue };
-
 /** Typed message payload sent to the background service worker. */
+// eslint-disable-next-line @typescript-eslint/no-restricted-types
 export interface MessagePayload {
     type: string;
-    [key: string]: SerializableValue;
+    [key: string]: string | number | boolean | null | undefined | object;
 }
 
 /** Platform-agnostic storage interface. */
 export interface PlatformStorage {
-    get<T extends SerializableValue = SerializableValue>(key: string): Promise<T | null>;
-    set<T extends SerializableValue = SerializableValue>(key: string, value: T): Promise<void>;
+    get<T = string | number | boolean | null | object>(key: string): Promise<T>;
+    set(key: string, value: string | number | boolean | null | object): Promise<void>;
     remove(key: string): Promise<void>;
 }
 

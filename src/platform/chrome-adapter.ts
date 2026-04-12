@@ -12,7 +12,6 @@ import type {
     PlatformStorage,
     PlatformTabs,
     MessagePayload,
-    SerializableValue,
 } from "./platform-adapter";
 
 /* ------------------------------------------------------------------ */
@@ -43,12 +42,12 @@ interface BackgroundPingResponse {
 /* ------------------------------------------------------------------ */
 
 const chromeStorage: PlatformStorage = {
-    async get<T extends SerializableValue = SerializableValue>(key: string): Promise<T | null> {
+    async get<T = string | number | boolean | null | object>(key: string): Promise<T> {
         const result = await chrome.storage.local.get(key);
-        return (result[key] as T) ?? null;
+        return (result[key] ?? null) as T;
     },
 
-    async set<T extends SerializableValue = SerializableValue>(key: string, value: T): Promise<void> {
+    async set(key: string, value: string | number | boolean | null | object): Promise<void> {
         await chrome.storage.local.set({ [key]: value });
     },
 
@@ -91,7 +90,7 @@ function isRetryableError(error: Error | string): boolean {
 }
 
 /** Throws if the response is a standardized background error envelope. */
-function throwIfErrorResponse(response: SerializableValue): void {
+function throwIfErrorResponse(response: string | number | boolean | null | object): void {
     const isObjectResponse =
         typeof response === "object" && response !== null;
 
