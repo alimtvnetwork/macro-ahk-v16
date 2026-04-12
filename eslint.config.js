@@ -25,6 +25,13 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "error",
       "no-var": "error",
+      "@typescript-eslint/no-restricted-types": ["warn", {
+        types: {
+          unknown: {
+            message: "Use a specific type instead of `unknown`. Define an interface or use a concrete type.",
+          },
+        },
+      }],
 
       // --- SonarJS: Code smells & complexity ---
       "sonarjs/cognitive-complexity": ["warn", 15],
@@ -69,6 +76,7 @@ export default tseslint.config(
       "max-lines-per-function": "off",
       "sonarjs/no-duplicate-string": "off",
       "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-restricted-types": "off",
     },
   },
   {
