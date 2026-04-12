@@ -222,8 +222,18 @@ export function ErrorDrawer({ open, onOpenChange }: ErrorDrawerProps) {
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={refresh} disabled={loading}>
               <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyAll}>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopyAll} title="Copy all">
               <Copy className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-destructive hover:text-destructive"
+              onClick={handleClearAll}
+              disabled={errorEntries.length === 0}
+              title="Clear all errors"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
