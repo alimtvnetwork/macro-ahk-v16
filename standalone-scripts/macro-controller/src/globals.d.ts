@@ -199,7 +199,7 @@ declare global {
 
   interface RiseupAsiaMacroExtNamespace {
     Logger?: {
-      error(fn: string, msg: string, error?: unknown): void;
+      error(fn: string, msg: string, error?: Error | string): void;
       warn(fn: string, msg: string): void;
       info(fn: string, msg: string): void;
       debug(fn: string, msg: string): void;
