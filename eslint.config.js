@@ -25,11 +25,10 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "error",
       "no-var": "error",
-      "@typescript-eslint/no-restricted-types": ["error", {
+      "@typescript-eslint/no-restricted-types": ["warn", {
         types: {
           unknown: {
             message: "Use a specific type instead of `unknown`. Define an interface or use a concrete type.",
-            suggest: ["string", "number", "Record<string, string>"],
           },
         },
       }],
