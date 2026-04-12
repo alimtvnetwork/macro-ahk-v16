@@ -11,7 +11,7 @@ import type { SqlValue } from "sql.js";
 import type { MessageRequest } from "../../shared/messages";
 import { getLogsDb, getErrorsDb, markLoggingDirty, countTable } from "./logging-handler";
 import JSZip from "jszip";
-import { logCaughtError, BgLogTag} from "../bg-logger";
+import { logCaughtError, BgLogTag, type CaughtError} from "../bg-logger";
 
 /* ------------------------------------------------------------------ */
 /*  PURGE_LOGS                                                         */

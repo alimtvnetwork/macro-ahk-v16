@@ -10,7 +10,7 @@
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-import { logCaughtError, logBgWarnError, BgLogTag} from "./bg-logger";
+import { logCaughtError, logBgWarnError, BgLogTag, type CaughtError} from "./bg-logger";
 
 export interface RemoteConfigSettings {
     isEnabled: boolean;
