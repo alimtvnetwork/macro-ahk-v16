@@ -3,7 +3,7 @@
  * Swagger-Style API Explorer
  * See: spec/05-chrome-extension/64-api-explorer-swagger.md
  */
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { sendMessage } from "@/lib/message-client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ import {
 import { EndpointAccordionItem } from "./EndpointAccordionItem";
 
 // eslint-disable-next-line max-lines-per-function
-export function ApiExplorerSwagger() {
+export const ApiExplorerSwagger = React.forwardRef<HTMLDivElement>(function ApiExplorerSwagger(_props, ref) {
   const [status, setStatus] = useState<ApiStatus | null>(null);
   const [endpoints, setEndpoints] = useState<EndpointDoc[]>([]);
   const [search, setSearch] = useState("");
@@ -176,4 +176,4 @@ export function ApiExplorerSwagger() {
       ))}
     </div>
   );
-}
+});
