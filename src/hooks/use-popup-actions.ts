@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- chrome runtime detection via globalThis */
+import type { ScriptEntry } from "@/shared/project-types";
 import { useState, useCallback, useRef } from "react";
 import { sendMessage } from "@/lib/message-client";
 import { getPlatform } from "@/platform";
@@ -72,7 +73,7 @@ export function usePopupActions() {
 
       console.log("[popup:handleRun] Fetching active project...");
       const projRes = await sendMessage<{
-        activeProject?: { scripts?: unknown[] } | null;
+        activeProject?: { scripts?: ScriptEntry[] } | null;
       }>({ type: "GET_ACTIVE_PROJECT" });
       console.log("[popup:handleRun] Active project response:", JSON.stringify(projRes?.activeProject?.scripts?.length ?? 0), "scripts");
 
@@ -169,8 +170,8 @@ function formatSkipReason(reason?: string): string {
     try {
       const data = await sendMessage<{
         sessionId: string;
-        logs: unknown[];
-        errors: unknown[];
+        logs: Record<string, string | number | null>[];
+        errors: Record<string, string | number | null>[];
       }>({ type: "GET_SESSION_LOGS" });
 
       const logCount = data.logs?.length ?? 0;
