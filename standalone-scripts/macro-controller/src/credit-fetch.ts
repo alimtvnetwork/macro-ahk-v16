@@ -154,7 +154,7 @@ function handleNonAuthError(resp: SdkApiResponse): void {
 }
 
 async function processSuccessData(
-  data: Record<string, unknown>,
+  data: WorkspacesApiResponse,
   autoDetectFn?: (token: string) => Promise<void>,
 ): Promise<void> {
   const isParseOk = parseLoopApiResponse(data);
@@ -192,7 +192,7 @@ export function fetchLoopCredits(
   logCreditPreflight(token, isRetry);
 
   apiFetchWorkspaces()
-    .then(async function (resp: SdkApiResponse): Promise<Record<string, unknown> | undefined> {
+    .then(async function (resp: SdkApiResponse): Promise<WorkspacesApiResponse | undefined> {
       if (!resp.ok) {
         if (isAuthFailure(resp.status) && !isRetry) {
           const recovered = await handleAuthRecovery(token, resp.status, '');
@@ -206,12 +206,12 @@ export function fetchLoopCredits(
         throw new Error('HTTP ' + resp.status);
       }
 
-      const data = resp.data as Record<string, unknown>;
+      const data = resp.data as WorkspacesApiResponse;
       logSub('Credit API: response received, data keys=' + Object.keys(data).join(','), 1);
 
       return data;
     })
-    .then(async function (data: Record<string, unknown> | undefined) {
+    .then(async function (data: WorkspacesApiResponse | undefined) {
       if (!data) {
         return;
       }
@@ -315,7 +315,7 @@ async function doFetchLoopCreditsAsync(isRetry?: boolean): Promise<void> {
     throw new Error('HTTP ' + resp.status);
   }
 
-  const data = resp.data as Record<string, unknown>;
+  const data = resp.data as WorkspacesApiResponse;
   parseLoopApiResponse(data);
   log('Credit API (async): parsed ' + (loopCreditState.perWorkspace || []).length + ' workspaces', 'success');
 }
