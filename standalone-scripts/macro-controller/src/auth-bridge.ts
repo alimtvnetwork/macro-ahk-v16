@@ -126,31 +126,31 @@ export function getAuthDebugSnapshot(): AuthDebugSnapshot {
 // ============================================
 
 export function extractTokenFromAuthBridgeResponse(
-  payload: Record<string, unknown>,
+  payload: Record<string, BridgePayloadValue>,
 ): string {
   if (!payload || typeof payload !== 'object') {
     return '';
   }
 
-  return extractTokenFromUnknownContainer(payload, 0);
+  return extractTokenFromContainer(payload, 0);
 }
 
-function extractTokenFromUnknownContainer(
-  raw: unknown,
+function extractTokenFromContainer(
+  raw: BridgePayloadValue,
   depth: number,
 ): string {
   if (depth > 4 || !raw || typeof raw !== 'object') {
     return '';
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw as Record<string, BridgePayloadValue>;
 
   const tokenCandidates = [
     obj.token, obj.authToken, obj.access_token, obj.jwt, obj.sessionId,
   ];
 
   for (const candidate of tokenCandidates) {
-    const token = extractBearerTokenFromUnknown(candidate);
+    const token = extractBearerTokenFromRaw(String(candidate ?? ''));
 
     if (token) {
       return token;
@@ -160,7 +160,7 @@ function extractTokenFromUnknownContainer(
   const wrapperCandidates = [obj.payload, obj.result, obj.data, obj.response];
 
   for (const wrapper of wrapperCandidates) {
-    const nestedToken = extractTokenFromUnknownContainer(wrapper, depth + 1);
+    const nestedToken = extractTokenFromContainer(wrapper, depth + 1);
 
     if (nestedToken) {
       return nestedToken;
@@ -316,19 +316,19 @@ function _requestTokenFromExtensionAttempt(
   }, BRIDGE_TIMEOUT_MS);
 }
 
-function unwrapRelayPayload(rawPayload: unknown): Record<string, unknown> {
+function unwrapRelayPayload(rawPayload: BridgePayloadValue): Record<string, BridgePayloadValue> {
   if (!rawPayload || typeof rawPayload !== 'object') {
     return {}
   }
 
-  const payload = rawPayload as Record<string, unknown>;
+  const payload = rawPayload as Record<string, BridgePayloadValue>;
   const nested = payload.payload;
 
   if (!nested || typeof nested !== 'object') {
     return payload;
   }
 
-  const nestedPayload = nested as Record<string, unknown>;
+  const nestedPayload = nested as Record<string, BridgePayloadValue>;
   const hasTokenLikeKey =
     typeof nestedPayload.token === 'string' ||
     typeof nestedPayload.authToken === 'string' ||
