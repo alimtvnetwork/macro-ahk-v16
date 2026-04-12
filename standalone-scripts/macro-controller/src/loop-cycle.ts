@@ -16,6 +16,7 @@ import { showToast } from './toast';
 import { resolveToken } from './auth';
 import { getLastTokenSource, invalidateSessionBridgeKey, markBearerTokenExpired, recoverAuthOnce } from './auth';
 import { parseLoopApiResponse, syncCreditStateFromApi } from './credit-fetch';
+import type { WorkspacesApiResponse } from './types';
 import { MacroController } from './core/MacroController';
 import { isUserTypingInPrompt } from './dom-helpers';
 import { CREDIT_API_BASE, TIMING, loopCreditState, state } from './shared-state';

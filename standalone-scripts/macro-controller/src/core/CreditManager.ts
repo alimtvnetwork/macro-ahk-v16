@@ -8,7 +8,7 @@
  */
 
 import type { CreditManagerInterface } from './MacroController';
-import type { LoopCreditState, CreditBalanceResponse } from '../types';
+import type { LoopCreditState, CreditBalanceResponse, WorkspacesApiResponse } from '../types';
 import { calcTotalCredits, calcAvailableCredits, calcFreeCreditAvailable } from '../credit-api';
 import { loopCreditState } from '../shared-state';
 import { fetchCreditBalance } from '../credit-balance';

@@ -18,7 +18,7 @@ import { showToast } from './toast';
 import { CREDIT_API_BASE } from './shared-state';
 import { hasForbidden, addForbidden, removeForbidden } from './rename-forbidden-cache';
 import { getAuthRecoveryExhausted, setAuthRecoveryExhausted } from './rename-bulk';
-import type { RenameStrategy } from './types';
+import type { RenameStrategy, MutationPayload } from './types';
 import { delay } from './async-utils';
 import { logError } from './error-utils';
 
