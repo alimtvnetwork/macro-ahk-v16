@@ -17,10 +17,24 @@ interface XPathUtilsAPI {
 }
 
 interface MacroControllerFacade {
-  getInstance?: () => unknown;
+  getInstance?: () => MacroControllerFacade;
   hasInstance?: () => boolean;
-  [key: string]: unknown;
+  ui?: { create?: () => void; update?: () => void } | null;
+  hasUI?: boolean;
+  registerUI?: (ui: ManagerInstance) => void;
+  registerAuth?: (a: ManagerInstance) => void;
+  registerCredits?: (c: ManagerInstance) => void;
+  registerLoop?: (l: ManagerInstance) => void;
+  registerWorkspaces?: (ws: ManagerInstance) => void;
+  auth?: ManagerInstance;
+  credits?: ManagerInstance;
+  loop?: ManagerInstance;
+  workspaces?: ManagerInstance;
+  [key: string]: ManagerInstance | ((...args: ManagerInstance[]) => ManagerInstance) | undefined;
 }
+
+/** Opaque manager type — typed enough to pass through register/factory calls. */
+type ManagerInstance = object | null | undefined;
 
 interface MarcoSDKPromptEntry {
   id?: string;
@@ -56,7 +70,7 @@ interface MarcoSDKApiResponse<T = unknown> {
 
 interface MarcoSDKApiCallOptions {
   params?: Record<string, string>;
-  body?: unknown;
+  body?: Record<string, string | number | boolean | null>;
   headers?: Record<string, string>;
   baseUrl?: string;
   timeoutMs?: number;
@@ -95,7 +109,7 @@ interface MarcoSDKAuthTokenUtils {
   extractBearerTokenFromRaw(raw: string): string;
   scanSupabaseLocalStorage(
     onFound?: (key: string, tokenLength: number) => void,
-    onScanError?: (error: unknown) => void,
+    onScanError?: (error: Error) => void,
   ): string;
   extractSupabaseTokenFromRaw(
     key: string,
