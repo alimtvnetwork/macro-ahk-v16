@@ -20,6 +20,7 @@ import { resolveToken, markBearerTokenExpired } from './auth';
 import { matchWorkspaceByName } from './ws-name-matching';
 import { detectWorkspaceViaProjectDialog } from './ws-dialog-detection';
 import { logError } from './error-utils';
+import type { MarkViewedResponse } from './types';
 
 // ============================================
 // Helper — auth failure check

@@ -17,7 +17,7 @@ import { resolveToken, markBearerTokenExpired, recoverAuthOnce } from './auth';
 import { showToast } from './toast';
 import { CREDIT_API_BASE, state } from './shared-state';
 import { extractProjectIdFromUrl } from './workspace-detection';
-import type { CreditBalanceResponse, CreditBalanceConfig } from './types';
+import type { CreditBalanceResponse, CreditBalanceConfig, MacroControllerConfig, CreditStatusConfig } from './types';
 import { logError } from './error-utils';
 
 // ============================================
