@@ -11,6 +11,26 @@ import type { Database as SqlJsDatabase } from "sql.js";
 import type { DbManager } from "../db-manager";
 import { computeContentHash } from "./library-content-hasher";
 import { bumpMinor } from "./library-version-manager";
+import { collectTypedRows, type JsonValue } from "./handler-types";
+
+/* ------------------------------------------------------------------ */
+/*  Message Interfaces                                                 */
+/* ------------------------------------------------------------------ */
+
+interface AssetTypeMsg { assetType?: AssetType }
+interface AssetIdMsg { assetId: number }
+interface SaveAssetMsg { asset: Partial<SharedAsset> & { Name: string; Type: AssetType; ContentJson: string; Slug: string } }
+interface LinkFilterMsg { projectId?: number; sharedAssetId?: number }
+interface SaveLinkMsg { link: Partial<AssetLink> & { SharedAssetId: number; ProjectId: number } }
+interface LinkIdMsg { linkId: number }
+interface PromoteMsg { slug: string; name: string; type: AssetType; contentJson: string }
+interface ReplaceMsg { assetId: number; contentJson: string; name?: string }
+interface ForkMsg { originalSlug: string; name: string; type: AssetType; contentJson: string }
+interface GroupMsg { group: Partial<ProjectGroup> & { Name: string } }
+interface GroupIdMsg { groupId: number }
+interface GroupMemberMsg { groupId: number; projectId: number }
+interface VersionIdMsg { assetId: number; versionId: number }
+interface ImportMsg { bundle: LibraryExport }
 
 /* ------------------------------------------------------------------ */
 /*  DB Binding                                                         */
@@ -89,8 +109,8 @@ export interface ProjectGroupMember {
 /*  SharedAsset CRUD                                                   */
 /* ------------------------------------------------------------------ */
 
-export async function handleGetSharedAssets(msg: unknown): Promise<{ assets: SharedAsset[] }> {
-    const { assetType } = (msg as { assetType?: AssetType });
+export async function handleGetSharedAssets(msg: AssetTypeMsg): Promise<{ assets: SharedAsset[] }> {
+    const { assetType } = msg;
     const db = getDb();
     const sql = assetType
         ? "SELECT * FROM SharedAsset WHERE Type = ? ORDER BY Name ASC"
@@ -98,22 +118,18 @@ export async function handleGetSharedAssets(msg: unknown): Promise<{ assets: Sha
     const params = assetType ? [assetType] : [];
     const stmt = db.prepare(sql);
     stmt.bind(params);
-    const assets: SharedAsset[] = [];
-    while (stmt.step()) {
-        assets.push(stmt.getAsObject() as unknown as SharedAsset);
-    }
-    stmt.free();
+    const assets = collectTypedRows(stmt) as SharedAsset[];
     return { assets };
 }
 
-export async function handleGetSharedAsset(msg: unknown): Promise<{ asset: SharedAsset | null }> {
-    const { assetId } = msg as { assetId: number };
+export async function handleGetSharedAsset(msg: AssetIdMsg): Promise<{ asset: SharedAsset | null }> {
+    const { assetId } = msg;
     const db = getDb();
     const result = db.exec("SELECT * FROM SharedAsset WHERE Id = ?", [assetId]);
     if (result.length === 0 || result[0].values.length === 0) return { asset: null };
     const cols = result[0].columns;
     const vals = result[0].values[0];
-    const asset = Object.fromEntries(cols.map((c, i) => [c, vals[i]])) as unknown as SharedAsset;
+    const asset = Object.fromEntries(cols.map((c, i) => [c, vals[i]])) as SharedAsset;
     return { asset };
 }
 
@@ -127,8 +143,8 @@ function snapshotVersion(db: ReturnType<typeof getDb>, assetId: number, version:
     );
 }
 
-export async function handleSaveSharedAsset(msg: unknown): Promise<{ assetId: number }> {
-    const { asset } = msg as { asset: Partial<SharedAsset> & { Name: string; Type: AssetType; ContentJson: string; Slug: string } };
+export async function handleSaveSharedAsset(msg: SaveAssetMsg): Promise<{ assetId: number }> {
+    const { asset } = msg;
     const db = getDb();
     const contentHash = await computeContentHash(asset.ContentJson);
     const version = asset.Version ?? "1.0.0";
@@ -157,8 +173,8 @@ export async function handleSaveSharedAsset(msg: unknown): Promise<{ assetId: nu
     return { assetId: newId };
 }
 
-export async function handleDeleteSharedAsset(msg: unknown): Promise<{ isOk: true; detachedCount: number }> {
-    const { assetId } = msg as { assetId: number };
+export async function handleDeleteSharedAsset(msg: AssetIdMsg): Promise<{ isOk: true; detachedCount: number }> {
+    const { assetId } = msg;
     const db = getDb();
 
     // Per spec §6.3: synced links become detached (preserving local copies)
@@ -188,8 +204,8 @@ export async function handleDeleteSharedAsset(msg: unknown): Promise<{ isOk: tru
 /*  AssetLink CRUD                                                     */
 /* ------------------------------------------------------------------ */
 
-export async function handleGetAssetLinks(msg: unknown): Promise<{ links: AssetLink[] }> {
-    const { projectId, sharedAssetId } = msg as { projectId?: number; sharedAssetId?: number };
+export async function handleGetAssetLinks(msg: LinkFilterMsg): Promise<{ links: AssetLink[] }> {
+    const { projectId, sharedAssetId } = msg;
     const db = getDb();
     let sql = "SELECT * FROM AssetLink";
     const conditions: string[] = [];
@@ -212,14 +228,14 @@ export async function handleGetAssetLinks(msg: unknown): Promise<{ links: AssetL
     stmt.bind(params);
     const links: AssetLink[] = [];
     while (stmt.step()) {
-        links.push(stmt.getAsObject() as unknown as AssetLink);
+        links.push(stmt.getAsObject() as AssetLink);
     }
     stmt.free();
     return { links };
 }
 
-export async function handleSaveAssetLink(msg: unknown): Promise<{ linkId: number }> {
-    const { link } = msg as { link: Partial<AssetLink> & { SharedAssetId: number; ProjectId: number } };
+export async function handleSaveAssetLink(msg: SaveLinkMsg): Promise<{ linkId: number }> {
+    const { link } = msg;
     const db = getDb();
     const linkState = link.LinkState ?? "synced";
 
@@ -242,8 +258,8 @@ export async function handleSaveAssetLink(msg: unknown): Promise<{ linkId: numbe
     return { linkId: newId };
 }
 
-export async function handleDeleteAssetLink(msg: unknown): Promise<{ isOk: true }> {
-    const { linkId } = msg as { linkId: number };
+export async function handleDeleteAssetLink(msg: LinkIdMsg): Promise<{ isOk: true }> {
+    const { linkId } = msg;
     const db = getDb();
     db.run("DELETE FROM AssetLink WHERE Id = ?", [linkId]);
     markDirty();
@@ -254,8 +270,8 @@ export async function handleDeleteAssetLink(msg: unknown): Promise<{ isOk: true 
 /*  Sync Engine                                                        */
 /* ------------------------------------------------------------------ */
 
-export async function handleSyncLibraryAsset(msg: unknown): Promise<{ syncedCount: number; pinnedNotified: number }> {
-    const { assetId } = msg as { assetId: number };
+export async function handleSyncLibraryAsset(msg: AssetIdMsg): Promise<{ syncedCount: number; pinnedNotified: number }> {
+    const { assetId } = msg;
     const db = getDb();
 
     // Get the latest asset
@@ -294,17 +310,12 @@ export async function handleSyncLibraryAsset(msg: unknown): Promise<{ syncedCoun
  * Promote a local project asset to the shared library.
  * Per spec §6.2: compares content hash, returns action needed.
  */
-export async function handlePromoteAsset(msg: unknown): Promise<{
+export async function handlePromoteAsset(msg: PromoteMsg): Promise<{
     action: "created" | "identical" | "conflict";
     assetId?: number;
     existingVersion?: string;
 }> {
-    const { slug, name, type, contentJson } = msg as {
-        slug: string;
-        name: string;
-        type: AssetType;
-        contentJson: string;
-    };
+    const { slug, name, type, contentJson } = msg;
     const db = getDb();
     const hash = await computeContentHash(contentJson);
 
@@ -337,8 +348,8 @@ export async function handlePromoteAsset(msg: unknown): Promise<{
 /**
  * Replace an existing library asset with new content (user chose "Replace").
  */
-export async function handleReplaceLibraryAsset(msg: unknown): Promise<{ isOk: true; newVersion: string }> {
-    const { assetId, contentJson, name } = msg as { assetId: number; contentJson: string; name?: string };
+export async function handleReplaceLibraryAsset(msg: ReplaceMsg): Promise<{ isOk: true; newVersion: string }> {
+    const { assetId, contentJson, name } = msg;
     const db = getDb();
     const hash = await computeContentHash(contentJson);
 
@@ -365,13 +376,8 @@ export async function handleReplaceLibraryAsset(msg: unknown): Promise<{ isOk: t
 /**
  * Fork an existing asset as a new library entry (user chose "Fork").
  */
-export async function handleForkLibraryAsset(msg: unknown): Promise<{ assetId: number; slug: string }> {
-    const { originalSlug, name, type, contentJson } = msg as {
-        originalSlug: string;
-        name: string;
-        type: AssetType;
-        contentJson: string;
-    };
+export async function handleForkLibraryAsset(msg: ForkMsg): Promise<{ assetId: number; slug: string }> {
+    const { originalSlug, name, type, contentJson } = msg;
     const db = getDb();
     const hash = await computeContentHash(contentJson);
 
@@ -404,14 +410,14 @@ export async function handleGetProjectGroups(): Promise<{ groups: ProjectGroup[]
     const stmt = db.prepare("SELECT * FROM ProjectGroup ORDER BY Name ASC");
     const groups: ProjectGroup[] = [];
     while (stmt.step()) {
-        groups.push(stmt.getAsObject() as unknown as ProjectGroup);
+        groups.push(stmt.getAsObject() as ProjectGroup);
     }
     stmt.free();
     return { groups };
 }
 
-export async function handleSaveProjectGroup(msg: unknown): Promise<{ groupId: number; cascadedCount: number }> {
-    const { group } = msg as { group: Partial<ProjectGroup> & { Name: string } };
+export async function handleSaveProjectGroup(msg: GroupMsg): Promise<{ groupId: number; cascadedCount: number }> {
+    const { group } = msg;
     const db = getDb();
 
     if (group.Id) {
@@ -437,8 +443,8 @@ export async function handleSaveProjectGroup(msg: unknown): Promise<{ groupId: n
     return { groupId: newId, cascadedCount: 0 };
 }
 
-export async function handleDeleteProjectGroup(msg: unknown): Promise<{ isOk: true }> {
-    const { groupId } = msg as { groupId: number };
+export async function handleDeleteProjectGroup(msg: GroupIdMsg): Promise<{ isOk: true }> {
+    const { groupId } = msg;
     const db = getDb();
     db.run("DELETE FROM ProjectGroup WHERE Id = ?", [groupId]);
     markDirty();
@@ -449,21 +455,21 @@ export async function handleDeleteProjectGroup(msg: unknown): Promise<{ isOk: tr
 /*  ProjectGroupMember CRUD                                            */
 /* ------------------------------------------------------------------ */
 
-export async function handleGetGroupMembers(msg: unknown): Promise<{ members: ProjectGroupMember[] }> {
-    const { groupId } = msg as { groupId: number };
+export async function handleGetGroupMembers(msg: GroupIdMsg): Promise<{ members: ProjectGroupMember[] }> {
+    const { groupId } = msg;
     const db = getDb();
     const stmt = db.prepare("SELECT * FROM ProjectGroupMember WHERE GroupId = ?");
     stmt.bind([groupId]);
     const members: ProjectGroupMember[] = [];
     while (stmt.step()) {
-        members.push(stmt.getAsObject() as unknown as ProjectGroupMember);
+        members.push(stmt.getAsObject() as ProjectGroupMember);
     }
     stmt.free();
     return { members };
 }
 
-export async function handleAddGroupMember(msg: unknown): Promise<{ memberId: number }> {
-    const { groupId, projectId } = msg as { groupId: number; projectId: number };
+export async function handleAddGroupMember(msg: GroupMemberMsg): Promise<{ memberId: number }> {
+    const { groupId, projectId } = msg;
     const db = getDb();
     db.run(
         `INSERT OR IGNORE INTO ProjectGroupMember (GroupId, ProjectId) VALUES (?, ?)`,
@@ -475,8 +481,8 @@ export async function handleAddGroupMember(msg: unknown): Promise<{ memberId: nu
     return { memberId: newId };
 }
 
-export async function handleRemoveGroupMember(msg: unknown): Promise<{ isOk: true }> {
-    const { groupId, projectId } = msg as { groupId: number; projectId: number };
+export async function handleRemoveGroupMember(msg: GroupMemberMsg): Promise<{ isOk: true }> {
+    const { groupId, projectId } = msg;
     const db = getDb();
     db.run("DELETE FROM ProjectGroupMember WHERE GroupId = ? AND ProjectId = ?", [groupId, projectId]);
     markDirty();
@@ -530,8 +536,8 @@ function cascadeSettingsToMembers(db: ReturnType<typeof getDb>, groupId: number,
 /**
  * Manual cascade trigger — push current group settings to all members.
  */
-export async function handleCascadeGroupSettings(msg: unknown): Promise<{ cascadedCount: number }> {
-    const { groupId } = msg as { groupId: number };
+export async function handleCascadeGroupSettings(msg: GroupIdMsg): Promise<{ cascadedCount: number }> {
+    const { groupId } = msg;
     const db = getDb();
 
     const result = db.exec("SELECT SharedSettingsJson FROM ProjectGroup WHERE Id = ?", [groupId]);
@@ -552,21 +558,21 @@ export async function handleCascadeGroupSettings(msg: unknown): Promise<{ cascad
 /*  Version History                                                    */
 /* ------------------------------------------------------------------ */
 
-export async function handleGetAssetVersions(msg: unknown): Promise<{ versions: AssetVersion[] }> {
-    const { assetId } = msg as { assetId: number };
+export async function handleGetAssetVersions(msg: AssetIdMsg): Promise<{ versions: AssetVersion[] }> {
+    const { assetId } = msg;
     const db = getDb();
     const stmt = db.prepare("SELECT * FROM AssetVersion WHERE SharedAssetId = ? ORDER BY CreatedAt DESC");
     stmt.bind([assetId]);
     const versions: AssetVersion[] = [];
     while (stmt.step()) {
-        versions.push(stmt.getAsObject() as unknown as AssetVersion);
+        versions.push(stmt.getAsObject() as AssetVersion);
     }
     stmt.free();
     return { versions };
 }
 
-export async function handleRollbackAssetVersion(msg: unknown): Promise<{ isOk: true; rolledBackTo: string }> {
-    const { assetId, versionId } = msg as { assetId: number; versionId: number };
+export async function handleRollbackAssetVersion(msg: VersionIdMsg): Promise<{ isOk: true; rolledBackTo: string }> {
+    const { assetId, versionId } = msg;
     const db = getDb();
 
     // Get the target version's content
@@ -612,11 +618,11 @@ export interface LibraryExport {
         slug: string;
         name: string;
         version: string;
-        content: unknown;
+        content: JsonValue;
     }>;
     groups: Array<{
         name: string;
-        sharedSettings: unknown;
+        sharedSettings: JsonValue;
         memberProjectIds: number[];
     }>;
 }
@@ -625,8 +631,8 @@ function exportAssets(db: SqlJsDatabase): LibraryExport["assets"] {
     const stmt = db.prepare("SELECT * FROM SharedAsset ORDER BY Name ASC");
     const assets: LibraryExport["assets"] = [];
     while (stmt.step()) {
-        const row = stmt.getAsObject() as unknown as SharedAsset;
-        let content: unknown;
+        const row = stmt.getAsObject() as SharedAsset;
+        let content: JsonValue;
         try { content = JSON.parse(row.ContentJson); } catch { content = row.ContentJson; }
         assets.push({ type: row.Type, slug: row.Slug, name: row.Name, version: row.Version, content });
     }
@@ -638,10 +644,10 @@ function exportGroups(db: SqlJsDatabase): LibraryExport["groups"] {
     const stmt = db.prepare("SELECT * FROM ProjectGroup ORDER BY Name ASC");
     const groups: LibraryExport["groups"] = [];
     while (stmt.step()) {
-        const row = stmt.getAsObject() as unknown as ProjectGroup;
+        const row = stmt.getAsObject() as ProjectGroup;
         const memberResult = db.exec("SELECT ProjectId FROM ProjectGroupMember WHERE GroupId = ?", [row.Id]);
         const memberProjectIds = memberResult.length > 0 ? memberResult[0].values.map((v) => v[0] as number) : [];
-        let sharedSettings: unknown = null;
+        let sharedSettings: JsonValue = null;
         if (row.SharedSettingsJson) {
             try { sharedSettings = JSON.parse(row.SharedSettingsJson); } catch { sharedSettings = row.SharedSettingsJson; }
         }
@@ -707,8 +713,8 @@ function importGroups(db: SqlJsDatabase, groups: LibraryExport["groups"]): void 
     }
 }
 
-export async function handleImportLibrary(msg: unknown): Promise<ImportResult> {
-    const { bundle } = msg as { bundle: LibraryExport };
+export async function handleImportLibrary(msg: ImportMsg): Promise<ImportResult> {
+    const { bundle } = msg;
     const db = getDb();
     const result: ImportResult = { imported: 0, skipped: 0, conflicts: [] };
 
