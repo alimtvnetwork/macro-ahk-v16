@@ -131,53 +131,44 @@ const DEFAULT_THEME: MacroThemeRoot = {
  * Validate and deep-merge config with defaults.
  * Warns on schema version mismatch or unexpected types.
  */
-export function validateConfig(raw: unknown): MacroControllerConfig {
-  if (!isPlainObject(raw)) {
-    warn('Config: received non-object — using all defaults');
-    return { ...DEFAULT_CONFIG };
-  }
-
-  const cfg = raw as Partial<MacroControllerConfig>;
-
+export function validateConfig(raw: Partial<MacroControllerConfig>): MacroControllerConfig {
   // Schema version check
-  if (cfg.schemaVersion !== undefined) {
-    validateSchemaVersion('Config', cfg.schemaVersion, SUPPORTED_CONFIG_SCHEMA);
+  if (raw.schemaVersion !== undefined) {
+    validateSchemaVersion('Config', raw.schemaVersion, SUPPORTED_CONFIG_SCHEMA);
   }
 
   // Type-check critical fields
-  validateFieldType(cfg as Record<string, unknown>, 'macroLoop', 'object', 'Config');
-  validateFieldType(cfg as Record<string, unknown>, 'general', 'object', 'Config');
-  validateFieldType(cfg as Record<string, unknown>, 'autoAttach', 'object', 'Config');
+  validateFieldType(raw as Record<string, unknown>, 'macroLoop', 'object', 'Config');
+  validateFieldType(raw as Record<string, unknown>, 'general', 'object', 'Config');
+  validateFieldType(raw as Record<string, unknown>, 'autoAttach', 'object', 'Config');
 
-  return deepMerge(DEFAULT_CONFIG as Record<string, unknown>, cfg as Record<string, unknown>) as unknown as MacroControllerConfig;
+  return deepMerge(DEFAULT_CONFIG as Record<string, unknown>, raw as Record<string, unknown>) as unknown as MacroControllerConfig;
 }
 
 /**
  * Validate and deep-merge theme with defaults.
  * Warns on schema version mismatch, missing presets, or invalid activePreset.
  */
-export function validateTheme(raw: unknown): MacroThemeRoot {
-  if (!isPlainObject(raw)) {
-    warn('Theme: received non-object — using all defaults');
-    return { ...DEFAULT_THEME };
-  }
-
-  const theme = raw as Partial<MacroThemeRoot>;
-
+export function validateTheme(raw: Partial<MacroThemeRoot>): MacroThemeRoot {
   // Schema version check
-  if (theme.schemaVersion !== undefined) {
-    validateSchemaVersion('Theme', theme.schemaVersion, SUPPORTED_THEME_SCHEMA);
+  if (raw.schemaVersion !== undefined) {
+    validateSchemaVersion('Theme', raw.schemaVersion, SUPPORTED_THEME_SCHEMA);
   }
 
   // Validate activePreset
-  if (theme.activePreset && theme.activePreset !== 'dark' && theme.activePreset !== 'light') {
-    warn('Theme: activePreset "' + theme.activePreset + '" is not "dark" or "light" — falling back to "dark"');
-    theme.activePreset = 'dark';
+  const hasActivePreset = raw.activePreset !== undefined;
+  const isKnownPreset = raw.activePreset === 'dark' || raw.activePreset === 'light';
+  const isUnknownPreset = hasActivePreset && !isKnownPreset;
+
+  if (isUnknownPreset) {
+    warn('Theme: activePreset "' + raw.activePreset + '" is not "dark" or "light" — falling back to "dark"');
+    raw.activePreset = 'dark';
   }
 
   // Ensure presets object has at least the active preset
-  const merged = deepMerge(DEFAULT_THEME as Record<string, unknown>, theme as Record<string, unknown>) as unknown as MacroThemeRoot;
+  const merged = deepMerge(DEFAULT_THEME as Record<string, unknown>, raw as Record<string, unknown>) as unknown as MacroThemeRoot;
   const activeKey = (merged.activePreset || 'dark') as string;
+
   if (merged.presets && !(merged.presets as Record<string, unknown>)[activeKey]) {
     warn('Theme: active preset "' + activeKey + '" not found in presets — using default');
     (merged.presets as Record<string, unknown>)[activeKey] = DEFAULT_THEME_PRESET;
@@ -188,12 +179,10 @@ export function validateTheme(raw: unknown): MacroThemeRoot {
 
 // ── Internal helpers ──
 
-function validateSchemaVersion(label: string, version: unknown, supported: number): void {
-  if (typeof version !== 'number') {
-    warn(label + ': schemaVersion is not a number (got ' + typeof version + ')');
-    return;
-  }
-  if (version > supported) {
+function validateSchemaVersion(label: string, version: number, supported: number): void {
+  const isNewerThanSupported = version > supported;
+
+  if (isNewerThanSupported) {
     warn(label + ': schemaVersion ' + version + ' is newer than supported (' + supported + ') — some fields may be ignored');
   }
 }
