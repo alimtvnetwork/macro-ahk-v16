@@ -65,6 +65,13 @@ const previewTabs: PlatformTabs = {
 /** Returns mock data matching the background service worker protocol. */
 // eslint-disable-next-line max-lines-per-function
 function getMockResponse(message: MessagePayload): unknown {
+    // Handle stateful mutations before building mock lookup
+    if (message.type === "CLEAR_ERRORS") {
+        mockErrorsCleared = true;
+        mockLogsCleared = true;
+        return { isOk: true };
+    }
+
     const mocks: Record<string, unknown> = {
         GET_STATUS: {
             connection: "online",
