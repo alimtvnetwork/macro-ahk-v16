@@ -14,7 +14,7 @@ import {
     resolveConfigCascade,
     getRemoteFetchStatus,
 } from "../remote-config-fetcher";
-import { logBgWarnError, logCaughtError, BgLogTag} from "../bg-logger";
+import { logBgWarnError, logCaughtError, BgLogTag, type CaughtError} from "../bg-logger";
 import {
     buildCookieUrlCandidates,
     readCookieValueFromCandidates,
