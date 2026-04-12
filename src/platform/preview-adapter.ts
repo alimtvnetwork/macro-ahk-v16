@@ -286,7 +286,7 @@ function getMockResponse(message: MessagePayload): unknown {
                 ext_version: "1.33.0",
             },
         ] },
-        CLEAR_ERRORS: (() => { mockErrorsCleared = true; mockLogsCleared = true; return { isOk: true }; })(),
+        /* CLEAR_ERRORS handled above as stateful mutation */
         GET_SETTINGS: { settings: {
             autoRunOnPageLoad: true,
             showNotifications: true,
