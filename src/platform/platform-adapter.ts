@@ -6,15 +6,16 @@
  */
 
 /** Typed message payload sent to the background service worker. */
+
 export interface MessagePayload {
     type: string;
-    [key: string]: unknown;
+    [key: string]: string | number | boolean | null | undefined | object;
 }
 
 /** Platform-agnostic storage interface. */
 export interface PlatformStorage {
-    get(key: string): Promise<unknown>;
-    set(key: string, value: unknown): Promise<void>;
+    get<T = string | number | boolean | null | object>(key: string): Promise<T>;
+    set(key: string, value: string | number | boolean | null | object): Promise<void>;
     remove(key: string): Promise<void>;
 }
 
@@ -35,7 +36,7 @@ export interface PlatformAdapter {
     readonly target: "extension" | "preview";
 
     /** Sends a typed message to the background service worker. */
-    sendMessage<T = unknown>(message: MessagePayload): Promise<T>;
+    sendMessage<T = void>(message: MessagePayload): Promise<T>;
 
     /** Platform-scoped storage operations. */
     readonly storage: PlatformStorage;

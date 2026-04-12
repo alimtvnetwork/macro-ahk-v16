@@ -14,13 +14,13 @@ declare global {
     namespace chrome {
         namespace runtime {
             const id: string | undefined;
-            function sendMessage(message: Record<string, unknown>): Promise<unknown>;
+            function sendMessage(message: Record<string, string | number | boolean | null | undefined | object>): Promise<string | number | boolean | null | object>;
             function getURL(path: string): string;
         }
         namespace storage {
             namespace local {
-                function get(key: string): Promise<Record<string, unknown>>;
-                function set(items: Record<string, unknown>): Promise<void>;
+                function get(key: string): Promise<Record<string, string | number | boolean | null | object>>;
+                function set(items: Record<string, string | number | boolean | null | object>): Promise<void>;
                 function remove(key: string): Promise<void>;
             }
         }

@@ -19,7 +19,7 @@ import type {
 /*  In-Memory Storage                                                  */
 /* ------------------------------------------------------------------ */
 
-const memoryStore = new Map<string, unknown>();
+const memoryStore = new Map<string, string | number | boolean | null | object>();
 
 /* ------------------------------------------------------------------ */
 /*  Mutable Mock Error/Log State                                       */
@@ -31,11 +31,11 @@ let mockErrorsCleared = false;
 let mockLogsCleared = false;
 
 const previewStorage: PlatformStorage = {
-    async get(key: string): Promise<unknown> {
-        return memoryStore.get(key) ?? null;
+    async get<T = string | number | boolean | null | object>(key: string): Promise<T> {
+        return (memoryStore.get(key) ?? null) as T;
     },
 
-    async set(key: string, value: unknown): Promise<void> {
+    async set(key: string, value: string | number | boolean | null | object): Promise<void> {
         memoryStore.set(key, value);
     },
 
@@ -64,7 +64,7 @@ const previewTabs: PlatformTabs = {
 
 /** Returns mock data matching the background service worker protocol. */
 // eslint-disable-next-line max-lines-per-function
-function getMockResponse(message: MessagePayload): unknown {
+function getMockResponse(message: MessagePayload): string | number | boolean | null | object {
     // Handle stateful mutations before building mock lookup
     if (message.type === "CLEAR_ERRORS") {
         mockErrorsCleared = true;
@@ -72,7 +72,7 @@ function getMockResponse(message: MessagePayload): unknown {
         return { isOk: true };
     }
 
-    const mocks: Record<string, unknown> = {
+    const mocks: Record<string, string | number | boolean | null | object> = {
         GET_STATUS: {
             connection: "online",
             token: { status: "valid", expiresIn: "58m" },
