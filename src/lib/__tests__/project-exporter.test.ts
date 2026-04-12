@@ -67,7 +67,6 @@ function getManifest(): Record<string, unknown> {
   return JSON.parse(downloadedContent);
 }
 
-// eslint-disable-next-line max-lines-per-function
 describe("exportProject", () => {
   it("includes name, version, targetUrls, and scripts", () => {
     exportProject(makeProject());

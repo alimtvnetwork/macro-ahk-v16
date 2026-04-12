@@ -85,7 +85,6 @@ interface GlobalWithChrome {
 }
 
 /** Returns globalThis.chrome typed as ChromeRef. */
-// eslint-disable-next-line @typescript-eslint/no-restricted-types
 export function getChromeRef(): ChromeRef {
     // Double-cast necessary: globalThis shape doesn't overlap with ChromeRef
     return (globalThis as unknown as GlobalWithChrome).chrome;

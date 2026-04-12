@@ -10,7 +10,6 @@ import {
   type ChainStep,
 } from "../automation-types";
 
-// eslint-disable-next-line max-lines-per-function
 describe("flattenSteps", () => {
   it("flattens a simple linear chain", () => {
     const steps: ChainStep[] = [

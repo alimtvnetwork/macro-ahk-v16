@@ -58,7 +58,6 @@ describe("satisfiesVersion", () => {
 /*  resolveInjectionOrder                                              */
 /* ------------------------------------------------------------------ */
 
-// eslint-disable-next-line max-lines-per-function
 describe("resolveInjectionOrder", () => {
     it("single project returns its ID", () => {
         const result = resolveInjectionOrder([makeNode({ id: "A" })]);

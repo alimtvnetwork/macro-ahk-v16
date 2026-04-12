@@ -44,7 +44,6 @@ function makeChain(steps: ChainStep[], overrides?: Partial<AutomationChain>): Au
   };
 }
 
-// eslint-disable-next-line max-lines-per-function
 describe("ChainRunner", () => {
   let states: ChainExecutionState[];
   let callback: StateCallback;

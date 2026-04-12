@@ -26,7 +26,6 @@ const PROJECT_ID = "584600b3-0bba-43a0-a09d-ab632bf4b5ac";
 
 type CookieStore = Map<string, Map<string, { name: string; value: string; domain: string }>>;
 
-// eslint-disable-next-line max-lines-per-function
 function buildChromeMock(options: {
     cookies?: CookieStore;
     tabs?: chrome.tabs.Tab[];

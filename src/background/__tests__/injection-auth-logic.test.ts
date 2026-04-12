@@ -67,7 +67,6 @@ function collectRelevantProjectIds(
     return relevantIds;
 }
 
-// eslint-disable-next-line max-lines-per-function
 describe("Global Project Injection Policy", () => {
     it("includes global projects even when active has no explicit deps", () => {
         const active: MinimalProject = { id: "my-project", name: "My Project" };
