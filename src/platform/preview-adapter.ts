@@ -21,6 +21,15 @@ import type {
 
 const memoryStore = new Map<string, unknown>();
 
+/* ------------------------------------------------------------------ */
+/*  Mutable Mock Error/Log State                                       */
+/* ------------------------------------------------------------------ */
+
+/** Whether mock errors have been cleared in this session. */
+let mockErrorsCleared = false;
+/** Whether mock logs have been cleared in this session. */
+let mockLogsCleared = false;
+
 const previewStorage: PlatformStorage = {
     async get(key: string): Promise<unknown> {
         return memoryStore.get(key) ?? null;
