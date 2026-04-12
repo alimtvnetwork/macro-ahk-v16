@@ -74,7 +74,7 @@ function buildDiagnosticClipboardText(
         : 'bridge skipped';
       lines.push('SDK Auth: ' + authDiag.source + ' · ' + bridgeTag + ' · ' + Math.round(authDiag.durationMs) + 'ms');
     }
-  } catch (e: unknown) {
+  } catch (e) {
     logError('buildAuthDiag', 'SDK auth diagnostics unavailable', e);
     // SDK not available
   }

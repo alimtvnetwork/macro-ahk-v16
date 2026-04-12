@@ -32,7 +32,7 @@ export function safeSetItem(key: string, value: string): boolean {
     localStorage.setItem(key, value);
 
     return true;
-  } catch (e: unknown) {
+  } catch (e) {
     logError('safeSetItem', 'localStorage setItem failed', e);
     const isQuotaError = (
       e instanceof DOMException &&

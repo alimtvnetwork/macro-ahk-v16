@@ -18,7 +18,7 @@ export interface RetryOptions {
   readonly maxAttempts: number;
   readonly delayMs: number;
   readonly backoffMultiplier?: number;
-  readonly onRetry?: (attempt: number, error: unknown) => void;
+  readonly onRetry?: (attempt: number, error: Error) => void;
 }
 
 export interface ConcurrencyLockResult<T> {
@@ -111,7 +111,7 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions):
   for (let attempt = 1; attempt <= options.maxAttempts; attempt++) {
     try {
       return await fn();
-    } catch (error: unknown) {
+    } catch (error) {
       if (attempt === options.maxAttempts) { throw error; }
       if (options.onRetry) { options.onRetry(attempt, error); }
       await delay(currentDelay);

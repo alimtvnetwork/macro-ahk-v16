@@ -376,7 +376,7 @@ function logAuthDiag(): void {
     timingStart('auth-source', 'Auth Source (SDK)');
     timingEnd('auth-source', status, detail);
     log('Startup: SDK auth diag — source=' + authDiag.source + ', bridge=' + authDiag.bridgeOutcome + ', ' + Math.round(authDiag.durationMs) + 'ms', authDiag.source === 'none' ? 'error' : 'info');
-  } catch (e: unknown) {
+  } catch (e) {
     logError('emitAuthDiag', 'SDK auth diagnostics unavailable', e);
     // SDK not available yet — skip silently
   }
@@ -482,7 +482,7 @@ function fetchTier1Prefetch(projectId: string, _token: string): Promise<MarkView
     return workspaceApi.markViewed(projectId)
       .then(handleTier1Response)
       .catch(handleTier1Error);
-  } catch (err: unknown) {
+  } catch (err) {
     log('Startup: Tier 1 prefetch error: ' + toErrorMessage(err), 'warn');
     timingEnd(WS_PREFETCH, 'warn', toErrorMessage(err));
     return Promise.resolve(null);
