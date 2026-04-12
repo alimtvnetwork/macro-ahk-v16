@@ -93,7 +93,7 @@ function formatBytes(bytes: number): string {
   return `${value.toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`;
 }
 
-function downloadJson(filename: string, payload: unknown): void {
+function downloadJson(filename: string, payload: string | number | boolean | null | object): void {
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
