@@ -31,11 +31,11 @@ let mockErrorsCleared = false;
 let mockLogsCleared = false;
 
 const previewStorage: PlatformStorage = {
-    async get(key: string): Promise<unknown> {
-        return memoryStore.get(key) ?? null;
+    async get<T = string | number | boolean | null | object>(key: string): Promise<T> {
+        return (memoryStore.get(key) ?? null) as T;
     },
 
-    async set(key: string, value: unknown): Promise<void> {
+    async set(key: string, value: string | number | boolean | null | object): Promise<void> {
         memoryStore.set(key, value);
     },
 
