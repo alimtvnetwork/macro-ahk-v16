@@ -10,7 +10,7 @@
  */
 
 import { sendToExtension } from './prompt-manager';
-import type { ExtensionCallbackResponse } from '../types';
+import type { ExtensionCallbackResponse, DatabaseRow } from '../types';
 import { buildFilterBar } from './database-data-filter';
 import { escapeHtml, buildPagination, buildDataTableElement } from './database-data-table';
 

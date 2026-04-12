@@ -10,7 +10,7 @@
 
 import { log } from '../logging';
 import { sendToExtension } from './prompt-manager';
-import type { ExtensionCallbackResponse } from '../types';
+import type { ExtensionCallbackResponse, ColumnDefinition } from '../types';
 import { injectSchemaStyles } from './database-schema-styles';
 import { el, escHtml, showMsg } from './database-schema-helpers';
 import {

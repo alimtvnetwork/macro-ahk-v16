@@ -8,6 +8,7 @@
  */
 
 import { loadTableData } from './database-modal-data';
+import type { DatabaseRow } from '../types';
 
 const PAGE_SIZE = 25;
 
