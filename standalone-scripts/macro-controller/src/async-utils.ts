@@ -10,6 +10,8 @@
  * @see spec/06-coding-guidelines/02-typescript-immutability-standards.md — Rule CQ18
  */
 
+import type { CaughtError } from './error-utils';
+
 // ============================================
 // Types (re-exported for consumers)
 // ============================================
