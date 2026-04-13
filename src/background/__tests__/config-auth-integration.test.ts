@@ -301,7 +301,7 @@ describe("handleGetToken — integration", () => {
         const result = await mod.handleGetToken(PROJECT_ID);
         expect(result.token).toBeNull();
         expect(result.errorMessage).toBeDefined();
-        expect(result.errorMessage).toContain("Session cookie not found");
+        expect(result.errorMessage).toContain("No JWT found after waiting 12s for auth restoration");
     }, 15_000);
 
     it("finds a signed URL token in a preview frame when the top-level editor URL has no token", async () => {
