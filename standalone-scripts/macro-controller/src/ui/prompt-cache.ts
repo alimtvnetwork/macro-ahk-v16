@@ -136,7 +136,7 @@ function readRecord<T>(storeName: string, key: string): Promise<T | null> {
 }
 
 /** Write a record to a store. */
-function writeRecord(storeName: string, record: Record<string, unknown>): Promise<void> {
+function writeRecord(storeName: string, record: IdbRecord): Promise<void> {
   return openDb().then(function(db) {
     return new Promise<void>(function(resolve) {
       try {

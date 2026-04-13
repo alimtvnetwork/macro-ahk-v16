@@ -21,6 +21,8 @@ import { pasteIntoEditor, showPasteToast } from './prompt-utils';
 import type { TaskNextDeps } from './task-next-ui';
 import type { EditablePrompt, PromptContext } from './prompt-loader';
 import { getPromptsConfig, sendToExtension, clearLoadedPrompts } from './prompt-loader';
+import type { PromptFormData } from '../types/api-data-types';
+import type { ExtensionResponse } from '../types';
 
 /** Adapter: getByXPath returns Node|null, pasteIntoEditor needs Element|null */
 function getByXPathAsElement(xpath: string): Element | null {

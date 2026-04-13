@@ -426,7 +426,7 @@ function _rebindActionIcons(
         if (!confirm('Delete prompt "' + p.name + '"?')) {
           return;
         }
-        sendToExtension('DELETE_PROMPT', { promptId: p.id }).then(function(resp: Record<string, unknown>) {
+        sendToExtension('DELETE_PROMPT', { promptId: p.id }).then(function(resp: ExtensionResponse) {
           if (resp && resp.isOk) {
             clearLoadedPrompts();
             clearUISnapshot();
@@ -662,7 +662,7 @@ function _buildDeleteIcon(p: PromptEntry, dropdown: HTMLElement, ctx: PromptCont
 
 /** Execute prompt deletion via extension message. */
 function _executeDeletePrompt(p: PromptEntry, _dropdown: HTMLElement, ctx: PromptContext, taskNextDeps: TaskNextDeps): void {
-  sendToExtension('DELETE_PROMPT', { promptId: p.id }).then(function(resp: Record<string, unknown>) {
+  sendToExtension('DELETE_PROMPT', { promptId: p.id }).then(function(resp: ExtensionResponse) {
     if (resp && resp.isOk) {
       log('Deleted prompt: ' + p.name, 'success');
       clearLoadedPrompts();
