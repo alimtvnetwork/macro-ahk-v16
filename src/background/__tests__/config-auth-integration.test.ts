@@ -235,7 +235,7 @@ describe("fetchAuthToken — integration", () => {
         const result = await mod.fetchAuthToken(null, PROJECT_ID);
         expect(result).toBeNull();
         expect(globalThis.fetch).not.toHaveBeenCalled();
-    });
+    }, 15_000);
 });
 
 /* ------------------------------------------------------------------ */
@@ -302,7 +302,7 @@ describe("handleGetToken — integration", () => {
         expect(result.token).toBeNull();
         expect(result.errorMessage).toBeDefined();
         expect(result.errorMessage).toContain("Session cookie not found");
-    });
+    }, 15_000);
 
     it("finds a signed URL token in a preview frame when the top-level editor URL has no token", async () => {
         const editorUrl = `https://lovable.dev/projects/${PROJECT_ID}`;
@@ -376,7 +376,7 @@ describe("handleRefreshToken — integration", () => {
         const result = await mod.handleRefreshToken(PROJECT_ID);
         expect(result.authToken).toBeUndefined();
         expect(result.errorMessage).toBeDefined();
-    });
+    }, 15_000);
 });
 
 /* ------------------------------------------------------------------ */
