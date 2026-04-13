@@ -354,7 +354,7 @@ function buildColumnDefinition(column: ColumnEntry): ColumnDefinition {
   const hasValidation = column.validation !== null;
 
   if (hasValidation) {
-    definition.Validation = column.validation;
+    definition.Validation = column.validation as ValidationRules | undefined;
   }
 
   const hasForeignKey = column.foreignKey !== null;

@@ -255,7 +255,7 @@ function renderValidationTestArea(panel: HTMLElement, col: ColumnEntry): void {
 
 function addValField(
   panel: HTMLElement,
-  validation: ValidationRules,
+  validation: ColumnValidation,
   key: string,
   label: string,
   placeholder?: string,
@@ -274,7 +274,7 @@ function addValField(
 
 function addValNumField(
   panel: HTMLElement,
-  validation: ValidationRules,
+  validation: ColumnValidation,
   key: string,
   label: string,
 ): void {
