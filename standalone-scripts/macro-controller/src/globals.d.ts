@@ -18,146 +18,146 @@ interface XPathUtilsAPI {
   reactClick: (el: Element, xpath?: string) => void;
 }
 
-interface MacroControllerFacade {
-  getInstance?: () => MacroControllerFacade;
-  hasInstance?: () => boolean;
-  ui?: { create?: () => void; update?: () => void } | null;
-  hasUI?: boolean;
-  registerUI?: (ui: ManagerInstance) => void;
-  registerAuth?: (a: ManagerInstance) => void;
-  registerCredits?: (c: ManagerInstance) => void;
-  registerLoop?: (l: ManagerInstance) => void;
-  registerWorkspaces?: (ws: ManagerInstance) => void;
-  auth?: ManagerInstance;
-  credits?: ManagerInstance;
-  loop?: ManagerInstance;
-  workspaces?: ManagerInstance;
-  [key: string]: ManagerInstance | ((...args: ManagerInstance[]) => ManagerInstance) | string | boolean | undefined;
-}
-
-/** Opaque manager type — typed enough to pass through register/factory calls. */
-type ManagerInstance = object | null | undefined;
-
-interface MarcoSDKPromptEntry {
-  id?: string;
-  name: string;
-  text: string;
-  category?: string;
-  categories?: string;
-  version?: string;
-  order?: number;
-  isDefault?: boolean;
-  isFavorite?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-interface MarcoSDKPromptsApi {
-  getAll(): Promise<MarcoSDKPromptEntry[]>;
-  save(prompt: { name: string; text: string; category?: string; id?: string }): Promise<MarcoSDKPromptEntry>;
-  delete(id: string): Promise<void>;
-  reorder(ids: string[]): Promise<void>;
-  inject(text: string, options?: { pasteTargetXPath?: string; pasteTargetSelector?: string }): boolean;
-  getConfig(): Promise<{ entries: MarcoSDKPromptEntry[]; pasteTargetXPath: string; pasteTargetSelector: string }>;
-  invalidateCache(): Promise<void>;
-  preWarm(): Promise<MarcoSDKPromptEntry[]>;
-}
-
-interface MarcoSDKApiResponse<T = Record<string, string | number | boolean | null>> {
-  readonly ok: boolean;
-  readonly status: number;
-  readonly data: T;
-  readonly headers: Record<string, string>;
-}
-
-interface MarcoSDKApiCallOptions {
-  params?: Record<string, string>;
-  body?: Record<string, string | number | boolean | null>;
-  headers?: Record<string, string>;
-  baseUrl?: string;
-  timeoutMs?: number;
-}
-
-interface MarcoSDKApiCredits {
-  fetchWorkspaces(options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse>;
-  fetchBalance(wsId: string, options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse>;
-  resolve(wsId: string, options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse>;
-}
-
-interface MarcoSDKApiWorkspace {
-  move(projectId: string, targetWsId: string, options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse>;
-  rename(wsId: string, newName: string, options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse>;
-  markViewed(projectId: string, options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse>;
-  probe(options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse>;
-  resolveByProject(projectId: string, options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse>;
-}
-
-interface MarcoSDKApiModule {
-  call<T = Record<string, string | number | boolean | null>>(path: string, options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse<T>>;
-  credits: MarcoSDKApiCredits;
-  workspace: MarcoSDKApiWorkspace;
-}
-
-interface MarcoSDKAuthResolutionDiag {
-  source: 'bridge' | 'localStorage' | 'none';
-  durationMs: number;
-  bridgeOutcome: 'hit' | 'timeout' | 'error' | 'skipped';
-}
-
-interface MarcoSDKAuthTokenUtils {
-  normalizeBearerToken(raw: string): string;
-  isJwtToken(raw: string): boolean;
-  isUsableToken(raw: string): boolean;
-  extractBearerTokenFromRaw(raw: string): string;
-  scanSupabaseLocalStorage(
-    onFound?: (key: string, tokenLength: number) => void,
-    onScanError?: (error: Error) => void,
-  ): string;
-  extractSupabaseTokenFromRaw(
-    key: string,
-    raw: string,
-    onFound?: (key: string, tokenLength: number) => void,
-  ): string;
-}
-
-interface MarcoSDK {
-  auth?: {
-    getToken(): Promise<string | null>;
-    getSource(): Promise<string>;
-    refresh(): Promise<string | null>;
-    isExpired(): Promise<boolean>;
-    getJwtPayload(): Promise<Record<string, string | number | boolean | null> | null>;
-    getLastAuthDiag(): MarcoSDKAuthResolutionDiag | null;
-  };
-  authUtils?: MarcoSDKAuthTokenUtils;
-  api?: MarcoSDKApiModule;
-  notify?: {
-    toast(message: string, level?: string, opts?: { duration?: number; position?: string }): void;
-    dismissAll(): void;
-    onError(callback: (error: Error | string) => void): void;
-    getRecentErrors(): Array<Error | string>;
-    _setStopLoopCallback(fn: () => void): void;
-    _setVersion(v: string): void;
-  };
-  prompts?: MarcoSDKPromptsApi;
-  utils?: {
-    withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T>;
-    withRetry<T>(fn: () => Promise<T>, options: { maxRetries?: number; backoffMs?: number }): Promise<T>;
-    createConcurrencyLock<T>(): { acquire: () => Promise<void>; release: () => void };
-    delay(ms: number): Promise<void>;
-    pollUntil<T>(condition: () => T | null | undefined | false, options?: { intervalMs?: number; timeoutMs?: number }): Promise<T | null>;
-    waitForElement(options: { selector?: string; xpath?: string; timeoutMs?: number }): Promise<Element | null>;
-    debounce<A extends Array<string | number | boolean>>(fn: (...args: A) => void, ms: number): (...args: A) => void;
-    throttle<A extends Array<string | number | boolean>>(fn: (...args: A) => void, ms: number): (...args: A) => void;
-    safeJsonParse<T>(json: string, fallback: T): T;
-    formatDuration(ms: number): string;
-    uid(prefix?: string): string;
-    deepClone<T>(value: T): T;
-    isObject(value: string | number | boolean | object | null | undefined): value is Record<string, string | number | boolean | null>;
-  };
-}
-
 declare global {
+  interface MacroControllerFacade {
+    getInstance?: () => MacroControllerFacade;
+    hasInstance?: () => boolean;
+    ui?: { create?: () => void; update?: () => void } | null;
+    hasUI?: boolean;
+    registerUI?: (ui: ManagerInstance) => void;
+    registerAuth?: (a: ManagerInstance) => void;
+    registerCredits?: (c: ManagerInstance) => void;
+    registerLoop?: (l: ManagerInstance) => void;
+    registerWorkspaces?: (ws: ManagerInstance) => void;
+    auth?: ManagerInstance;
+    credits?: ManagerInstance;
+    loop?: ManagerInstance;
+    workspaces?: ManagerInstance;
+    [key: string]: ManagerInstance | ((...args: ManagerInstance[]) => ManagerInstance) | string | boolean | undefined;
+  }
+
+  /** Opaque manager type — typed enough to pass through register/factory calls. */
+  type ManagerInstance = object | null | undefined;
+
+  interface MarcoSDKPromptEntry {
+    id?: string;
+    name: string;
+    text: string;
+    category?: string;
+    categories?: string;
+    version?: string;
+    order?: number;
+    isDefault?: boolean;
+    isFavorite?: boolean;
+    createdAt?: string;
+    updatedAt?: string;
+  }
+
+  interface MarcoSDKPromptsApi {
+    getAll(): Promise<MarcoSDKPromptEntry[]>;
+    save(prompt: { name: string; text: string; category?: string; id?: string }): Promise<MarcoSDKPromptEntry>;
+    delete(id: string): Promise<void>;
+    reorder(ids: string[]): Promise<void>;
+    inject(text: string, options?: { pasteTargetXPath?: string; pasteTargetSelector?: string }): boolean;
+    getConfig(): Promise<{ entries: MarcoSDKPromptEntry[]; pasteTargetXPath: string; pasteTargetSelector: string }>;
+    invalidateCache(): Promise<void>;
+    preWarm(): Promise<MarcoSDKPromptEntry[]>;
+  }
+
+  interface MarcoSDKApiResponse<T = Record<string, string | number | boolean | null>> {
+    readonly ok: boolean;
+    readonly status: number;
+    readonly data: T;
+    readonly headers: Record<string, string>;
+  }
+
+  interface MarcoSDKApiCallOptions {
+    params?: Record<string, string>;
+    body?: Record<string, string | number | boolean | null | undefined>;
+    headers?: Record<string, string>;
+    baseUrl?: string;
+    timeoutMs?: number;
+  }
+
+  interface MarcoSDKApiCredits {
+    fetchWorkspaces(options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse>;
+    fetchBalance(wsId: string, options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse>;
+    resolve(wsId: string, options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse>;
+  }
+
+  interface MarcoSDKApiWorkspace {
+    move(projectId: string, targetWsId: string, options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse>;
+    rename(wsId: string, newName: string, options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse>;
+    markViewed(projectId: string, options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse>;
+    probe(options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse>;
+    resolveByProject(projectId: string, options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse>;
+  }
+
+  interface MarcoSDKApiModule {
+    call<T = Record<string, string | number | boolean | null>>(path: string, options?: MarcoSDKApiCallOptions): Promise<MarcoSDKApiResponse<T>>;
+    credits: MarcoSDKApiCredits;
+    workspace: MarcoSDKApiWorkspace;
+  }
+
+  interface MarcoSDKAuthResolutionDiag {
+    source: 'bridge' | 'localStorage' | 'none';
+    durationMs: number;
+    bridgeOutcome: 'hit' | 'timeout' | 'error' | 'skipped';
+  }
+
+  interface MarcoSDKAuthTokenUtils {
+    normalizeBearerToken(raw: string): string;
+    isJwtToken(raw: string): boolean;
+    isUsableToken(raw: string): boolean;
+    extractBearerTokenFromRaw(raw: string): string;
+    scanSupabaseLocalStorage(
+      onFound?: (key: string, tokenLength: number) => void,
+      onScanError?: (error: Error) => void,
+    ): string;
+    extractSupabaseTokenFromRaw(
+      key: string,
+      raw: string,
+      onFound?: (key: string, tokenLength: number) => void,
+    ): string;
+  }
+
+  interface MarcoSDK {
+    auth?: {
+      getToken(): Promise<string | null>;
+      getSource(): Promise<string>;
+      refresh(): Promise<string | null>;
+      isExpired(): Promise<boolean>;
+      getJwtPayload(): Promise<Record<string, string | number | boolean | null> | null>;
+      getLastAuthDiag(): MarcoSDKAuthResolutionDiag | null;
+    };
+    authUtils?: MarcoSDKAuthTokenUtils;
+    api?: MarcoSDKApiModule;
+    notify?: {
+      toast(message: string, level?: string, opts?: { duration?: number; position?: string }): void;
+      dismissAll(): void;
+      onError(callback: (error: Error | string) => void): void;
+      getRecentErrors(): Array<Error | string>;
+      _setStopLoopCallback(fn: () => void): void;
+      _setVersion(v: string): void;
+    };
+    prompts?: MarcoSDKPromptsApi;
+    utils?: {
+      withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T>;
+      withRetry<T>(fn: () => Promise<T>, options: { maxRetries?: number; backoffMs?: number }): Promise<T>;
+      createConcurrencyLock<T>(): { acquire: () => Promise<void>; release: () => void };
+      delay(ms: number): Promise<void>;
+      pollUntil<T>(condition: () => T | null | undefined | false, options?: { intervalMs?: number; timeoutMs?: number }): Promise<T | null>;
+      waitForElement(options: { selector?: string; xpath?: string; timeoutMs?: number }): Promise<Element | null>;
+      debounce<A extends Array<string | number | boolean>>(fn: (...args: A) => void, ms: number): (...args: A) => void;
+      throttle<A extends Array<string | number | boolean>>(fn: (...args: A) => void, ms: number): (...args: A) => void;
+      safeJsonParse<T>(json: string, fallback: T): T;
+      formatDuration(ms: number): string;
+      uid(prefix?: string): string;
+      deepClone<T>(value: T): T;
+      isObject(value: string | number | boolean | object | null | undefined): value is Record<string, string | number | boolean | null>;
+    };
+  }
+
   interface Window {
     __MARCO_CONFIG__: MacroControllerConfig;
     __MARCO_THEME__: MacroThemeRoot;
