@@ -95,7 +95,7 @@ export interface ColumnDefinition {
  * Data context passed to the template renderer.
  * Values can be primitives, arrays (for {{#each}}), or nested objects.
  */
-export type TemplateData = Record<string, FieldValue | undefined | FieldValue[] | TemplateDataItem[] | TemplateData>;
+export type TemplateData = Record<string, FieldValue | undefined | FieldValue[] | TemplateDataItem[] | Record<string, FieldValue | undefined | FieldValue[]>>;
 
 /** A single item in a template {{#each}} array. */
 export type TemplateDataItem = Record<string, FieldValue>;
