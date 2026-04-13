@@ -9,6 +9,7 @@
 import { log } from '../logging';
 import { logError } from '../error-utils';
 import { showToast } from '../toast';
+import type { IdbRecord } from '../types/api-data-types';
 
 const DB_NAME = 'marco_prompts_cache';
 const DB_VERSION = 3;

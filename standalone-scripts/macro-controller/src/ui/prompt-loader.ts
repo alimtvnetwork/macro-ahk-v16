@@ -7,6 +7,7 @@
 
 import { log, logSub } from '../logging';
 import type { ExtensionResponse, PromptEntry, ResolvedPromptsConfig } from '../types';
+import type { ExtensionPayload } from '../types/api-data-types';
 import type { CachedPromptEntry } from './prompt-cache';
 import {
   clearPromptCache,
