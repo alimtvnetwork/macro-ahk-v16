@@ -10,7 +10,7 @@
 
 import { log } from '../logging';
 import { sendToExtension } from './prompt-manager';
-import type { ExtensionCallbackResponse, ColumnDefinition } from '../types';
+import type { ExtensionCallbackResponse, ColumnDefinition, ValidationRules } from '../types';
 import { injectSchemaStyles } from './database-schema-styles';
 import { el, escHtml, showMsg } from './database-schema-helpers';
 import {
@@ -354,7 +354,7 @@ function buildColumnDefinition(column: ColumnEntry): ColumnDefinition {
   const hasValidation = column.validation !== null;
 
   if (hasValidation) {
-    definition.Validation = column.validation;
+    definition.Validation = column.validation as ValidationRules | undefined;
   }
 
   const hasForeignKey = column.foreignKey !== null;

@@ -10,6 +10,8 @@
  * @see spec/06-coding-guidelines/02-typescript-immutability-standards.md — Rule CQ18
  */
 
+import type { CaughtError } from './error-utils';
+
 // ============================================
 // Types (re-exported for consumers)
 // ============================================
@@ -18,7 +20,7 @@ export interface RetryOptions {
   readonly maxAttempts: number;
   readonly delayMs: number;
   readonly backoffMultiplier?: number;
-  readonly onRetry?: (attempt: number, error: Error) => void;
+  readonly onRetry?: (attempt: number, error: CaughtError) => void;
 }
 
 export interface ConcurrencyLockResult<T> {

@@ -71,9 +71,9 @@ function buildDiagnosticDump(): DiagnosticDump {
     currentWsId: loopCreditState.currentWs ? loopCreditState.currentWs.id : '(null)',
     wsCount: (loopCreditState.perWorkspace || []).length,
     wsByIdKeys: Object.keys(loopCreditState.wsById || {}),
-    projectId: extractProjectIdFromUrl(),
+    projectId: extractProjectIdFromUrl() || undefined,
     lastCheckedAt: loopCreditState.lastCheckedAt ? new Date(loopCreditState.lastCheckedAt).toLocaleTimeString() : '(never)',
-    source: loopCreditState.source,
+    source: loopCreditState.source || undefined,
   };
 
   log('=== DIAGNOSTIC DUMP ===', 'warn');

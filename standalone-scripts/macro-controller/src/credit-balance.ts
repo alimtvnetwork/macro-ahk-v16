@@ -202,7 +202,7 @@ export async function fetchCreditBalance(
       return null;
     }
 
-    const data = resp.data as CreditBalanceResponse;
+    const data = resp.data as unknown as CreditBalanceResponse;
 
     if (typeof data.daily_remaining !== 'number') {
       logError('CreditBalance', 'Response missing daily_remaining — treating as failure');

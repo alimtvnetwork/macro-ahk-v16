@@ -8,7 +8,7 @@
  */
 
 import { el } from './database-schema-helpers';
-import type { ValidationRules } from '../types';
+
 
 const ID_MARCO_SCHEMA_VAL_ROW = 'marco-schema-val-row';
 const ID_MARCO_SCHEMA_VAL_LABEL = 'marco-schema-val-label';
@@ -30,6 +30,7 @@ export interface ColumnValidation {
   format?: string;
   pattern?: string;
   flags?: string;
+  [key: string]: string | number | undefined;
 }
 
 export interface ForeignKeyDef {
@@ -254,7 +255,7 @@ function renderValidationTestArea(panel: HTMLElement, col: ColumnEntry): void {
 
 function addValField(
   panel: HTMLElement,
-  validation: ValidationRules,
+  validation: ColumnValidation,
   key: string,
   label: string,
   placeholder?: string,
@@ -273,7 +274,7 @@ function addValField(
 
 function addValNumField(
   panel: HTMLElement,
-  validation: ValidationRules,
+  validation: ColumnValidation,
   key: string,
   label: string,
 ): void {
