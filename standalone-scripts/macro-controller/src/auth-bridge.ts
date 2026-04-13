@@ -18,7 +18,7 @@ import {
 } from './auth-resolve';
 
 /** Recursive value type for bridge message payloads. */
-type BridgePayloadValue = string | number | boolean | null | undefined | Record<string, string | number | boolean | null | undefined>;
+type BridgePayloadValue = string | number | boolean | null | undefined | Record<string, string | number | boolean | null | undefined> | object;
 
 const EXTENSION_BRIDGE = 'Extension bridge ';
 
