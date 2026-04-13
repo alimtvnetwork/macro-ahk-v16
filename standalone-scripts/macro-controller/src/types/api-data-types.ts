@@ -180,11 +180,3 @@ export interface WorkspaceProbeData {
   workspaces?: Array<Record<string, FieldValue>>;
   [key: string]: FieldValue | Array<Record<string, FieldValue>> | undefined;
 }
-  name: string;
-  type: string;
-  primaryKey?: boolean;
-  notNull?: boolean;
-  defaultValue?: string | number | boolean | null;
-  unique?: boolean;
-  validation?: ValidationRules;
-}
