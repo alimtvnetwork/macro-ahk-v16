@@ -106,7 +106,7 @@ export function bootstrap(deps: {
   }, 5000);
 
   // Store timeout ID so loadWorkspacesOnStartup can cancel it on success
-  (state as unknown as Record<string, unknown>).__uiTimeoutId = uiCreationTimeout;
+  (state as StartupStateWithTimeout).__uiTimeoutId = uiCreationTimeout;
 
   // ── Background data loading ──
   timingStart(PROMPT_PREWARM, 'Prompt Pre-warm');
@@ -165,7 +165,7 @@ function _preWarmPrompts(attempt: number): void {
   const MAX_SDK_ATTEMPTS = 3;
   const SDK_RETRY_DELAY_MS = 500;
 
-  const sdk = (window as unknown as Record<string, unknown>).marco as { prompts?: { preWarm(): Promise<unknown[]> } } | undefined;
+  const sdk = window.marco as { prompts?: { preWarm(): Promise<MarcoSDKPromptEntry[]> } } | undefined;
 
   if (sdk && sdk.prompts && typeof sdk.prompts.preWarm === 'function') {
     sdk.prompts.preWarm().then(function(prompts: MarcoSDKPromptEntry[]) {
@@ -311,10 +311,10 @@ function scheduleUiCreationRetry(mc: MacroController, attempt: number): void {
  * Called when workspace data resolves (success or failure).
  */
 function cancelTimeoutAndCreateUi(): void {
-  const timeoutId = (state as unknown as Record<string, unknown>).__uiTimeoutId as number | undefined;
+  const timeoutId = (state as StartupStateWithTimeout).__uiTimeoutId;
   if (timeoutId) {
     window.clearTimeout(timeoutId);
-    (state as unknown as Record<string, unknown>).__uiTimeoutId = undefined;
+    (state as StartupStateWithTimeout).__uiTimeoutId = undefined;
   }
   if (!document.getElementById(IDS.CONTAINER)) {
     createUiAndObserver();
