@@ -122,10 +122,10 @@ export async function buildAuthHealthResponse(): Promise<AuthHealthResponse> {
 
         return { success: false, detail: "No signed URL token found" };
     });
-    strategies.push(s3);
-    if (s3.success && !resolvedVia) resolvedVia = s3.name;
+    strategies.push(s2);
+    if (s2.success && !resolvedVia) resolvedVia = s2.name;
 
-    // ── Strategy 4: Network auth-token exchange (disabled) ──
+    // ── Strategy 3: Network auth-token exchange (disabled) ──
     const s4 = await timedStrategy("Auth-token exchange", 4, async () => {
         const detail = projectId
             ? `Disabled — cookie/localStorage-only mode (no call to ${AUTH_API_BASE}/projects/${projectId}/auth-token)`
