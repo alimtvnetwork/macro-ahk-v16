@@ -7,9 +7,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
  * and global fetch to validate the current no-network auth resolution waterfall:
  *
  *   1. Session cookie JWT
- *   2. Supabase localStorage JWT scan
- *   3. Signed URL token fallback
- *   4. Error diagnostics when nothing resolves
+ *   2. Signed URL token fallback
+ *   3. Error diagnostics when nothing resolves
  */
 
 /* ------------------------------------------------------------------ */
@@ -323,21 +322,6 @@ describe("handleGetToken — integration", () => {
         expect(result.cookieName).toBe("signedUrl[__lovable_token]");
     });
 
-    it("finds a JWT in a preview frame localStorage when the top-level editor frame has none", async () => {
-        const editorUrl = `https://lovable.dev/projects/${PROJECT_ID}`;
-        const tabs = [
-            { id: 1, url: editorUrl, active: true } as chrome.tabs.Tab,
-        ];
-
-        const scriptResults = new Map<number, unknown>();
-        scriptResults.set(1, [null, FAKE_JWT]);
-
-        const { mod } = await setupTest({ tabs, scriptResults });
-
-        const result = await mod.handleGetToken(PROJECT_ID, editorUrl);
-        expect(result.token).toBe(FAKE_JWT);
-        expect(result.cookieName).toBe("localStorage[sb-*-auth-token]");
-    });
 });
 
 /* ------------------------------------------------------------------ */
