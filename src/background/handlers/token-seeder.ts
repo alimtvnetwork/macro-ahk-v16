@@ -38,10 +38,9 @@ const LS_TOKEN_SAVED_AT_KEY = "marco_token_saved_at";
  * Seeds a verified JWT auth token into the target tab's localStorage.
  *
  * Resolution order:
- * 1. Read existing Supabase JWT from page localStorage (sb-*-auth-token)
- * 2. Read a JWT from signed preview URL (__lovable_token / lovable_token)
- * 3. Read a JWT directly from session cookies
- * 4. If neither works, DO NOT seed — let macro controller handle it
+ * 1. Read a JWT from signed preview URL (__lovable_token / lovable_token)
+ * 2. Read a JWT directly from session cookies
+ * 3. If neither works, DO NOT seed — let macro controller handle it
  */
 export async function seedTokensIntoTab(tabId: number): Promise<void> {
     const tabUrl = await getTabUrl(tabId);
@@ -51,16 +50,7 @@ export async function seedTokensIntoTab(tabId: number): Promise<void> {
         return;
     }
 
-    // Step 1: Check if page already has a Supabase JWT in localStorage
-    const existingJwt = await readSupabaseJwtFromTab(tabId);
-
-    if (existingJwt !== null) {
-        console.log("[token-seeder] Found existing Supabase JWT in tab %d — seeding into marco keys", tabId);
-        await injectJwtIntoTab(tabId, existingJwt);
-        return;
-    }
-
-    // Step 2: Read signed preview URL token from tab/frame URLs
+    // Step 1: Read signed preview URL token from tab/frame URLs
     const signedUrlToken = await resolveSignedUrlTokenCandidate(tabId, tabUrl);
 
     if (signedUrlToken !== null) {
@@ -69,7 +59,7 @@ export async function seedTokensIntoTab(tabId: number): Promise<void> {
         return;
     }
 
-    // Step 3: Read session cookie directly and only seed it if it is already a JWT
+    // Step 2: Read session cookie directly and only seed it if it is already a JWT
     const projectId = extractProjectIdFromTabUrl(tabUrl);
     const sessionCookieNames = await resolveSessionCookieNamesFromProjects();
     const sessionLookup = await readCookieValueByNameCandidates(sessionCookieNames, tabUrl);
@@ -80,7 +70,7 @@ export async function seedTokensIntoTab(tabId: number): Promise<void> {
         return;
     }
 
-    // Step 4: Check if session cookie exists (for diagnostics only)
+    // Step 3: Check if session cookie exists (for diagnostics only)
     if (sessionLookup.value !== null) {
         logBgWarnError(BgLogTag.TOKEN_SEEDER, `Session cookie exists for project ${projectId ?? "unknown"} but no JWT is available — NOT seeding raw cookie`);
     } else {
@@ -132,68 +122,6 @@ function writeJwtToLocalStorage(
     }
 }
 
-/* ------------------------------------------------------------------ */
-/*  Supabase JWT Reader (runs in page context)                         */
-/* ------------------------------------------------------------------ */
-
-/** Reads an existing Supabase JWT from the tab's localStorage. */
-async function readSupabaseJwtFromTab(tabId: number): Promise<string | null> {
-    try {
-        const results = await chrome.scripting.executeScript({
-            target: { tabId },
-            world: "MAIN",
-            func: scanSupabaseLocalStorageForJwt,
-        });
-
-        const jwt = results?.[0]?.result;
-        return typeof jwt === "string" && jwt.startsWith("eyJ") ? jwt : null;
-    } catch {
-        return null;
-    }
-}
-
-/** Scans localStorage for Supabase auth keys and returns the access_token JWT. Runs in MAIN world. */
-// eslint-disable-next-line sonarjs/cognitive-complexity -- localStorage scan with priority matching
-function scanSupabaseLocalStorageForJwt(): string | null {
-    try {
-        const len = localStorage.length;
-
-        for (let i = 0; i < len; i++) {
-            const key = localStorage.key(i);
-            if (!key) continue;
-
-            // Match Supabase auth token keys: sb-<ref>-auth-token
-            const isSupabaseKey = key.startsWith("sb-") && key.includes("-auth-token");
-            if (!isSupabaseKey) continue;
-
-            const raw = localStorage.getItem(key);
-            if (!raw || raw.length < 20) continue;
-
-            try {
-                const parsed = JSON.parse(raw);
-                const accessToken = parsed?.access_token;
-
-                if (typeof accessToken === "string" && accessToken.startsWith("eyJ")) {
-                    return accessToken;
-                }
-
-                // Check nested session object
-                const session = parsed?.currentSession ?? parsed?.session;
-                if (session?.access_token && typeof session.access_token === "string" && session.access_token.startsWith("eyJ")) {
-                    return session.access_token;
-                }
-            } catch {
-                // Not JSON — check if raw value is a JWT
-                if (raw.startsWith("eyJ") && raw.split(".").length === 3) {
-                    return raw;
-                }
-            }
-        }
-    } catch {
-        // localStorage unavailable
-    }
-    return null;
-}
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
