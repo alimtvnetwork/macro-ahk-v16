@@ -28,13 +28,11 @@ interface RenameHistoryEntry {
 
 // ── Constants ──
 
-const DEFAULT_DELAY_MS = 750;
-const MIN_DELAY_MS = 100;
-const MAX_DELAY_MS = 10000;
-const RENAME_OP_WINDOW = 5;
-const RENAME_HISTORY_MAX = 20;
-const MAX_CONSECUTIVE_FAILURES = 3;
-const LS_HISTORY_KEY = 'ml_rename_history';
+import { RENAME_DEFAULT_DELAY_MS, RENAME_MIN_DELAY_MS, RENAME_MAX_DELAY_MS, RENAME_OP_WINDOW, RENAME_HISTORY_MAX, RENAME_MAX_CONSECUTIVE_FAILURES } from './constants';
+import { StorageKey } from './types';
+const DEFAULT_DELAY_MS = RENAME_DEFAULT_DELAY_MS;
+const MIN_DELAY_MS = RENAME_MIN_DELAY_MS;
+const MAX_DELAY_MS = RENAME_MAX_DELAY_MS;
 
 // ── Singleton Manager ──
 
@@ -121,22 +119,22 @@ export class BulkRenameManager {
 
   private restoreHistory(): void {
     try {
-      const saved = localStorage.getItem(LS_HISTORY_KEY);
+      const saved = localStorage.getItem(StorageKey.RenameHistory);
       const hasSaved = saved !== null;
 
       if (hasSaved) {
         this.history = JSON.parse(saved!);
         log('[Rename] Restored ' + this.history.length + ' undo entries from localStorage', 'success');
       }
-    } catch (_e) {
+    } catch (_e: unknown) {
       log('[Rename] Failed to restore undo history: ' + (_e instanceof Error ? _e.message : String(_e)), 'warn');
     }
   }
 
   private persistHistory(): void {
     try {
-      localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(this.history));
-    } catch (_e) {
+      localStorage.setItem(StorageKey.RenameHistory, JSON.stringify(this.history));
+    } catch (_e: unknown) {
       log('[Rename] Failed to persist undo history: ' + (_e instanceof Error ? _e.message : String(_e)), 'warn');
     }
   }
@@ -273,11 +271,11 @@ export class BulkRenameManager {
       logError('Rename', '❌ ' + (idx + 1) + '/' + entries.length + ' failed: ' + err.message);
       this.trackOpTime(opStartTime);
 
-      const isCircuitBroken = newFailures >= MAX_CONSECUTIVE_FAILURES;
+      const isCircuitBroken = newFailures >= RENAME_MAX_CONSECUTIVE_FAILURES;
 
       if (isCircuitBroken) {
-        logError('Rename', '⚡ Circuit breaker: \' + MAX_CONSECUTIVE_FAILURES + \' consecutive failures — auto-stopping');
-        showToast('Bulk rename auto-stopped after ' + MAX_CONSECUTIVE_FAILURES + ' consecutive failures', 'error', { noStop: true });
+        logError('Rename', '⚡ Circuit breaker: \' + RENAME_MAX_CONSECUTIVE_FAILURES + \' consecutive failures — auto-stopping');
+        showToast('Bulk rename auto-stopped after ' + RENAME_MAX_CONSECUTIVE_FAILURES + ' consecutive failures', 'error', { noStop: true });
         this.cancelled = true;
       }
 

@@ -9,7 +9,6 @@
 import { getWaterfallClipboardLines } from './auth-diag-waterfall';
 import { logError } from '../error-utils';
 import { showToast } from '../toast';
-import { getStartupGateSnapshot } from '../startup-token-gate';
 
 /** Build the copy button and status badge for the diagnostics header. */
 export function buildHeaderControls(
@@ -33,7 +32,7 @@ export function buildHeaderControls(
     navigator.clipboard.writeText(text).then(function () {
       copyButton.textContent = '✅';
       setTimeout(function () { copyButton.textContent = '📋'; }, 1500);
-    }).catch(function (e) {
+    }).catch(function (e: unknown) {
       logError('copyAuthDiag', 'Clipboard write failed', e);
       showToast('❌ Clipboard write failed', 'error');
       copyButton.textContent = '❌';
@@ -75,25 +74,10 @@ function buildDiagnosticClipboardText(
         : 'bridge skipped';
       lines.push('SDK Auth: ' + authDiag.source + ' · ' + bridgeTag + ' · ' + Math.round(authDiag.durationMs) + 'ms');
     }
-  } catch (e) {
+  } catch (e: unknown) {
     logError('buildAuthDiag', 'SDK auth diagnostics unavailable', e);
     // SDK not available
   }
-
-  // Append startup gate snapshot
-  const gate = getStartupGateSnapshot();
-  lines.push('');
-  lines.push('=== Startup Gate ===');
-  lines.push('Settled:    ' + gate.settled);
-  lines.push('Token:      ' + (gate.token ? 'yes' : 'no'));
-  lines.push('WaitedMs:   ' + gate.waitedMs);
-  lines.push('Reason:     ' + gate.reason);
-  lines.push('Bridge:     ' + gate.bridgeState);
-  lines.push('Cookies:    ' + gate.visibleCookies);
-  lines.push('SignedUrl:   ' + (gate.signedUrlDetected ? 'yes' : 'no'));
-  lines.push('PreSeed:    ' + gate.preSeedSource);
-  lines.push('Polls:      ' + gate.pollCount);
-  lines.push('Refreshes:  ' + gate.refreshCount);
 
   lines.push('');
   lines.push('=== Startup Waterfall ===');

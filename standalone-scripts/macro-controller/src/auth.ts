@@ -12,7 +12,7 @@ export {
   normalizeBearerToken,
   isJwtToken,
   isUsableToken,
-  extractBearerTokenFromRaw,
+  extractBearerTokenFromUnknown,
   getLastTokenSource,
   setLastTokenSource,
   getBearerTokenFromSessionBridge,
@@ -34,6 +34,7 @@ export {
   extractTokenFromAuthBridgeResponse,
   requestTokenFromExtension,
   isRelayActive,
+  wakeBridge,
 } from './auth-bridge';
 
 export type { AuthDebugSnapshot } from './auth-bridge';

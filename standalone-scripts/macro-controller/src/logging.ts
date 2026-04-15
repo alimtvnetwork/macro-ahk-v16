@@ -1,5 +1,5 @@
  
-import { toErrorMessage, logError } from './error-utils';
+import { toErrorMessage, logError, logDebug } from './error-utils';
 /**
  * MacroLoop Controller — Logging Module
  * Phase 6: for-of conversions, newline-before-return, curly braces (CQ13–CQ15)
@@ -13,7 +13,7 @@ import { toErrorMessage, logError } from './error-utils';
  * @see spec/06-coding-guidelines/02-typescript-immutability-standards.md
  */
 
-import { VERSION, BLOATED_KEY_PATTERNS, LOG_STORAGE_KEY, LOG_MAX_ENTRIES, WS_HISTORY_KEY, state, CONFIG, cLogDefault, cLogError, cLogInfo, cLogSuccess, cLogWarn, cLogDelegate, cLogCheck, cLogSkip } from './shared-state';
+import { VERSION, BLOATED_KEY_PATTERNS, LOG_STORAGE_KEY, LOG_MAX_ENTRIES, WS_HISTORY_KEY, CONFIG, state, cLogDefault, cLogError, cLogInfo, cLogSuccess, cLogWarn, cLogDelegate, cLogCheck, cLogSkip } from './shared-state';
 import { getByXPath } from './xpath-utils';
 import type { PersistedLogEntry } from './types';
 import { shouldLog, shouldConsole, shouldPersist, shouldActivityUi } from './log-manager';
@@ -32,7 +32,7 @@ export function safeSetItem(key: string, value: string): boolean {
     localStorage.setItem(key, value);
 
     return true;
-  } catch (e) {
+  } catch (e: unknown) {
     logError('safeSetItem', 'localStorage setItem failed', e);
     const isQuotaError = (
       e instanceof DOMException &&
@@ -148,6 +148,11 @@ export function getProjectNameFromDom(): string | null {
 }
 
 export function getDisplayProjectName(): string {
+  // Priority 0: User-configured custom display name (settings)
+  if (state.customDisplayName) {
+    return state.customDisplayName;
+  }
+
   // Priority 1: API-resolved project name (source of truth)
   if (state.projectNameFromApi) {
     return state.projectNameFromApi;
@@ -211,7 +216,7 @@ class LogFlushState {
 }
 
 const logFlushState = new LogFlushState();
-const LOG_FLUSH_INTERVAL_MS = 1000;
+import { LOG_FLUSH_INTERVAL_MS } from './constants';
 
 function _flushPendingLogs(): void {
   logFlushState.timer = null;
@@ -283,7 +288,7 @@ export function clearAllLogs(): void {
     const key = getLogStorageKey();
     localStorage.removeItem(key);
   } catch (_e) {
-    console.debug('[RiseupAsia] [clearAllLogs] localStorage.removeItem failed: ' + (_e instanceof Error ? _e.message : String(_e)));
+    logDebug('clearAllLogs', 'localStorage.removeItem failed: ' + (_e instanceof Error ? _e.message : String(_e)));
   }
 }
 
@@ -307,7 +312,7 @@ export function copyLogsToClipboard(): void {
   const text = formatLogsForExport();
   navigator.clipboard.writeText(text).then(function () {
     log('Copied ' + getAllLogs().length + ' log entries to clipboard', 'success');
-  }).catch(function (err) {
+  }).catch(function (err: unknown) {
     log('Clipboard copy failed: ' + toErrorMessage(err), 'warn');
   });
 }

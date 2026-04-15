@@ -25,7 +25,6 @@ import {
  * Get the AuthTokenUtils from the SDK.
  * Falls back to a minimal inline implementation if SDK is not loaded yet.
  */
-// eslint-disable-next-line max-lines-per-function -- inline fallback implementing full MarcoSDKAuthTokenUtils interface
 function getAuthUtils(): MarcoSDKAuthTokenUtils {
   const sdkUtils = window.marco?.authUtils;
   if (sdkUtils) {
@@ -46,43 +45,36 @@ function getAuthUtils(): MarcoSDKAuthTokenUtils {
     },
     isUsableToken(raw: string): boolean {
       const token = (raw || '').trim().replace(/^Bearer\s+/i, '');
-      if (!token || token.length < 10) {
-        return false;
-      }
-      if (/\s/.test(token)) {
-        return false;
-      }
-      if (token[0] === '{' || token[0] === '[') {
-        return false;
-      }
+      if (!token || token.length < 10) return false;
+      if (/\s/.test(token)) return false;
+      if (token[0] === '{' || token[0] === '[') return false;
 
       return token.startsWith('eyJ') && token.split('.').length === 3;
     },
-    extractBearerTokenFromRaw(raw: string): string {
+    extractBearerTokenFromUnknown(raw: unknown): string {
+      if (typeof raw !== 'string') return '';
       const normalized = this.normalizeBearerToken(raw);
-      if (this.isUsableToken(normalized)) {
-        return normalized;
-      }
+      if (this.isUsableToken(normalized)) return normalized;
 
       try {
-        const parsed = JSON.parse(raw) as Record<string, string>;
-        if (parsed === null || typeof parsed !== 'object') {
-          return '';
-        }
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+        if (parsed === null || typeof parsed !== 'object') return '';
         const candidates = [parsed.token, parsed.access_token, parsed.authToken, parsed.sessionId];
         for (const candidate of candidates) {
-          if (typeof candidate !== 'string') {
-            continue;
-          }
+          if (typeof candidate !== 'string') continue;
           const nested = this.normalizeBearerToken(candidate);
-          if (this.isUsableToken(nested)) {
-            return nested;
-          }
+          if (this.isUsableToken(nested)) return nested;
         }
-      } catch (e) {
-        log('auth-resolve: fallback extractBearerTokenFromRaw JSON parse failed — ' + toErrorMessage(e), 'debug');
+      } catch (e: unknown) {
+        log('auth-resolve: fallback extractBearerTokenFromUnknown JSON parse failed — ' + toErrorMessage(e), 'debug');
       }
 
+      return '';
+    },
+    scanSupabaseLocalStorage(): string {
+      return '';
+    },
+    extractSupabaseTokenFromRaw(): string {
       return '';
     },
   };
@@ -101,8 +93,8 @@ export function isUsableToken(raw: string): boolean {
   return getAuthUtils().isUsableToken(raw);
 }
 
-export function extractBearerTokenFromRaw(raw: string): string {
-  return getAuthUtils().extractBearerTokenFromRaw(raw);
+export function extractBearerTokenFromUnknown(raw: unknown): string {
+  return getAuthUtils().extractBearerTokenFromUnknown(raw);
 }
 
 // ============================================
@@ -148,7 +140,7 @@ export function getBearerTokenFromSessionBridge(): string {
   try {
     for (const key of SESSION_BRIDGE_KEYS) {
       const raw = localStorage.getItem(key) || '';
-      const token = utils.extractBearerTokenFromRaw(raw);
+      const token = utils.extractBearerTokenFromUnknown(raw);
 
       if (!token) {
         if (raw.length >= 10) {
@@ -165,7 +157,20 @@ export function getBearerTokenFromSessionBridge(): string {
       return token;
     }
 
-  } catch (e) {
+    const supabaseToken = utils.scanSupabaseLocalStorage(
+      (key: string, tokenLength: number) => {
+        setLastSessionBridgeSource(key);
+        log('resolveToken: ✅ Found Supabase auth in localStorage[' + key + '] (len=' + tokenLength + ')', 'success');
+      },
+      (scanErr: unknown) => {
+        log('resolveToken: Supabase localStorage scan failed — ' + toErrorMessage(scanErr), 'warn');
+      },
+    );
+
+    if (supabaseToken) {
+      return supabaseToken;
+    }
+  } catch (e: unknown) {
     log('resolveToken: localStorage bridge unavailable — ' + toErrorMessage(e), 'warn');
   }
 
@@ -176,15 +181,8 @@ export function getBearerTokenFromSessionBridge(): string {
 // Cookie Token & Session Cookie Names
 // ============================================
 
-const FALLBACK_SESSION_COOKIE_NAMES = [
-  'lovable-session-id-v2',
-  'lovable-session-id.id',
-  '__Secure-lovable-session-id.id',
-  '__Host-lovable-session-id.id',
-  'lovable-session-id',
-];
-
-const COOKIE_DIAGNOSTIC_COOLDOWN_MS = 60_000;
+import { FALLBACK_SESSION_COOKIE_NAMES, COOKIE_DIAGNOSTIC_COOLDOWN_MS } from './constants';
+import { StorageKey } from './types';
 
 // CQ11: Encapsulate diagnostic timestamp in singleton
 class CookieDiagnosticState {
@@ -231,13 +229,14 @@ export function getSessionCookieNames(): string[] {
     const names: string[] = [];
     for (const projectKey of Object.keys(root.Projects)) {
       const project = root.Projects[projectKey];
-      if (project) {
-        names.push(...extractSessionNamesFromProject(project));
+      if (!project) {
+        continue;
       }
+      names.push(...extractSessionNamesFromProject(project));
     }
 
     return Array.from(new Set(names.concat(FALLBACK_SESSION_COOKIE_NAMES)));
-  } catch (e) {
+  } catch (e: unknown) {
     log('getSessionCookieNames: failed to read config — ' + toErrorMessage(e), 'warn');
 
     return FALLBACK_SESSION_COOKIE_NAMES;
@@ -291,9 +290,9 @@ export function getBearerTokenFromCookie(): string {
 
     cookieDiagState.lastAt = now;
     logCookieDiagnostics(fn, cookies, sessionNames, rawCookie, result.hasTarget);
-  } catch (e) {
-    logError(fn, 'EXCEPTION reading cookies: ' + toErrorMessage(e));
-    logError(fn, 'This may happen in sandboxed iframes or restricted contexts');
+  } catch (e: unknown) {
+    logError('readCookies', 'EXCEPTION reading cookies: ' + toErrorMessage(e));
+    logError('readCookies', 'This may happen in sandboxed iframes or restricted contexts');
   }
 
   return '';
@@ -319,7 +318,7 @@ function logCookieDiagnostics(
 
   if (!hasTargetCookie) {
     log(fn + ': Session cookie NOT found in document.cookie (expected: HttpOnly)', 'info');
-    log(fn + ': Auth should resolve via localStorage session bridge or extension bridge', 'info');
+    log(fn + ': Auth should resolve via Supabase localStorage scan or extension bridge', 'info');
   }
 
   log(fn + ': === COOKIE DIAGNOSTIC END ===', 'info');
@@ -333,15 +332,14 @@ function logCookieDiagnostics(
 // Token timestamp helpers (Phase A: Auth Bridge)
 // ============================================
 
-const TOKEN_SAVED_AT_KEY = 'marco_token_saved_at';
 
 /** Read the timestamp when the token was last persisted. */
 export function getTokenSavedAt(): number {
   try {
-    const raw = localStorage.getItem(TOKEN_SAVED_AT_KEY) || '0';
+    const raw = localStorage.getItem(StorageKey.TokenSavedAt) || '0';
 
     return parseInt(raw, 10) || 0;
-  } catch (e) {
+  } catch (e: unknown) {
     log('getTokenSavedAt: localStorage read failed — ' + toErrorMessage(e), 'warn');
 
     return 0;
@@ -352,7 +350,7 @@ export function getTokenSavedAt(): number {
 export function saveTokenWithTimestamp(token: string): void {
   localStorage.setItem('marco_bearer_token', token);
   localStorage.setItem('lovable-session-id', token);
-  localStorage.setItem(TOKEN_SAVED_AT_KEY, String(Date.now()));
+  localStorage.setItem(StorageKey.TokenSavedAt, String(Date.now()));
   log('[AuthBridge] Token persisted with timestamp', 'info');
 }
 
@@ -382,7 +380,7 @@ export function persistResolvedBearerToken(token: string): boolean {
     updateAuthBadge(true, tokenSourceState.value || 'persisted');
 
     return true;
-  } catch (e) {
+  } catch (e: unknown) {
     log('resolveToken: failed to persist token to localStorage — ' + toErrorMessage(e), 'warn');
 
     return false;
@@ -430,7 +428,7 @@ export function markBearerTokenExpired(controller: string): void {
     for (const key of SESSION_BRIDGE_KEYS) {
       localStorage.removeItem(key);
     }
-  } catch (e) {
+  } catch (e: unknown) {
     log('markBearerTokenExpired: localStorage cleanup failed — ' + toErrorMessage(e), 'warn');
   }
 
@@ -446,7 +444,7 @@ export function invalidateSessionBridgeKey(token: string): string {
   for (const key of SESSION_BRIDGE_KEYS) {
     try {
       const stored = localStorage.getItem(key) || '';
-      const normalizedStored = utils.extractBearerTokenFromRaw(stored);
+      const normalizedStored = utils.extractBearerTokenFromUnknown(stored);
 
       if (normalizedStored === '' || normalizedStored !== normalizedTarget) {
         continue;
@@ -454,7 +452,7 @@ export function invalidateSessionBridgeKey(token: string): string {
 
       localStorage.removeItem(key);
       removedKeys.push(key);
-    } catch (e) {
+    } catch (e: unknown) {
       log('invalidateSessionBridgeKey: failed to check/remove localStorage[' + key + '] — ' + toErrorMessage(e), 'warn');
     }
   }

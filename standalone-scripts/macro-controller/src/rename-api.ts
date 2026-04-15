@@ -13,16 +13,15 @@
  */
 
 import { log, logSub } from './logging';
-import { getBearerToken, markBearerTokenExpired } from './auth';
+import { resolveToken, recoverAuthOnce, invalidateSessionBridgeKey } from './auth';
 import { showToast } from './toast';
 import { CREDIT_API_BASE } from './shared-state';
 import { hasForbidden, addForbidden, removeForbidden } from './rename-forbidden-cache';
 import { getAuthRecoveryExhausted, setAuthRecoveryExhausted } from './rename-bulk';
-import type { RenameStrategy, MutationPayload } from './types';
+import type { RenameStrategy } from './types';
 import { delay } from './async-utils';
 import { logError } from './error-utils';
-
-const API_USER_WORKSPACES_ = '/user/workspaces/';
+import { ApiPath } from './types';
 
 // ============================================
 // Types
@@ -31,7 +30,7 @@ const API_USER_WORKSPACES_ = '/user/workspaces/';
 interface SdkApiResponse {
   readonly ok: boolean;
   readonly status: number;
-  readonly data: Record<string, string | number | boolean | null>;
+  readonly data: unknown;
   readonly headers: Record<string, string>;
 }
 
@@ -87,8 +86,8 @@ function buildLabels(attempt: RenameAttemptState): string {
   return labels.length > 0 ? ' (' + labels.join(', ') + ')' : '';
 }
 
-function buildRenameBody(newName: string, includeCreditLimit: boolean): MutationPayload {
-  const payload: MutationPayload = { name: newName };
+function buildRenameBody(newName: string, includeCreditLimit: boolean): Record<string, unknown> {
+  const payload: Record<string, unknown> = { name: newName };
 
   if (includeCreditLimit) {
     payload.default_monthly_member_credit_limit = -1;
@@ -106,7 +105,7 @@ function rejectNoBearerToken(wsId: string): Error {
   logError('Rename', '\' + msg + \' — request blocked');
   showToast(msg + '. Please refresh authentication.', 'error', {
     noStop: true,
-    requestDetail: { method: 'PUT', url: API_USER_WORKSPACES_ + wsId },
+    requestDetail: { method: 'PUT', url: ApiPath.UserWorkspacesSlash + wsId },
   });
 
   return new Error('NO_BEARER_TOKEN');
@@ -123,12 +122,12 @@ function handleCreditLimitFallback(
   const bodyPreview = JSON.stringify(resp.data).substring(0, 500);
   log('[Rename] 403 with default_monthly_member_credit_limit — retrying without limit field', 'warn');
   showToast('Rename 403 with monthly-limit field — retrying without it...\nResponse: HTTP 403\nBody: ' + bodyPreview, 'warn', {
-    requestDetail: { method: 'PUT', url: API_USER_WORKSPACES_ + wsId, status: resp.status, responseBody: bodyPreview },
+    requestDetail: { method: 'PUT', url: ApiPath.UserWorkspacesSlash + wsId, status: resp.status, responseBody: bodyPreview },
   });
 }
 
 async function handleRenameAuthRecovery(
-  _token: string,
+  token: string,
   wsId: string,
 ): Promise<string | null> {
   const isExhausted = getAuthRecoveryExhausted();
@@ -139,24 +138,32 @@ async function handleRenameAuthRecovery(
     return null;
   }
 
-  markBearerTokenExpired('rename-api');
-  log('[Rename] Got 401 — forcing token refresh...', 'warn');
+  const invalidatedKey = invalidateSessionBridgeKey(token);
+  log('[Rename] Got 401 — invalidated "' + invalidatedKey + '", recovering auth...', 'warn');
   showToast('Rename auth 401 — recovering session...', 'warn', {
-    requestDetail: { method: 'PUT', url: API_USER_WORKSPACES_ + wsId, status: 401 },
+    requestDetail: { method: 'PUT', url: ApiPath.UserWorkspacesSlash + wsId, status: 401 },
   });
 
-  const fallbackToken = await getBearerToken({ force: true });
+  try {
+    const recoveredToken = await recoverAuthOnce();
+    const fallbackToken = recoveredToken || resolveToken();
 
-  if (fallbackToken) {
-    log('[Rename] Auth recovered — retrying with new token', 'info');
+    if (fallbackToken) {
+      log('[Rename] Auth recovered — retrying with new token', 'info');
 
-    return fallbackToken;
+      return fallbackToken;
+    }
+
+    log('[Rename] Auth recovery produced no token — marking exhausted for batch', 'warn');
+    setAuthRecoveryExhausted(true);
+
+    return null;
+  } catch {
+    log('[Rename] Auth recovery error — marking exhausted for batch', 'warn');
+    setAuthRecoveryExhausted(true);
+
+    return null;
   }
-
-  log('[Rename] Auth recovery produced no token — marking exhausted for batch', 'warn');
-  setAuthRecoveryExhausted(true);
-
-  return null;
 }
 
 function handleRenameError(
@@ -167,7 +174,7 @@ function handleRenameError(
   const bodyPreview = JSON.stringify(resp.data).substring(0, 500);
   logError('Rename', '❌ HTTP ' + resp.status + ': ' + bodyPreview.substring(0, 200));
   showToast('Rename failed: HTTP ' + resp.status + '\nResponse: ' + bodyPreview, 'error', {
-    requestDetail: { method: 'PUT', url: API_USER_WORKSPACES_ + wsId, status: resp.status, responseBody: bodyPreview },
+    requestDetail: { method: 'PUT', url: ApiPath.UserWorkspacesSlash + wsId, status: resp.status, responseBody: bodyPreview },
   });
 
   const isForbiddenAfterFallback = resp.status === 403 && attempt.didLimitFallback;
@@ -266,12 +273,17 @@ export async function renameWorkspace(wsId: string, newName: string, forceRetry?
     throw new Error('FORBIDDEN_CACHED');
   }
 
-  let token = await getBearerToken();
+  let token = resolveToken();
 
   if (!token) {
     log('[Rename] No bearer token — recovering before request', 'warn');
 
-    token = await getBearerToken({ force: true });
+    try {
+      const recoveredToken = await recoverAuthOnce();
+      token = recoveredToken || resolveToken();
+    } catch {
+      throw rejectNoBearerToken(wsId);
+    }
 
     if (!token) {
       throw rejectNoBearerToken(wsId);

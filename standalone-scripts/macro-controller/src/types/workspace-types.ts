@@ -45,13 +45,5 @@ export interface WorkspaceMatchCandidate {
 export interface ExtensionResponse {
   entries?: Array<{ key: string; value: string }>;
   isOk?: boolean;
-  errorMessage?: string;
-  status?: string;
-  bundledVersion?: string;
-  scriptSource?: string;
-  version?: string;
-  prompts?: Array<Record<string, string | number | boolean | null>>;
-  rows?: Array<Record<string, string | number | boolean | null>>;
-  value?: string;
-  count?: number;
+  [key: string]: unknown;
 }

@@ -37,18 +37,12 @@ class DomCache {
 
   /** Get a single node by XPath, using cache if fresh */
   getByXPath(xpath: string): Node | null {
-    if (!xpath) {
-      return null;
-    }
+    if (!xpath) return null;
 
     const cached = this._cache.get(xpath);
-    const isCacheFresh = cached && Date.now() - cached.timestamp < this._ttlMs;
-
-    if (isCacheFresh) {
+    if (cached && Date.now() - cached.timestamp < this._ttlMs) {
       // Verify element is still in DOM
-      const isStillValid = cached.element === null || (cached.element instanceof Element && document.contains(cached.element));
-
-      if (isStillValid) {
+      if (cached.element === null || (cached.element instanceof Element && document.contains(cached.element))) {
         this._hits++;
         return cached.element;
       }
@@ -61,7 +55,7 @@ class DomCache {
       const el = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
       this._cache.set(xpath, { element: el, timestamp: Date.now() });
       return el;
-    } catch (e) {
+    } catch (e: unknown) {
       logError('DomCache.getOne', 'XPath evaluation failed', e);
       return null;
     }
@@ -69,14 +63,10 @@ class DomCache {
 
   /** Get all nodes by XPath, using cache if fresh */
   getAllByXPath(xpath: string): Node[] {
-    if (!xpath) {
-      return [];
-    }
+    if (!xpath) return [];
 
     const cached = this._cacheMulti.get(xpath);
-    const isCacheFresh = cached && Date.now() - cached.timestamp < this._ttlMs;
-
-    if (isCacheFresh) {
+    if (cached && Date.now() - cached.timestamp < this._ttlMs) {
       this._hits++;
       return cached.elements;
     }
@@ -95,7 +85,7 @@ class DomCache {
       }
       this._cacheMulti.set(xpath, { elements: nodes, timestamp: Date.now() });
       return nodes;
-    } catch (e) {
+    } catch (e: unknown) {
       logError('DomCache.getAll', 'XPath multi-evaluation failed', e);
       return [];
     }
@@ -105,12 +95,8 @@ class DomCache {
   querySelector(selector: string): Element | null {
     const key = 'css:' + selector;
     const cached = this._cache.get(key);
-    const isCacheFresh = cached && Date.now() - cached.timestamp < this._ttlMs;
-
-    if (isCacheFresh) {
-      const isStillValid = cached.element === null || (cached.element instanceof Element && document.contains(cached.element));
-
-      if (isStillValid) {
+    if (cached && Date.now() - cached.timestamp < this._ttlMs) {
+      if (cached.element === null || (cached.element instanceof Element && document.contains(cached.element))) {
         this._hits++;
         return cached.element as Element | null;
       }
@@ -127,12 +113,8 @@ class DomCache {
   getElementById(id: string): HTMLElement | null {
     const key = 'id:' + id;
     const cached = this._cache.get(key);
-    const isCacheFresh = cached && Date.now() - cached.timestamp < this._ttlMs;
-
-    if (isCacheFresh) {
-      const isStillValid = cached.element === null || (cached.element instanceof Element && document.contains(cached.element));
-
-      if (isStillValid) {
+    if (cached && Date.now() - cached.timestamp < this._ttlMs) {
+      if (cached.element === null || (cached.element instanceof Element && document.contains(cached.element))) {
         this._hits++;
         return cached.element as HTMLElement | null;
       }

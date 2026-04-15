@@ -11,8 +11,7 @@
 
 import { log } from './logging';
 import { persistResolvedBearerToken, updateAuthBadge, setLastTokenSource } from './auth';
-
-const SOURCE_EXTENSION = 'marco-extension';
+import { Label } from './types';
 
 interface TokenBroadcast {
   source: string;
@@ -49,9 +48,7 @@ const broadcastState = new BroadcastListenerState();
  * Idempotent — safe to call multiple times.
  */
 export function registerTokenBroadcastListener(): void {
-  if (broadcastState.registered) {
-    return;
-  }
+  if (broadcastState.registered) return;
   broadcastState.registered = true;
 
   window.addEventListener('message', handleTokenBroadcast);
@@ -60,9 +57,7 @@ export function registerTokenBroadcastListener(): void {
 
 function handleTokenBroadcast(event: MessageEvent): void {
   const data = event.data as TokenBroadcast | null;
-  if (!data || data.source !== SOURCE_EXTENSION) {
-    return;
-  }
+  if (!data || data.source !== Label.SourceExtension) return;
 
   const token = data.token
     || data.payload?.token

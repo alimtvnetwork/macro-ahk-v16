@@ -13,6 +13,7 @@
  */
 
 import { log } from './logging';
+import { logDebug } from './error-utils';
 import { getLastSessionBridgeSource } from './shared-state';
 import {
   getBearerTokenFromSessionBridge,
@@ -31,7 +32,6 @@ import {
 import { createConcurrencyLock } from './async-utils';
 import type { ConcurrencyLock } from './async-utils';
 import { logError } from './error-utils';
-import { AUTH_READY_TIMEOUT_MS } from './startup-token-gate';
 
 // ============================================
 // Types
@@ -94,7 +94,7 @@ export class AuthRecoveryManager {
     return this.recoveryLock
       .run(
         () => this.executeRecovery(),
-        AUTH_READY_TIMEOUT_MS,
+        10_000,
         resolveToken(),
       )
       .then(function (result) {
@@ -160,29 +160,30 @@ const authRecoveryManager = new AuthRecoveryManager();
 // TTL-aware getBearerToken (Phase A: Auth Bridge)
 // ============================================
 
-const DEFAULT_TOKEN_TTL_MS = 120_000;
+import { DEFAULT_TOKEN_TTL_MS } from './constants';
 
 /** Read configured TTL from marco_config_overrides or config JSON. */
 function resolveTokenTtlMs(): number {
   try {
-    const overrides = window.marco_config_overrides;
+    const overrides = (window as unknown as Record<string, unknown>).marco_config_overrides as
+      { tokenTtlMs?: number } | undefined;
 
     if (overrides && typeof overrides.tokenTtlMs === 'number') {
       return overrides.tokenTtlMs;
     }
   } catch (_e) {
-    console.debug('[RiseupAsia] [getTokenTtlMs] Config override read failed: ' + (_e instanceof Error ? _e.message : String(_e)));
+    logDebug('getTokenTtlMs', 'Config override read failed: ' + (_e instanceof Error ? _e.message : String(_e)));
   }
 
   try {
-    const cfg = window.__MARCO_CONFIG__ as
+    const cfg = (window as unknown as Record<string, unknown>).__MARCO_CONFIG__ as
       { authBridge?: { tokenTtlMs?: number } } | undefined;
 
     if (cfg?.authBridge?.tokenTtlMs) {
       return cfg.authBridge.tokenTtlMs;
     }
   } catch (_e) {
-    console.debug('[RiseupAsia] [getTokenTtlMs] __MARCO_CONFIG__ read failed: ' + (_e instanceof Error ? _e.message : String(_e)));
+    logDebug('getTokenTtlMs', '__MARCO_CONFIG__ read failed: ' + (_e instanceof Error ? _e.message : String(_e)));
   }
 
   return DEFAULT_TOKEN_TTL_MS;
@@ -258,7 +259,7 @@ export { authRecoveryManager };
 
 /**
  * Multi-tier token refresh waterfall:
- * Tier 1/2: localStorage (seeded keys)
+ * Tier 1/2: localStorage (seeded keys + Supabase scan)
  * Tier 3a: Extension bridge GET_TOKEN
  * Tier 3b: Extension bridge REFRESH_TOKEN
  * Tier 4: Cookie fallback
@@ -269,28 +270,14 @@ export function refreshBearerTokenFromBestSource(
 ): void {
   const shouldSkipCache = !!(options && options.skipSessionBridgeCache);
   const cookieSourceLabel = buildCookieSourceLabel();
-  const t0 = performance.now();
 
-  const hasCachedToken = attemptLocalStorageTier(shouldSkipCache, function (token: string, source: string) {
-    const elapsed = (performance.now() - t0).toFixed(1);
-    log('[AuthWaterfall] Tier 1/2 localStorage — ' + elapsed + 'ms ✅', 'success');
-    onDone(token, source);
-  });
+  const hasCachedToken = attemptLocalStorageTier(shouldSkipCache, onDone);
 
   if (hasCachedToken) {
     return;
   }
 
-  log('[AuthWaterfall] Tier 1/2 miss (' + (performance.now() - t0).toFixed(1) + 'ms) — checking relay...', 'check');
-  attemptExtensionBridgeTier(function (token: string, source: string) {
-    const elapsed = (performance.now() - t0).toFixed(1);
-    if (token) {
-      log('[AuthWaterfall] Total waterfall — ' + elapsed + 'ms ✅ via ' + source, 'success');
-    } else {
-      log('[AuthWaterfall] Total waterfall — ' + elapsed + 'ms ❌ exhausted', 'error');
-    }
-    onDone(token, source);
-  }, cookieSourceLabel, t0);
+  attemptExtensionBridgeTier(onDone, cookieSourceLabel);
 }
 
 // ============================================
@@ -333,25 +320,22 @@ function attemptLocalStorageTier(
 function attemptExtensionBridgeTier(
   onDone: RefreshCallback,
   cookieSourceLabel: string,
-  t0: number,
 ): void {
   log(
     'refreshToken: Tier 1/2 miss — checking relay health before bridge attempt...',
     'check',
   );
 
-  const tRelay = performance.now();
   isRelayActive().then(function (isRelayAlive) {
-    const relayMs = (performance.now() - tRelay).toFixed(1);
-    logRelayStatus(isRelayAlive, relayMs);
-    attemptBridgeGetToken(onDone, cookieSourceLabel, t0);
+    logRelayStatus(isRelayAlive);
+    attemptBridgeGetToken(onDone, cookieSourceLabel);
   });
 }
 
-function logRelayStatus(isRelayAlive: boolean, relayMs: string): void {
+function logRelayStatus(isRelayAlive: boolean): void {
   if (isRelayAlive) {
     log(
-      'refreshToken: Relay active (' + relayMs + 'ms) — attempting extension bridge GET_TOKEN...',
+      'refreshToken: Relay active — attempting extension bridge GET_TOKEN...',
       'check',
     );
 
@@ -359,7 +343,7 @@ function logRelayStatus(isRelayAlive: boolean, relayMs: string): void {
   }
 
   log(
-    'refreshToken: ⚠️ Relay ping timed out (' + relayMs + 'ms) — attempting bridge anyway before cookie fallback',
+    'refreshToken: ⚠️ Relay ping timed out (500ms) — attempting bridge anyway before cookie fallback',
     'warn',
   );
 }
@@ -367,24 +351,20 @@ function logRelayStatus(isRelayAlive: boolean, relayMs: string): void {
 function attemptBridgeGetToken(
   onDone: RefreshCallback,
   cookieSourceLabel: string,
-  t0: number,
 ): void {
-  const tBridge = performance.now();
   requestTokenFromExtension(
     false,
     function (cachedToken: string, cachedSource: string) {
-      const bridgeMs = (performance.now() - tBridge).toFixed(1);
       const hasCachedToken = !!cachedToken && persistResolvedBearerToken(cachedToken);
 
       if (hasCachedToken) {
-        log('refreshToken: ✅ Tier 3a GET_TOKEN — ' + bridgeMs + 'ms via ' + cachedSource, 'success');
+        log('refreshToken: ✅ Tier 3a — resolved from ' + cachedSource, 'success');
         onDone(cachedToken, cachedSource);
 
         return;
       }
 
-      log('[AuthWaterfall] Tier 3a GET_TOKEN miss (' + bridgeMs + 'ms) — trying REFRESH_TOKEN...', 'check');
-      attemptBridgeRefreshToken(onDone, cookieSourceLabel, t0);
+      attemptBridgeRefreshToken(onDone, cookieSourceLabel);
     },
   );
 }
@@ -392,24 +372,20 @@ function attemptBridgeGetToken(
 function attemptBridgeRefreshToken(
   onDone: RefreshCallback,
   cookieSourceLabel: string,
-  t0: number,
 ): void {
-  const tRefresh = performance.now();
   requestTokenFromExtension(
     true,
     function (refreshedToken: string, refreshedSource: string) {
-      const refreshMs = (performance.now() - tRefresh).toFixed(1);
       const hasRefreshedToken = !!refreshedToken && persistResolvedBearerToken(refreshedToken);
 
       if (hasRefreshedToken) {
-        log('refreshToken: ✅ Tier 3b REFRESH_TOKEN — ' + refreshMs + 'ms via ' + refreshedSource, 'success');
+        log('refreshToken: ✅ Tier 3b — resolved from ' + refreshedSource, 'success');
         onDone(refreshedToken, refreshedSource);
 
         return;
       }
 
-      log('[AuthWaterfall] Tier 3b REFRESH_TOKEN miss (' + refreshMs + 'ms) — trying cookie...', 'check');
-      attemptCookieFallback(onDone, cookieSourceLabel, t0);
+      attemptCookieFallback(onDone, cookieSourceLabel);
     },
   );
 }
@@ -417,21 +393,17 @@ function attemptBridgeRefreshToken(
 function attemptCookieFallback(
   onDone: RefreshCallback,
   cookieSourceLabel: string,
-  _t0: number,
 ): void {
-  const tCookie = performance.now();
   const cookieToken = getBearerTokenFromCookie();
   const hasCookieToken = !!cookieToken && persistResolvedBearerToken(cookieToken);
-  const cookieMs = (performance.now() - tCookie).toFixed(1);
 
   if (hasCookieToken) {
-    log('refreshToken: ✅ Tier 4 cookie — ' + cookieMs + 'ms', 'success');
+    log('refreshToken: ✅ Tier 4 — resolved from cookie', 'success');
     onDone(cookieToken, cookieSourceLabel);
 
     return;
   }
 
-  log('[AuthWaterfall] Tier 4 cookie miss (' + cookieMs + 'ms)', 'warn');
   logError('refreshToken', '❌ All tiers exhausted — no token found');
   onDone('', 'none');
 }

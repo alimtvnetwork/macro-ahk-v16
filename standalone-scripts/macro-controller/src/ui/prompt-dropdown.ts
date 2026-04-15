@@ -7,7 +7,7 @@
 
 import { log } from '../logging';
 import { logError } from '../error-utils';
-import type { PromptEntry as LoaderPromptEntry, ExtensionResponse } from '../types';
+import type { PromptEntry as LoaderPromptEntry } from '../types';
 
 import { cPanelBg, cPanelFg, cPanelFgDim, cPrimary, cPrimaryLight, cPrimaryHL, cBtnMenuHover, lDropdownRadius, lDropdownShadow } from '../shared-state';
 import { getByXPath } from '../xpath-utils';
@@ -105,7 +105,7 @@ export function renderPromptsDropdown(ctx: PromptContext, taskNextDeps: TaskNext
     }
     // No valid snapshot — full render
     _renderFresh(promptsDropdown, entries, promptsCfg, ctx, taskNextDeps, currentHash, currentFilter);
-  }).catch(function(e) {
+  }).catch(function(e: unknown) {
     logError('renderPrompts', 'Prompt dropdown render failed', e);
     showToast('❌ Prompt dropdown render failed', 'error');
     _renderFresh(promptsDropdown, entries, promptsCfg, ctx, taskNextDeps, currentHash, currentFilter);
@@ -156,7 +156,7 @@ function handleLoadClick(btn: HTMLElement, ctx: PromptContext, taskNextDeps: Tas
   forceLoadFromDb().then(function() {
     log('[PromptDropdown] Manual load complete — re-rendering', 'success');
     renderPromptsDropdown(ctx, taskNextDeps);
-  }).catch(function (err) {
+  }).catch(function(err: unknown) {
     logError('PromptDropdown', 'Manual load failed: ' + (err instanceof Error ? err.message : String(err)));
     btn.textContent = '↻ Load';
     btn.style.pointerEvents = '';
@@ -279,9 +279,7 @@ function _rebindDropdownListeners(
 function _rebindHeader(container: HTMLElement, ctx: PromptContext, taskNextDeps: TaskNextDeps): void {
   // Header is the first child — find Load button inside it
   const header = container.firstElementChild as HTMLElement;
-  if (!header) {
-    return;
-  }
+  if (!header) return;
   // Replace the old Load button with a fresh one
   const oldLoadBtn = header.querySelector('span[title="Reload prompts from database"]') as HTMLElement;
   if (oldLoadBtn) {
@@ -331,9 +329,7 @@ function _rebindFilterChips(
 ): void {
   for (const child of Array.from(container.children)) {
     const el = child as HTMLElement;
-    if (!el.style.cssText.includes('flex-wrap')) {
-      continue;
-    }
+    if (!el.style.cssText.includes('flex-wrap')) continue;
     el.textContent = '';
     el.appendChild(makeFilterChip('All', '', ctx, taskNextDeps));
     for (const cat of collectUniqueCategories(entries)) {
@@ -370,15 +366,11 @@ function _bindSinglePromptItem(
 ): void {
   item.onmouseover = function() { (this as HTMLElement).style.background = cBtnMenuHover; };
   item.onmouseout = function() { (this as HTMLElement).style.background = 'transparent'; };
-  if (!p.text) {
-    return;
-  }
+  if (!p.text) return;
 
   const actionsSpan = item.querySelector('span:last-child') as HTMLElement;
   item.onclick = function(e: Event) {
-    if (actionsSpan && actionsSpan.contains(e.target as Node)) {
-      return;
-    }
+    if (actionsSpan && actionsSpan.contains(e.target as Node)) return;
     pasteIntoEditor(p.text, promptsCfg, getByXPathAsElement);
     container.style.display = 'none';
   };
@@ -390,9 +382,7 @@ function _bindSinglePromptItem(
 /** Re-attach the Add New Prompt button handler. */
 function _rebindAddButton(container: HTMLElement, ctx: PromptContext, taskNextDeps: TaskNextDeps): void {
   const lastChild = container.lastElementChild as HTMLElement;
-  if (!lastChild || !lastChild.textContent?.includes('Add New Prompt')) {
-    return;
-  }
+  if (!lastChild || !lastChild.textContent?.includes('Add New Prompt')) return;
   lastChild.onmouseover = function() { (this as HTMLElement).style.background = 'rgba(139,92,246,0.2)'; };
   lastChild.onmouseout = function() { (this as HTMLElement).style.background = 'transparent'; };
   lastChild.onclick = function(e: Event) {
@@ -423,10 +413,8 @@ function _rebindActionIcons(
     } else if (el.title === 'Delete prompt') {
       el.onclick = function(e: Event) {
         e.stopPropagation();
-        if (!confirm('Delete prompt "' + p.name + '"?')) {
-          return;
-        }
-        sendToExtension('DELETE_PROMPT', { promptId: p.id }).then(function(resp: ExtensionResponse) {
+        if (!confirm('Delete prompt "' + p.name + '"?')) return;
+        sendToExtension('DELETE_PROMPT', { promptId: p.id }).then(function(resp: Record<string, unknown>) {
           if (resp && resp.isOk) {
             clearLoadedPrompts();
             clearUISnapshot();
@@ -471,9 +459,7 @@ function collectUniqueCategories(entries: Array<{ category?: string }>): string[
 
 function filterByCategory<T extends { category?: string }>(entries: T[]): T[] {
   const currentFilter = getPromptCategoryFilter();
-  if (!currentFilter) {
-    return entries;
-  }
+  if (!currentFilter) return entries;
   return entries.filter(entry => (String(entry.category || '')).trim().toLowerCase() === currentFilter);
 }
 
@@ -608,9 +594,7 @@ function renderPromptItem(
   if (hasText) {
     appendPromptActions(actions, p, promptsDropdown, promptsCfg, ctx, taskNextDeps);
     item.onclick = function(e: Event) {
-      if (actions.contains(e.target as Node)) {
-        return;
-      }
+      if (actions.contains(e.target as Node)) return;
       log('Prompt clicked: "' + p.name + '" (' + p.text.length + ' chars)', 'info');
       pasteIntoEditor(p.text, promptsCfg, getByXPathAsElement);
       promptsDropdown.style.display = 'none';
@@ -652,9 +636,7 @@ function _buildDeleteIcon(p: PromptEntry, dropdown: HTMLElement, ctx: PromptCont
   const icon = _makeActionIcon('🗑️', 'Delete prompt', '0.6');
   icon.onclick = function(e: Event) {
     e.stopPropagation();
-    if (!confirm('Delete prompt "' + p.name + '"?')) {
-      return;
-    }
+    if (!confirm('Delete prompt "' + p.name + '"?')) return;
     _executeDeletePrompt(p, dropdown, ctx, taskNextDeps);
   };
   return icon;
@@ -662,7 +644,7 @@ function _buildDeleteIcon(p: PromptEntry, dropdown: HTMLElement, ctx: PromptCont
 
 /** Execute prompt deletion via extension message. */
 function _executeDeletePrompt(p: PromptEntry, _dropdown: HTMLElement, ctx: PromptContext, taskNextDeps: TaskNextDeps): void {
-  sendToExtension('DELETE_PROMPT', { promptId: p.id }).then(function(resp: ExtensionResponse) {
+  sendToExtension('DELETE_PROMPT', { promptId: p.id }).then(function(resp: Record<string, unknown>) {
     if (resp && resp.isOk) {
       log('Deleted prompt: ' + p.name, 'success');
       clearLoadedPrompts();

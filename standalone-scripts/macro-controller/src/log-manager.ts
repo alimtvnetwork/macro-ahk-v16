@@ -35,7 +35,8 @@ export interface LogManagerConfig {
   levels: Record<string, boolean>;
 }
 
-const STORAGE_KEY = 'marco_log_manager_config';
+import { StorageKey } from './types';
+const STORAGE_KEY = StorageKey.LogManagerConfig;
 
 const DEFAULT_CONFIG: LogManagerConfig = {
   enabled: true,

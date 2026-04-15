@@ -10,11 +10,7 @@
  */
 
 import type { MacroControllerConfig, MacroThemeRoot, ThemePreset } from './types';
-import { DEFAULT_GENERAL_CONFIG } from './types';
-
-// ── Supported schema versions ──
-const SUPPORTED_CONFIG_SCHEMA = 1;
-const SUPPORTED_THEME_SCHEMA = 2;
+import { SUPPORTED_CONFIG_SCHEMA, SUPPORTED_THEME_SCHEMA } from './constants';
 
 // ── Validation warning collector ──
 const validationWarnings: string[] = [];
@@ -34,20 +30,15 @@ function warn(msg: string): void {
  * Recursively merge `source` into `target`, preferring source values.
  * Arrays are replaced (not merged). Only plain objects are recursed.
  */
-/** Internal record type for deep-merge key iteration. */
-type MergeableRecord = Record<string, string | number | boolean | null | undefined | object>;
-
-function deepMerge<T extends MergeableRecord>(target: T, source: Partial<T>): T {
-  const result = { ...target } as MergeableRecord;
+function deepMerge<T extends Record<string, unknown>>(target: T, source: Partial<T>): T {
+  const result = { ...target } as Record<string, unknown>;
 
   for (const key of Object.keys(source)) {
-    const srcVal = (source as MergeableRecord)[key];
+    const srcVal = (source as Record<string, unknown>)[key];
     const tgtVal = result[key];
 
-    const areBothPlainObjects = isPlainObject(srcVal) && isPlainObject(tgtVal);
-
-    if (areBothPlainObjects) {
-      result[key] = deepMerge(tgtVal as MergeableRecord, srcVal as MergeableRecord);
+    if (isPlainObject(srcVal) && isPlainObject(tgtVal)) {
+      result[key] = deepMerge(tgtVal as Record<string, unknown>, srcVal as Record<string, unknown>);
     } else if (srcVal !== undefined) {
       result[key] = srcVal;
     }
@@ -56,7 +47,7 @@ function deepMerge<T extends MergeableRecord>(target: T, source: Partial<T>): T 
   return result as T;
 }
 
-function isPlainObject(v: string | number | boolean | object | null | undefined): v is Record<string, string | number | boolean | null | object> {
+function isPlainObject(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === 'object' && !Array.isArray(v);
 }
 
@@ -64,7 +55,7 @@ function isPlainObject(v: string | number | boolean | object | null | undefined)
 
 const DEFAULT_MACRO_LOOP = {
   creditBarWidthPx: 160,
-  // retry config REMOVED per issue #88 — no retry/backoff in controller
+  retry: { maxRetries: 3, backoffMs: 2000 },
   timing: {
     loopIntervalMs: 100000,
     countdownIntervalMs: 1000,
@@ -99,7 +90,7 @@ const DEFAULT_MACRO_LOOP = {
 const DEFAULT_CONFIG: MacroControllerConfig = {
   schemaVersion: SUPPORTED_CONFIG_SCHEMA,
   macroLoop: DEFAULT_MACRO_LOOP as MacroControllerConfig['macroLoop'],
-  general: DEFAULT_GENERAL_CONFIG,
+  general: { logLevel: 'info', maxRetries: 3 },
 };
 
 // ── Default theme ──
@@ -137,48 +128,56 @@ const DEFAULT_THEME: MacroThemeRoot = {
  * Validate and deep-merge config with defaults.
  * Warns on schema version mismatch or unexpected types.
  */
-export function validateConfig(raw: Partial<MacroControllerConfig>): MacroControllerConfig {
+export function validateConfig(raw: unknown): MacroControllerConfig {
+  if (!isPlainObject(raw)) {
+    warn('Config: received non-object — using all defaults');
+    return { ...DEFAULT_CONFIG };
+  }
+
+  const cfg = raw as Partial<MacroControllerConfig>;
+
   // Schema version check
-  if (raw.schemaVersion !== undefined) {
-    validateSchemaVersion('Config', raw.schemaVersion, SUPPORTED_CONFIG_SCHEMA);
+  if (cfg.schemaVersion !== undefined) {
+    validateSchemaVersion('Config', cfg.schemaVersion, SUPPORTED_CONFIG_SCHEMA);
   }
 
   // Type-check critical fields
-  validateFieldType(raw as MergeableRecord, 'macroLoop', 'object', 'Config');
-  validateFieldType(raw as MergeableRecord, 'general', 'object', 'Config');
-  validateFieldType(raw as MergeableRecord, 'autoAttach', 'object', 'Config');
+  validateFieldType(cfg as Record<string, unknown>, 'macroLoop', 'object', 'Config');
+  validateFieldType(cfg as Record<string, unknown>, 'general', 'object', 'Config');
+  validateFieldType(cfg as Record<string, unknown>, 'autoAttach', 'object', 'Config');
 
-  return deepMerge(DEFAULT_CONFIG as MergeableRecord, raw as MergeableRecord) as MacroControllerConfig;
+  return deepMerge(DEFAULT_CONFIG as Record<string, unknown>, cfg as Record<string, unknown>) as unknown as MacroControllerConfig;
 }
 
 /**
  * Validate and deep-merge theme with defaults.
  * Warns on schema version mismatch, missing presets, or invalid activePreset.
  */
-export function validateTheme(raw: Partial<MacroThemeRoot>): MacroThemeRoot {
+export function validateTheme(raw: unknown): MacroThemeRoot {
+  if (!isPlainObject(raw)) {
+    warn('Theme: received non-object — using all defaults');
+    return { ...DEFAULT_THEME };
+  }
+
+  const theme = raw as Partial<MacroThemeRoot>;
+
   // Schema version check
-  if (raw.schemaVersion !== undefined) {
-    validateSchemaVersion('Theme', raw.schemaVersion, SUPPORTED_THEME_SCHEMA);
+  if (theme.schemaVersion !== undefined) {
+    validateSchemaVersion('Theme', theme.schemaVersion, SUPPORTED_THEME_SCHEMA);
   }
 
   // Validate activePreset
-  const hasActivePreset = raw.activePreset !== undefined;
-  const isKnownPreset = raw.activePreset === 'dark' || raw.activePreset === 'light';
-  const isUnknownPreset = hasActivePreset && !isKnownPreset;
-
-  if (isUnknownPreset) {
-    warn('Theme: activePreset "' + raw.activePreset + '" is not "dark" or "light" — falling back to "dark"');
-    raw.activePreset = 'dark';
+  if (theme.activePreset && theme.activePreset !== 'dark' && theme.activePreset !== 'light') {
+    warn('Theme: activePreset "' + theme.activePreset + '" is not "dark" or "light" — falling back to "dark"');
+    theme.activePreset = 'dark';
   }
 
   // Ensure presets object has at least the active preset
-  const merged = deepMerge(DEFAULT_THEME as MergeableRecord, raw as MergeableRecord) as MacroThemeRoot;
+  const merged = deepMerge(DEFAULT_THEME as Record<string, unknown>, theme as Record<string, unknown>) as unknown as MacroThemeRoot;
   const activeKey = (merged.activePreset || 'dark') as string;
-  const isActivePresetMissing = merged.presets && !(merged.presets as MergeableRecord)[activeKey];
-
-  if (isActivePresetMissing) {
+  if (merged.presets && !(merged.presets as Record<string, unknown>)[activeKey]) {
     warn('Theme: active preset "' + activeKey + '" not found in presets — using default');
-    (merged.presets as MergeableRecord)[activeKey] = DEFAULT_THEME_PRESET;
+    (merged.presets as Record<string, unknown>)[activeKey] = DEFAULT_THEME_PRESET;
   }
 
   return merged;
@@ -186,24 +185,24 @@ export function validateTheme(raw: Partial<MacroThemeRoot>): MacroThemeRoot {
 
 // ── Internal helpers ──
 
-function validateSchemaVersion(label: string, version: number, supported: number): void {
-  const isNewerThanSupported = version > supported;
-
-  if (isNewerThanSupported) {
+function validateSchemaVersion(label: string, version: unknown, supported: number): void {
+  if (typeof version !== 'number') {
+    warn(label + ': schemaVersion is not a number (got ' + typeof version + ')');
+    return;
+  }
+  if (version > supported) {
     warn(label + ': schemaVersion ' + version + ' is newer than supported (' + supported + ') — some fields may be ignored');
   }
 }
 
 function validateFieldType(
-  obj: MergeableRecord,
+  obj: Record<string, unknown>,
   field: string,
   expected: string,
   label: string,
 ): void {
   const val = obj[field];
-  if (val == null) {
-    return;
-  }
+  if (val === undefined || val === null) return;
   const actual = Array.isArray(val) ? 'array' : typeof val;
   if (actual !== expected) {
     warn(label + '.' + field + ': expected ' + expected + ', got ' + actual + ' — using default');

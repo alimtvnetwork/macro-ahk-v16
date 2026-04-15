@@ -10,14 +10,13 @@
  */
 
 import { sendToExtension } from './prompt-manager';
-import type { ExtensionCallbackResponse, DatabaseRow } from '../types';
+import type { ExtensionCallbackResponse } from '../types';
 import { buildFilterBar } from './database-data-filter';
 import { escapeHtml, buildPagination, buildDataTableElement } from './database-data-table';
 
-const MACRO_CONTROLLER = 'macro-controller';
-const ID_MARCO_DB_EMPTY = 'marco-db-empty';
-
-const PAGE_SIZE = 25;
+import { MACRO_CONTROLLER_NS, DB_PAGE_SIZE } from '../constants';
+import { DomId } from '../types';
+const PAGE_SIZE = DB_PAGE_SIZE;
 
 /** Filter state for a single table. */
 export interface FilterState {
@@ -45,7 +44,7 @@ export function loadTables(
   existingTables?: Array<{ name: string }>,
 ): void {
   sendToExtension('PROJECT_DB_LIST_TABLES', {
-    project: MACRO_CONTROLLER,
+    project: MACRO_CONTROLLER_NS,
     method: 'SCHEMA',
     endpoint: 'listTables',
   }).then((response: ExtensionCallbackResponse) => {
@@ -74,7 +73,7 @@ export function loadTables(
 function parseTableList(
   response: ExtensionCallbackResponse,
 ): Array<{ name: string; rowCount?: number }> {
-  return (response.tables || []).map((table: { name?: string; TableName?: string; ColumnDefs?: string; rowCount?: number }) => ({
+  return (response.tables || []).map((table: Record<string, unknown>) => ({
     name: (table.name as string) || '',
     rowCount: table.rowCount as number | undefined,
   }));
@@ -101,7 +100,7 @@ function renderTableListError(
 ): void {
   tableList.textContent = '';
   const failDiv = document.createElement('div');
-  failDiv.className = ID_MARCO_DB_EMPTY;
+  failDiv.className = DomId.DbEmpty;
   failDiv.textContent = 'Failed to load';
   tableList.appendChild(failDiv);
   statusBar.textContent = 'Error: ' + (response?.errorMessage || 'unknown');
@@ -113,7 +112,7 @@ function renderEmptyTableList(
 ): void {
   tableList.textContent = '';
   const emptyDiv = document.createElement('div');
-  emptyDiv.className = ID_MARCO_DB_EMPTY;
+  emptyDiv.className = DomId.DbEmpty;
   emptyDiv.style.padding = '12px';
   emptyDiv.textContent = 'No tables found';
   tableList.appendChild(emptyDiv);
@@ -132,9 +131,7 @@ function renderTableListItems(
     const item = createTableListItem(table);
 
     item.onclick = () => {
-      if (activeItem) {
-        activeItem.classList.remove('active');
-      }
+      if (activeItem) activeItem.classList.remove('active');
       item.classList.add('active');
       activeItem = item;
       loadTableData(table.name, 0, content, statusBar);
@@ -181,7 +178,7 @@ export function loadTableData(
   const whereClause = buildWhereClause(tableName);
 
   sendToExtension('PROJECT_API', {
-    project: MACRO_CONTROLLER,
+    project: MACRO_CONTROLLER_NS,
     method: 'GET',
     endpoint: tableName,
     params: {
@@ -198,13 +195,13 @@ export function loadTableData(
       return;
     }
 
-    const rows: DatabaseRow[] = response.rows || [];
+    const rows: Record<string, unknown>[] = response.rows || [];
     updateFilterColumns(tableName, rows);
     fetchCountAndRender(tableName, rows, page, whereClause, content, statusBar);
   });
 }
 
-function buildWhereClause(tableName: string): DatabaseRow | Record<string, DatabaseRow> | undefined {
+function buildWhereClause(tableName: string): Record<string, unknown> | undefined {
   const filter = activeFilters[tableName];
   const hasFilter = filter !== null && filter !== undefined && filter.column !== '' && filter.value !== '';
 
@@ -225,7 +222,7 @@ function buildWhereClause(tableName: string): DatabaseRow | Record<string, Datab
 
 function updateFilterColumns(
   tableName: string,
-  rows: DatabaseRow[],
+  rows: Record<string, unknown>[],
 ): void {
   const hasRows = rows.length > 0;
   const filter = activeFilters[tableName];
@@ -251,14 +248,14 @@ function updateFilterColumns(
 
 function fetchCountAndRender(
   tableName: string,
-  rows: DatabaseRow[],
+  rows: Record<string, unknown>[],
   page: number,
-  whereClause: DatabaseRow | Record<string, DatabaseRow> | undefined,
+  whereClause: Record<string, unknown> | undefined,
   content: HTMLElement,
   statusBar: HTMLElement,
 ): void {
   sendToExtension('PROJECT_API', {
-    project: MACRO_CONTROLLER,
+    project: MACRO_CONTROLLER_NS,
     method: 'GET',
     endpoint: tableName,
     params: { count: true, ...(whereClause ? { where: whereClause } : {}) },
@@ -275,7 +272,7 @@ function renderDataError(
 ): void {
   content.textContent = '';
   const errorDiv = document.createElement('div');
-  errorDiv.className = ID_MARCO_DB_EMPTY;
+  errorDiv.className = DomId.DbEmpty;
   errorDiv.textContent = '❌ ' + (response?.errorMessage || 'Failed to load data');
   content.appendChild(errorDiv);
 }
@@ -284,7 +281,7 @@ function renderDataError(
 
 function renderDataTable(
   tableName: string,
-  rows: DatabaseRow[],
+  rows: Record<string, unknown>[],
   page: number,
   totalCount: number,
   content: HTMLElement,
@@ -327,7 +324,7 @@ function renderEmptyTableState(
     : 'Table <b>' + escapeHtml(tableName) + '</b> is empty';
 
   const emptyDiv = document.createElement('div');
-  emptyDiv.className = ID_MARCO_DB_EMPTY;
+  emptyDiv.className = DomId.DbEmpty;
   emptyDiv.innerHTML = emptyMessage;
   content.appendChild(emptyDiv);
   statusBar.textContent = tableName + ' — 0 rows';

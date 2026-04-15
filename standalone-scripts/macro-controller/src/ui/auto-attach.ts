@@ -1,6 +1,5 @@
  
 import { toErrorMessage , logError } from '../error-utils';
-import type { AutoAttachRawConfig } from '../types/api-data-types';
 /**
  * MacroLoop Controller — Auto-Attach File Automation
  * Step 03f: Extracted from createUI() closure
@@ -29,10 +28,10 @@ export interface AutoAttachConfig {
 /**
  * Resolve auto-attach config from window.__MARCO_CONFIG__ or fallback.
  */
-export function resolveAutoAttachConfig(autoAttachCfg?: AutoAttachRawConfig): AutoAttachConfig {
+export function resolveAutoAttachConfig(autoAttachCfg?: Record<string, unknown>): AutoAttachConfig {
   const rawCfg = (window.__MARCO_CONFIG__ || {}).autoAttach;
-  const liveCfg: AutoAttachRawConfig = (rawCfg && typeof rawCfg === 'object')
-    ? rawCfg as AutoAttachRawConfig
+  const liveCfg: Record<string, unknown> = (rawCfg && typeof rawCfg === 'object')
+    ? rawCfg as Record<string, unknown>
     : ((autoAttachCfg && typeof autoAttachCfg === 'object') ? autoAttachCfg : {});
 
   const timing = (liveCfg.timing && typeof liveCfg.timing === 'object') ? liveCfg.timing as AutoAttachConfig['timing'] : {};
@@ -61,9 +60,7 @@ export function clickByXPath(xpath: string, label: string): boolean {
 }
 
 export function insertTextIntoElement(xpath: string, text: string, label: string): boolean {
-  if (!xpath || !text) {
-    return false;
-  }
+  if (!xpath || !text) return false;
   const el = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue as HTMLElement;
   if (!el) { log('Auto-Attach: Element not found for ' + label + ': ' + xpath, 'warn'); return false; }
   el.focus();
@@ -86,7 +83,7 @@ export function insertTextIntoElement(xpath: string, text: string, label: string
 
 export async function runAutoAttachGroup(
   group: AutoAttachGroupRuntime,
-  autoAttachCfg: AutoAttachRawConfig,
+  autoAttachCfg: Record<string, unknown>,
   showToast: (msg: string, type: string) => void,
 ) {
   const aaCfg = resolveAutoAttachConfig(autoAttachCfg);
@@ -127,7 +124,7 @@ export async function runAutoAttachGroup(
     try {
       await navigator.clipboard.writeText('AUTO_ATTACH_FILE:' + filePath);
       log('Auto-Attach: File path written to clipboard for AHK: ' + filePath, 'info');
-    } catch (e) {
+    } catch (e: unknown) {
       log('Auto-Attach: Clipboard write failed: ' + toErrorMessage(e), 'warn');
     }
 

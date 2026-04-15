@@ -10,8 +10,6 @@
  * @see spec/06-coding-guidelines/02-typescript-immutability-standards.md — Rule CQ18
  */
 
-import type { CaughtError } from './error-utils';
-
 // ============================================
 // Types (re-exported for consumers)
 // ============================================
@@ -20,7 +18,7 @@ export interface RetryOptions {
   readonly maxAttempts: number;
   readonly delayMs: number;
   readonly backoffMultiplier?: number;
-  readonly onRetry?: (attempt: number, error: CaughtError) => void;
+  readonly onRetry?: (attempt: number, error: unknown) => void;
 }
 
 export interface ConcurrencyLockResult<T> {
@@ -56,12 +54,12 @@ interface SdkUtils {
   formatDuration(ms: number): string;
   uid(prefix?: string): string;
   deepClone<T>(value: T): T;
-  isObject(value: string | number | boolean | object | null | undefined): value is Record<string, string | number | boolean | null>;
+  isObject(value: unknown): value is Record<string, unknown>;
 }
 
 function getSdkUtils(): SdkUtils | null {
   try {
-    const w = window as { marco?: { utils?: SdkUtils } };
+    const w = window as unknown as { marco?: { utils?: SdkUtils } };
 
     if (w.marco && w.marco.utils) {
       return w.marco.utils;
@@ -113,7 +111,7 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions):
   for (let attempt = 1; attempt <= options.maxAttempts; attempt++) {
     try {
       return await fn();
-    } catch (error) {
+    } catch (error: unknown) {
       if (attempt === options.maxAttempts) { throw error; }
       if (options.onRetry) { options.onRetry(attempt, error); }
       await delay(currentDelay);

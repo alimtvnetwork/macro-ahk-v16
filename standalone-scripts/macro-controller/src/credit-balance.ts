@@ -13,18 +13,18 @@
  */
 
 import { log, logSub } from './logging';
-import { getBearerToken, markBearerTokenExpired } from './auth';
+import { resolveToken, markBearerTokenExpired, recoverAuthOnce } from './auth';
 import { showToast } from './toast';
 import { CREDIT_API_BASE, state } from './shared-state';
 import { extractProjectIdFromUrl } from './workspace-detection';
-import type { CreditBalanceResponse, CreditBalanceConfig, MacroControllerConfig, CreditStatusConfig } from './types';
+import type { CreditBalanceResponse, CreditBalanceConfig } from './types';
 import { logError } from './error-utils';
 
 // ============================================
 // Config — reads from window.__MARCO_CONFIG__.creditStatus.balance
 // ============================================
-const cfg = (window.__MARCO_CONFIG__ || {}) as Partial<MacroControllerConfig>;
-const creditStatusCfg = (cfg.creditStatus || {}) as Partial<CreditStatusConfig>;
+const cfg = (window.__MARCO_CONFIG__ || {}) as Record<string, unknown>;
+const creditStatusCfg = (cfg.creditStatus || {}) as Record<string, unknown>;
 const balanceCfg = (creditStatusCfg.balance || {}) as Partial<CreditBalanceConfig>;
 
 export const BALANCE_CONFIG: CreditBalanceConfig = {
@@ -37,7 +37,7 @@ export const BALANCE_CONFIG: CreditBalanceConfig = {
 // ============================================
 // CreditBalanceState — encapsulated module state (CQ11, CQ17)
 // ============================================
-const MIN_CALL_GAP_MS = 10_000;
+import { MIN_CREDIT_CALL_GAP_MS as MIN_CALL_GAP_MS } from './constants';
 
 class CreditBalanceState {
   private _lastBalanceCallAt = 0;
@@ -92,11 +92,7 @@ export async function resolveWorkspaceId(): Promise<string | null> {
     return null;
   }
 
-  /**
-   * Uses getBearerToken() (Auth Bridge) instead of raw resolveToken().
-   * @see spec/17-app-issues/88-auth-loading-failure-retry-inconsistency/01-deep-audit.md (RCA-3)
-   */
-  const token = await getBearerToken();
+  const token = resolveToken();
 
   if (!token) {
     log('CreditBalance: No bearer token — cannot resolve workspace', 'warn');
@@ -173,7 +169,7 @@ export async function fetchCreditBalance(
 
   creditBalanceState.lastBalanceCallAt = Date.now();
 
-  const token = await getBearerToken();
+  const token = resolveToken();
 
   if (!token) {
     log('CreditBalance: No bearer token', 'warn');
@@ -183,47 +179,22 @@ export async function fetchCreditBalance(
 
   log('CreditBalance: GET /workspaces/' + wsId + '/credit-balance' + (isRetry ? ' (RETRY)' : ''), 'check');
 
-  /**
-   * Sequential auth recovery via getBearerToken({ force: true }).
-   * NO recursive fetchCreditBalance() call. NO direct recoverAuthOnce().
-   * @see spec/17-app-issues/88-auth-loading-failure-retry-inconsistency/00-overview.md
-   * @see spec/17-app-issues/88-auth-loading-failure-retry-inconsistency/01-deep-audit.md (RCA-3)
-   */
   try {
     const resp = await window.marco!.api!.credits.fetchBalance(wsId, { baseUrl: CREDIT_API_BASE });
 
     if (!resp.ok) {
       if (isAuthFailure(resp.status) && !isRetry) {
         markBearerTokenExpired('credit-balance');
-        log('CreditBalance: Auth ' + resp.status + ' — forcing token refresh...', 'warn');
-        const newToken = await getBearerToken({ force: true });
+        log('CreditBalance: Auth ' + resp.status + ' — recovering...', 'warn');
+        const newToken = await recoverAuthOnce();
 
-        if (!newToken) {
-          logError('CreditBalance', 'Token refresh failed — skipping');
-
-          return null;
+        if (newToken) {
+          return fetchCreditBalance(wsId, true);
         }
 
-        // Sequential retry — NOT recursive
-        const retryResp = await window.marco!.api!.credits.fetchBalance(wsId, { baseUrl: CREDIT_API_BASE });
+        logError('CreditBalance', 'Auth recovery failed');
 
-        if (!retryResp.ok) {
-          logError('CreditBalance', 'HTTP ' + retryResp.status + ' after recovery');
-
-          return null;
-        }
-
-        const retryData = retryResp.data as unknown as CreditBalanceResponse;
-
-        if (typeof retryData.daily_remaining !== 'number') {
-          logError('CreditBalance', 'Response missing daily_remaining after recovery');
-
-          return null;
-        }
-
-        logSub('daily_remaining=' + retryData.daily_remaining + ' (after recovery)', 1);
-
-        return retryData;
+        return null;
       }
 
       logError('CreditBalance', 'HTTP ' + resp.status);
@@ -231,7 +202,7 @@ export async function fetchCreditBalance(
       return null;
     }
 
-    const data = resp.data as unknown as CreditBalanceResponse;
+    const data = resp.data as CreditBalanceResponse;
 
     if (typeof data.daily_remaining !== 'number') {
       logError('CreditBalance', 'Response missing daily_remaining — treating as failure');

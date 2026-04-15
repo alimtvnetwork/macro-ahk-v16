@@ -19,10 +19,7 @@ import {
 } from './auth-jwt-utils';
 import type { AuthDiagDeps } from './section-auth-diag';
 import { logError } from '../error-utils';
-import { getStartupGateSnapshot } from '../startup-token-gate';
-
-const ROW_CSS = 'display:flex;align-items:center;gap:6px;padding:2px 4px;background:rgba(0,0,0,.2);border-radius:3px;';
-
+import { CssFragment } from '../types';
 // ── Diagnostic Row Elements ──
 
 export interface DiagRowElements {
@@ -39,7 +36,7 @@ export function buildDiagRow(
   skeletonHeight: string,
 ): DiagRowElements {
   const row = document.createElement('div');
-  row.style.cssText = ROW_CSS;
+  row.style.cssText = CssFragment.RowDiag;
 
   const iconEl = document.createElement('span');
   iconEl.style.cssText = 'font-size:11px;';
@@ -73,7 +70,7 @@ function detectBindingsSource(): boolean {
   try {
     const root = RiseupAsiaMacroExt;
     return root !== undefined && root.Projects !== undefined && Object.keys(root.Projects).length > 0;
-  } catch (e) {
+  } catch (e: unknown) {
     logError('hasActiveProject', 'Failed to check active projects', e);
     return false;
   }
@@ -95,6 +92,26 @@ export function updateBridgeRow(deps: AuthDiagDeps, bridgeRow: DiagRowElements):
     bridgeRow.valEl.textContent = 'OK via ' + bridge.source;
     bridgeRow.valEl.style.color = '#4ade80';
     _removeHelpIcon(bridgeRow);
+  } else if (_isServiceWorkerSuspended(bridge.error || '')) {
+    // Auto-wake: show reconnecting state, then ping to wake service worker
+    bridgeRow.iconEl.textContent = '🔄';
+    bridgeRow.valEl.textContent = 'Reconnecting…';
+    bridgeRow.valEl.style.color = '#fbbf24';
+    _removeHelpIcon(bridgeRow);
+
+    deps.wakeBridge().then(function (alive: boolean) {
+      if (alive) {
+        bridgeRow.iconEl.textContent = '✅';
+        bridgeRow.valEl.textContent = 'OK — reconnected after idle';
+        bridgeRow.valEl.style.color = '#4ade80';
+        _removeHelpIcon(bridgeRow);
+      } else {
+        bridgeRow.iconEl.textContent = '💤';
+        bridgeRow.valEl.textContent = 'Idle — service worker suspended';
+        bridgeRow.valEl.style.color = '#fbbf24';
+        _appendHelpIcon(bridgeRow, _getBridgeErrorHelp(bridge.error || ''));
+      }
+    });
   } else {
     bridgeRow.iconEl.textContent = '❌';
     bridgeRow.valEl.textContent = 'FAILED' + (bridge.error ? ' — ' + bridge.error : '');
@@ -103,17 +120,24 @@ export function updateBridgeRow(deps: AuthDiagDeps, bridgeRow: DiagRowElements):
   }
 }
 
+/** Check if the bridge error is due to normal MV3 service worker suspension. */
+function _isServiceWorkerSuspended(error: string): boolean {
+  const lower = error.toLowerCase();
+  return lower.includes('extension context invalidated') || lower.includes('receiving end does not exist');
+}
+
 /** Map known bridge errors to user-friendly help text. */
 function _getBridgeErrorHelp(error: string): string {
   const lower = error.toLowerCase();
   if (lower.includes('extension context invalidated')) {
-    return 'The Chrome extension was updated or reloaded while this page was open. ' +
-      'The content script lost its connection to the background service worker. ' +
-      'Fix: Refresh this page (F5) to re-establish the connection.';
+    return 'Normal MV3 behavior — Chrome suspended the background service worker after inactivity. ' +
+      'The token is still available from localStorage. ' +
+      'The bridge will reconnect automatically on the next action, or refresh the page (F5).';
   }
   if (lower.includes('receiving end does not exist')) {
-    return 'The extension background service worker is not running. ' +
-      'This can happen after Chrome suspends it. Fix: Open the extension popup or refresh the page.';
+    return 'Normal MV3 behavior — the background service worker is currently suspended. ' +
+      'This happens automatically after ~30s of inactivity. ' +
+      'The bridge will reconnect on the next action, or open the extension popup to wake it.';
   }
   if (lower.includes('could not establish connection')) {
     return 'Chrome could not reach the extension. It may be disabled, uninstalled, or crashed. ' +
@@ -148,9 +172,7 @@ function _appendHelpIcon(diagRow: DiagRowElements, helpText: string): void {
 /** Remove existing help icon from a row. */
 function _removeHelpIcon(diagRow: DiagRowElements): void {
   const existing = diagRow.row.querySelector('[data-help-icon]');
-  if (existing) {
-    existing.remove();
-  }
+  if (existing) existing.remove();
 }
 
 export function updateSourceRow(deps: AuthDiagDeps, srcRow: DiagRowElements, headerBadge: HTMLElement): void {
@@ -234,7 +256,7 @@ export function updateWsCacheRow(wsCacheRow: DiagRowElements): void {
 
 export function buildProjectIdRow(dimStyle: string, valStyle: string): HTMLElement {
   const pidRow = document.createElement('div');
-  pidRow.style.cssText = ROW_CSS;
+  pidRow.style.cssText = CssFragment.RowDiag;
 
   const pidIcon = document.createElement('span');
   pidIcon.style.cssText = 'font-size:11px;';
@@ -282,7 +304,7 @@ function buildRefreshButton(deps: AuthDiagDeps, onUpdate: () => void): HTMLButto
   button.onclick = function () {
     button.disabled = true;
     button.textContent = '⏳ Refreshing…';
-    deps.getBearerToken({ force: true }).then(function (token: string) {
+    deps.recoverAuthOnce().then(function (token: string) {
       const source = token ? deps.getLastTokenSource() : 'none';
       const hasToken = !!token;
       recordRefreshOutcome(hasToken, source, token ? '' : 'No token from any source');
@@ -317,37 +339,4 @@ function buildReadCookieButton(deps: AuthDiagDeps, onUpdate: () => void): HTMLBu
   };
 
   return button;
-}
-
-// ── Startup Gate Row ──
-
-export function updateStartupGateRow(gateRow: DiagRowElements): void {
-  const snap = getStartupGateSnapshot();
-
-  if (!snap.settled) {
-    gateRow.iconEl.textContent = '⏳';
-    gateRow.valEl.textContent = 'Gate pending…';
-    gateRow.valEl.style.color = '';
-    return;
-  }
-
-  if (snap.token) {
-    gateRow.iconEl.textContent = '✅';
-    gateRow.valEl.textContent = snap.reason + ' · ' + snap.waitedMs + 'ms';
-    gateRow.valEl.style.color = '#4ade80';
-  } else {
-    gateRow.iconEl.textContent = '❌';
-    gateRow.valEl.textContent = 'FAILED · ' + snap.waitedMs + 'ms';
-    gateRow.valEl.style.color = '#f87171';
-  }
-
-  const parts: string[] = [
-    'bridge=' + snap.bridgeState,
-    'cookies=' + snap.visibleCookies,
-    'signedUrl=' + (snap.signedUrlDetected ? 'yes' : 'no'),
-    'preSeed=' + snap.preSeedSource,
-    'polls=' + snap.pollCount,
-    'refreshes=' + snap.refreshCount,
-  ];
-  gateRow.valEl.title = snap.reason + '\n' + parts.join(' | ');
 }

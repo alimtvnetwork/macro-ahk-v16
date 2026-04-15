@@ -23,13 +23,14 @@ import {
   getLastTokenSource,
   getLastBridgeOutcome,
   getSessionCookieNames,
+  recoverAuthOnce,
   refreshBearerTokenFromBestSource,
   resolveToken,
-  getBearerToken,
+  wakeBridge,
 } from '../auth';
 import { setRecordRefreshOutcome } from '../auth';
 import { showToast } from '../toast';
-import { dualWrite } from '../api-namespace';
+import { nsWrite } from '../api-namespace';
 import { buildWsDropdownSection } from './ws-dropdown-builder';
 import { buildToolsSections } from './tools-sections-builder';
 import {
@@ -128,12 +129,13 @@ function _buildAuthDiagnostics(): { row: HTMLElement; updateAuthDiagRow: () => v
   const authDiagResult = createAuthDiagRow({
     getLastTokenSource: function() { return getLastTokenSource(); },
     resolveToken: resolveToken,
-    getBearerToken: getBearerToken,
+    recoverAuthOnce: recoverAuthOnce,
     getSessionCookieNames: getSessionCookieNames,
     getLastBridgeOutcome: getLastBridgeOutcome,
     refreshFromBestSource: refreshBearerTokenFromBestSource,
+    wakeBridge: wakeBridge,
   });
-  dualWrite('__loopUpdateAuthDiag', '_internal.updateAuthDiag', authDiagResult.updateAuthDiagRow);
+  nsWrite('_internal.updateAuthDiag', authDiagResult.updateAuthDiagRow);
   setRecordRefreshOutcome(recordRefreshOutcome);
   return { row: authDiagResult.row, updateAuthDiagRow: authDiagResult.updateAuthDiagRow };
 }

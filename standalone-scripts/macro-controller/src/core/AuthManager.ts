@@ -14,7 +14,7 @@ import { getLastTokenSource, getBearerTokenFromCookie, getBearerTokenFromSession
 
 export class AuthManager implements AuthManagerInterface {
 
-  /** Synchronous token retrieval — mirrors the v1.133 root contract */
+  /** Synchronous token resolution — returns cached/localStorage/cookie token or '' */
   getToken(): string {
     return resolveToken();
   }
@@ -69,7 +69,7 @@ export class AuthManager implements AuthManagerInterface {
     requestTokenFromExtension(forceRefresh, onDone);
   }
 
-  /** Forced auth recovery via legacy single-flight recovery path */
+  /** Single-flight auth recovery (RCA-4 fix) */
   recoverOnce(): Promise<string> {
     return recoverAuthOnce();
   }

@@ -8,20 +8,21 @@
  */
 
 import { log, logSub } from './logging';
-import { nsCall, nsRead } from './api-namespace';
+import { nsCallTyped, nsReadTyped } from './api-namespace';
+
+const NS_UPDATE_START_STOP = '_internal.updateStartStopBtn' as const;
 import { showToast, setStopLoopCallback } from './toast';
 import { LoopDirection } from './types';
 import { getByXPath } from './xpath-utils';
 import { fetchLoopCreditsAsync, syncCreditStateFromApi } from './credit-fetch';
 import { MacroController } from './core/MacroController';
-import { getLastTokenSource } from './auth';
+import { resolveToken, refreshBearerTokenFromBestSource } from './auth';
 import { checkSystemBusy, closeProjectDialog, ensureProjectDialogOpen, isOnProjectPage, isUserTypingInPrompt, pollForDialogReady } from './dom-helpers';
 import { CONFIG, IDS, TIMING, loopCreditState, state } from './shared-state';
 import { runCycle } from './loop-cycle';
 import { logError } from './error-utils';
-import { ensureTokenReady, AUTH_READY_TIMEOUT_MS } from './startup-token-gate';
 
-const NS_UPDATESTARTSTOPBTN = '_internal.updateStartStopBtn';
+
 
 // Re-export runCheck from loop-check.ts (barrel pattern)
 export { runCheck } from './loop-check';
@@ -53,9 +54,10 @@ function initLoopState(direction: LoopDirection | string): void {
   state.isIdle = true;
   state.isDelegating = false;
   state.__cycleInFlight = false;
+  state.__cycleRetryPending = false;
   state.running = true;
   state.countdown = Math.floor(TIMING.LOOP_INTERVAL / 1000);
-  nsCall('__loopUpdateStartStopBtn', NS_UPDATESTARTSTOPBTN, true);
+  nsCallTyped(NS_UPDATE_START_STOP, true);
 }
 
 function logLoopStartInfo(): void {
@@ -73,19 +75,19 @@ function verifyControllerInjection(): boolean {
   const marker = document.getElementById(IDS.SCRIPT_MARKER);
   const uiContainer = document.getElementById(IDS.CONTAINER);
   const xpathTarget = getByXPath(CONFIG.CONTROLS_XPATH);
-  const loopStartFn = nsRead('__loopStart', 'api.loop.start');
+  const loopStartFn = nsReadTyped('api.loop.start');
 
   if (!marker || typeof loopStartFn !== 'function') {
     logError('unknown', '❌ Controller script NOT injected (marker=\' + !!marker + \', __loopStart=\' + (typeof loopStartFn) + \') — aborting');
     state.running = false;
-    nsCall('__loopUpdateStartStopBtn', NS_UPDATESTARTSTOPBTN, false);
+    nsCallTyped(NS_UPDATE_START_STOP, false);
     return false;
   }
 
   if (!uiContainer) {
     logError('unknown', '❌ Controller UI container NOT found in DOM (id=\' + IDS.CONTAINER + \') — aborting');
     state.running = false;
-    nsCall('__loopUpdateStartStopBtn', NS_UPDATESTARTSTOPBTN, false);
+    nsCallTyped(NS_UPDATE_START_STOP, false);
     return false;
   }
 
@@ -125,22 +127,24 @@ function startLoopTimers(): void {
 
 async function handleAuthAndStartCheck(): Promise<void> {
   log('Step 1: Resolving auth token before workspace check...', 'check');
+  // Dynamic import to break circular dependency (was require())
   const { runCheck: runCheckFn } = await import('./loop-check');
-  const tokenResult = await ensureTokenReady(AUTH_READY_TIMEOUT_MS);
 
-  logAuthResult(tokenResult.token, tokenResult.token ? getLastTokenSource() : tokenResult.reason);
-  if (!state.running) { log('Loop was stopped during auth resolution — aborting', 'warn'); return; }
+  refreshBearerTokenFromBestSource(function(authToken: string, authSource: string) {
+    logAuthResult(authToken, authSource);
+    if (!state.running) { log('Loop was stopped during auth resolution — aborting', 'warn'); return; }
 
-  log('Step 2: Running initial workspace check...', 'check');
-  let checkPromise;
-  try { checkPromise = runCheckFn(); } catch(e) {
-    log('Initial check threw error: ' + (e as Error).message + ' — starting loop anyway', 'warn');
-  }
+    log('Step 2: Running initial workspace check...', 'check');
+    let checkPromise;
+    try { checkPromise = runCheckFn(); } catch(e) {
+      log('Initial check threw error: ' + (e as Error).message + ' — starting loop anyway', 'warn');
+    }
 
-  log('Step 3: Fetching initial credit data...', 'check');
-  mc().credits.fetch(false);
+    log('Step 3: Fetching initial credit data...', 'check');
+    mc().credits.fetch(false);
 
-  scheduleTimersAfterCheck(checkPromise);
+    scheduleTimersAfterCheck(checkPromise);
+  });
 }
 
 function logAuthResult(authToken: string, authSource: string): void {
@@ -170,16 +174,12 @@ function scheduleTimersAfterCheck(checkPromise: Promise<void> | undefined): void
 // startLoop
 // ============================================
 export function startLoop(direction: LoopDirection | string): boolean {
-  if (!validateLoopPreconditions()) {
-    return false;
-  }
+  if (!validateLoopPreconditions()) return false;
 
   initLoopState(direction);
   logLoopStartInfo();
 
-  if (!verifyControllerInjection()) {
-    return false;
-  }
+  if (!verifyControllerInjection()) return false;
 
   mc().updateUI();
   handleAuthAndStartCheck();
@@ -191,21 +191,20 @@ export function startLoop(direction: LoopDirection | string): boolean {
 // stopLoop
 // ============================================
 export function stopLoop(): boolean {
-  if (!state.running) {
-    return false;
-  }
+  if (!state.running) return false;
 
   state.running = false;
   state.isDelegating = false;
   state.forceDirection = null;
   state.__cycleInFlight = false;
+  state.__cycleRetryPending = false;
 
   if (state.loopIntervalId) { clearInterval(state.loopIntervalId); state.loopIntervalId = null; }
   if (state.countdownIntervalId) { clearInterval(state.countdownIntervalId); state.countdownIntervalId = null; }
 
   log('=== LOOP STOPPED ===', 'success');
   log('Total cycles completed: ' + state.cycleCount);
-  nsCall('__loopUpdateStartStopBtn', NS_UPDATESTARTSTOPBTN, false);
+  nsCallTyped(NS_UPDATE_START_STOP, false);
   mc().updateUI();
 
   return true;
@@ -221,9 +220,7 @@ function refreshStatusStopped(): void {
     logSub('Workspace name updated from nav (passive, loop stopped)', 1);
   }
 
-  const hasNoCreditData = !state.workspaceName && (!loopCreditState.perWorkspace || loopCreditState.perWorkspace.length === 0);
-
-  if (hasNoCreditData) {
+  if (!state.workspaceName && (!loopCreditState.perWorkspace || loopCreditState.perWorkspace.length === 0)) {
     triggerBackgroundCreditFetch();
   }
 
@@ -231,7 +228,10 @@ function refreshStatusStopped(): void {
 }
 
 function triggerBackgroundCreditFetch(): void {
-  logSub('No workspace + no credits — triggering background credit fetch via getBearerToken', 1);
+  const token = resolveToken();
+  if (!token) return;
+
+  logSub('No workspace + no credits — triggering background credit fetch', 1);
   fetchLoopCreditsAsync(false).then(function() {
     syncCreditStateFromApi();
     mc().updateUI();
@@ -295,9 +295,7 @@ export function refreshStatus(): void {
 }
 
 export function startStatusRefresh(): void {
-  if (state.statusRefreshId) {
-    return;
-  }
+  if (state.statusRefreshId) return;
   const intervalMs = state.running ? (TIMING.WS_CHECK_INTERVAL || 5000) : 30000;
   log('Starting workspace auto-check (every ' + (intervalMs / 1000) + 's)', 'success');
   state.statusRefreshId = setInterval(refreshStatus, intervalMs);

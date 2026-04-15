@@ -7,7 +7,6 @@
 
 import { log, logSub } from '../logging';
 import type { ExtensionResponse, PromptEntry, ResolvedPromptsConfig } from '../types';
-import type { ExtensionPayload } from '../types/api-data-types';
 import type { CachedPromptEntry } from './prompt-cache';
 import {
   clearPromptCache,
@@ -20,7 +19,7 @@ import type { TaskNextDeps } from './task-next-ui';
 import { normalizePromptEntries } from './prompt-utils';
 import { logError } from '../error-utils';
 import { showToast } from '../toast';
-
+import { DEFAULT_PASTE_XPATH } from '../constants';
 /** Editable prompt — a PromptEntry with an optional DB id. */
 export interface EditablePrompt extends PromptEntry {
   id?: string;
@@ -50,8 +49,6 @@ export const DEFAULT_PROMPTS: PromptEntry[] = [
   { name: 'Next Tasks', text: 'Next,\n\nList out the remaining tasks always, if you finish then in future `next` command, find any remaining tasks from memory and suggest', category: 'automation', slug: 'next-tasks', id: 'default-next-tasks' },
   { name: 'Unit Test Issues V2 Enhanced', text: 'Based on the packages that have low coverage, if a package has more than 1000 lines, then for that specific package we should split it into segments of 200 lines per task.\n\nYou should create a plan where each 200-line segment is treated as one task. Each task should focus on writing meaningful test coverage, including:\n- Branch coverage\n- Logical segment coverage\n- Edge cases\n\nFirst, create a detailed plan outlining:\n- Which packages will be handled\n- How many segments each package will be split into\n- The step-by-step execution plan\n\nEach time I say "next", you should proceed with the next package or segment and work towards achieving 100% code coverage.\n\nYou do not need to ask which package to prioritize. Choose based on logical ordering.\n\nEnsure that tests are written in a way that they are buildable in Go. Even if you cannot run them, ensure correctness through reasoning.\n\nFollow existing test patterns from the testing guideline spec folder.\n\nTesting requirements:\n- Follow AAA pattern (Arrange, Act, Assert)\n- Follow naming conventions (use "Should" style naming)\n- Maintain consistency with existing tests\n\nIf you have any questions or confusion, feel free to ask.\n\nYour task now is to create a detailed execution plan.', category: 'code-coverage', slug: 'unit-test-issues-v2-enhanced', id: 'default-unit-test-issues-v2-enhanced' },
 ];
-
-export const DEFAULT_PASTE_XPATH = '/html/body/div[3]/div/div[2]/main/div/div/div[1]/div/div[2]/div/form/div[3]/div/div/div/div';
 
 // ============================================
 // PromptLoaderState — encapsulated module state (CQ11, CQ17)
@@ -118,7 +115,7 @@ export function invalidatePromptCache(): void {
   // Also invalidate SDK cache if available
   const sdk = window.marco as { prompts?: { invalidateCache(): Promise<void> } } | undefined;
   if (sdk && sdk.prompts && typeof sdk.prompts.invalidateCache === 'function') {
-    sdk.prompts.invalidateCache().catch(function (e) { log('[PromptLoader] SDK cache invalidation failed: ' + (e instanceof Error ? e.message : String(e)), 'warn'); });
+    sdk.prompts.invalidateCache().catch(function(e: unknown) { log('[PromptLoader] SDK cache invalidation failed: ' + (e instanceof Error ? e.message : String(e)), 'warn'); });
   }
   clearPromptCache().then(function() {
     log('[PromptCache] Cache cleared (invalidated)', 'info');
@@ -139,7 +136,7 @@ export function clearLoadedPrompts(): void {
   // Also invalidate SDK cache
   const sdk = window.marco as { prompts?: { invalidateCache(): Promise<void> } } | undefined;
   if (sdk && sdk.prompts && typeof sdk.prompts.invalidateCache === 'function') {
-    sdk.prompts.invalidateCache().catch(function (e) { log('[PromptLoader] SDK cache invalidation failed: ' + (e instanceof Error ? e.message : String(e)), 'warn'); });
+    sdk.prompts.invalidateCache().catch(function(e: unknown) { log('[PromptLoader] SDK cache invalidation failed: ' + (e instanceof Error ? e.message : String(e)), 'warn'); });
   }
 }
 
@@ -157,9 +154,7 @@ interface RelayCtx {
 
 // CQ16: Extracted from sendToExtension closure
 function finishRelay(ctx: RelayCtx, resp: ExtensionResponse): void {
-  if (ctx.settled) {
-    return;
-  }
+  if (ctx.settled) return;
   ctx.settled = true;
   window.removeEventListener('message', ctx._onResponse!);
   clearTimeout(ctx.timeout);
@@ -177,7 +172,7 @@ function handleRelayResponse(ctx: RelayCtx, event: MessageEvent): void {
  * Send a message to the extension via chrome.runtime or window.postMessage relay.
  * Returns a Promise that resolves with the extension response.
  */
-export function sendToExtension(type: string, payload: ExtensionPayload): Promise<ExtensionResponse> {
+export function sendToExtension(type: string, payload: Record<string, unknown>): Promise<ExtensionResponse> {
   return new Promise<ExtensionResponse>(function(resolve) {
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
       try {
@@ -224,9 +219,7 @@ export function sendToExtension(type: string, payload: ExtensionPayload): Promis
  */
 function tryLoadByMessage(type: string): Promise<PromptEntry[] | null> {
   return sendToExtension(type, {}).then(function(response: ExtensionResponse) {
-    if (!response) {
-      return null;
-    }
+    if (!response) return null;
     const prompts = normalizePromptEntries((response.prompts) as Partial<PromptEntry>[]);
     return prompts.length > 0 ? prompts : null;
   });
@@ -265,14 +258,14 @@ export function loadPromptsFromJson(): Promise<PromptEntry[] | null> {
   const loadStartMs = Date.now();
 
   // ── SDK delegation (preferred path) ──
-  const sdk = window.marco as { prompts?: { getAll(): Promise<MarcoSDKPromptEntry[]> } } | undefined;
+  const sdk = window.marco as { prompts?: { getAll(): Promise<unknown[]> } } | undefined;
   if (sdk && sdk.prompts && typeof sdk.prompts.getAll === 'function') {
     if (promptLoaderState.loadedJsonPrompts) {
       log('[PromptLoad] ✅ In-memory cache hit (' + promptLoaderState.loadedJsonPrompts.length + ' prompts, 0ms)', 'info');
       return Promise.resolve(promptLoaderState.loadedJsonPrompts);
     }
     log('[PromptLoad] Fetching via SDK marco.prompts.getAll()...', 'info');
-    return sdk.prompts.getAll().then(function(entries: MarcoSDKPromptEntry[]) {
+    return sdk.prompts.getAll().then(function(entries: unknown[]) {
       const prompts = normalizePromptEntries(entries as Partial<PromptEntry>[]);
       const elapsed = Date.now() - loadStartMs;
       if (prompts.length > 0) {
@@ -285,7 +278,7 @@ export function loadPromptsFromJson(): Promise<PromptEntry[] | null> {
       promptLoaderState.loadedJsonPrompts = DEFAULT_PROMPTS;
       promptLoaderState.flushPendingCallbacks(DEFAULT_PROMPTS);
       return DEFAULT_PROMPTS;
-    }).catch(function (e) {
+    }).catch(function(e: unknown) {
       const elapsed = Date.now() - loadStartMs;
       log('[PromptLoad] ❌ SDK prompts.getAll() failed (' + elapsed + 'ms): ' + (e instanceof Error ? e.message : String(e)) + ' — using defaults', 'warn');
       promptLoaderState.loadedJsonPrompts = DEFAULT_PROMPTS;
@@ -325,7 +318,7 @@ export function loadPromptsFromJson(): Promise<PromptEntry[] | null> {
     log('[PromptCache] No IndexedDB cache — fetching from extension...', 'info');
 
     return fetchAndCacheFromExtension();
-  }).catch(function(e) {
+  }).catch(function(e: unknown) {
     logError('loadPrompts', 'Prompt loading failed', e);
     showToast('❌ Prompt loading failed', 'error');
     return fetchAndCacheFromExtension();

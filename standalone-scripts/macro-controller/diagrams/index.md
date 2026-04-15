@@ -148,7 +148,7 @@ Copy Injection Logs button workflow: 5 parallel background fetches via Promise.a
 **File:** [`auth-token-seeding-workflow.mmd`](auth-token-seeding-workflow.mmd)  
 **Image:** [`images/auth-token-seeding-workflow.png`](images/auth-token-seeding-workflow.png)
 
-Full authentication and token seeding flow from 4 trigger sources (extension boot, Run Scripts pipeline, cookie change, tab navigation) through the core 2-tier resolution: Tier 1 reads a JWT from signed preview URLs (`__lovable_token`), Tier 2 reads session cookies and only seeds if the value is a real JWT (`eyJ...` with 3 segments). Raw opaque cookies are never seeded. On cookie change, the cookie watcher reseeds all platform tabs and broadcasts TOKEN_UPDATED/TOKEN_EXPIRED. Downstream consumers (authBridge, Macro Controller, Credit Monitor) read from localStorage with TTL caching.
+Full authentication and token seeding flow from 4 trigger sources (extension boot, Run Scripts pipeline, cookie change, tab navigation) through the core 2-tier resolution: Tier 1 scans tab localStorage for Supabase JWTs (`sb-*-auth-token`), Tier 2 reads session cookies and only seeds if the value is a real JWT (`eyJ...` with 3 segments). Raw opaque cookies are never seeded. On cookie change, the cookie watcher reseeds all platform tabs and broadcasts TOKEN_UPDATED/TOKEN_EXPIRED. Downstream consumers (authBridge, Macro Controller, Credit Monitor) read from localStorage with TTL caching.
 
 ![Auth Token Seeding Workflow](images/auth-token-seeding-workflow.png)
 
@@ -173,13 +173,3 @@ End-to-end message relay workflow: page scripts (MacroController or Marco SDK) p
 End-to-end prompt lifecycle workflow: Stage 1 reads markdown source files (info.json + prompt.md per numbered folder); Stage 2 build aggregation via AggregatePrompts.mjs validates, renders markdown to HTML, and outputs MacroPrompts.json with a Count-Hash36 version hash; Stage 3 deploys via ViteStaticCopy into chrome-extension dist/prompts/ as a web-accessible resource; Stage 4 SQLite seeding on install/update uses the version hash to skip unchanged data, upserts into Prompts + PromptsCategory tables with both JsonCopy and HtmlCopy; Stage 5 runtime loading on user menu open checks IndexedDB dual cache (marco_prompts_cache) first, falls back to GetPrompts bridge → SQLite on cache miss, with manual Load button for force-refresh; Stage 6 UI rendering picks HtmlCopy for MacroController (zero rendering cost) or JsonCopy for other consumers, displays category-tabbed dropdown, and pastes selected prompt into editor with variable resolution.
 
 ![Prompts Pipeline Workflow](images/prompts-pipeline-workflow.png)
-
----
-
-## 15. Auth Retry Inconsistencies (DO NOT REPEAT)
-
-**Folder:** [`inconsistencies/`](inconsistencies/)  
-**File:** [`inconsistencies/auth-retry-inconsistencies.mmd`](inconsistencies/auth-retry-inconsistencies.mmd)  
-**Image:** [`inconsistencies/images/auth-retry-inconsistencies.png`](inconsistencies/images/auth-retry-inconsistencies.png)
-
-Documents the 5 unauthorized retry mechanisms that were added without spec approval and caused the persistent "Auth failed — no token after 12s" toast. **This diagram exists as a permanent record of what NOT to do.** See `spec/17-app-issues/88-auth-loading-failure-retry-inconsistency/00-overview.md` for full RCA. **No retry logic, no exponential backoff, no recursive self-calls.** Cycle failures are transient — the loop interval is the natural retry.

@@ -8,31 +8,23 @@
  *        Auth toasts now use noStop:true to avoid stopping loop on recoverable errors.
  * v7.40: Migrated from raw fetch() to httpRequest() (XMLHttpRequest + Promise).
  * v7.50: Migrated to marco.api centralized SDK (Axios + registry).
- * v2.136: Removed recursive self-calls per issue #88. Sequential pattern only.
- *
- * NO RETRY POLICY: Auth recovery uses getBearerToken({ force: true }) once.
- * If it fails, emit error. No recursive fetchLoopCredits(true) calls.
- * @see spec/17-app-issues/88-auth-loading-failure-retry-inconsistency/00-overview.md
- * @see standalone-scripts/macro-controller/diagrams/inconsistencies/auth-retry-inconsistencies.mmd
  *
  * @see spec/17-app-issues/authentication-freeze-and-retry-loop.md (RCA-1, RCA-2)
  * @see memory/architecture/networking/centralized-api-registry
  */
 
 import { log, logSub } from './logging';
-import { markBearerTokenExpired, getLastTokenSource, getAuthDebugSnapshot, getBearerToken } from './auth';
+import { resolveToken, invalidateSessionBridgeKey, markBearerTokenExpired, getLastTokenSource, getAuthDebugSnapshot, getBearerToken } from './auth';
 import { showToast } from './toast';
-import { dualWrite, nsCall } from './api-namespace';
+import { nsWrite, nsCallTyped } from './api-namespace';
 
 import { MacroController } from './core/MacroController';
 
 import { CREDIT_API_BASE, loopCreditState } from './shared-state';
 import { parseLoopApiResponse, syncCreditStateFromApi } from './credit-parser';
-import type { WorkspacesApiResponse } from './types';
 import { logError } from './error-utils';
+import { ApiPath } from './types';
 
-const API_USER_WORKSPACES = '/user/workspaces';
-const NS_UPDATEAUTHDIAG = '_internal.updateAuthDiag';
 
 function mc() { return MacroController.getInstance(); }
 
@@ -43,7 +35,7 @@ function mc() { return MacroController.getInstance(); }
 interface SdkApiResponse {
   readonly ok: boolean;
   readonly status: number;
-  readonly data: Record<string, string | number | boolean | null>;
+  readonly data: unknown;
   readonly headers: Record<string, string>;
 }
 
@@ -91,7 +83,7 @@ function emitAuthFailureToast(status: number, statusText: string): void {
     {
       noStop: true,
       requestDetail: {
-        method: 'GET', url: CREDIT_API_BASE + API_USER_WORKSPACES, headers: {}, status, statusText, responseBody: detail,
+        method: 'GET', url: CREDIT_API_BASE + ApiPath.UserWorkspaces, headers: {}, status, statusText, responseBody: detail,
       },
     },
   );
@@ -102,15 +94,17 @@ function emitAuthFailureToast(status: number, statusText: string): void {
 // ============================================
 
 async function handleAuthRecovery(
+  token: string,
   status: number,
   statusText: string,
 ): Promise<string | null> {
   markBearerTokenExpired('credit-fetch');
+  if (token) { invalidateSessionBridgeKey(token); }
 
   log('Credit API: Auth ' + status + ' — forcing token refresh before retry...', 'warn');
   showToast('Auth ' + status + ' — recovering session...', 'warn', {
     noStop: true,
-    requestDetail: { method: 'GET', url: CREDIT_API_BASE + API_USER_WORKSPACES, headers: {}, status, statusText },
+    requestDetail: { method: 'GET', url: CREDIT_API_BASE + ApiPath.UserWorkspaces, headers: {}, status, statusText },
   });
 
   const newToken = await getBearerToken({ force: true });
@@ -153,88 +147,79 @@ function handleNonAuthError(resp: SdkApiResponse): void {
   showToast('Credit API error: HTTP ' + resp.status, 'error', {
     noStop: true,
     requestDetail: {
-      method: 'GET', url: CREDIT_API_BASE + API_USER_WORKSPACES, headers: {}, status: resp.status, statusText: '', responseBody: bodyPreview,
+      method: 'GET', url: CREDIT_API_BASE + ApiPath.UserWorkspaces, headers: {}, status: resp.status, statusText: '', responseBody: bodyPreview,
     },
   });
 }
 
 async function processSuccessData(
-  data: WorkspacesApiResponse,
+  data: Record<string, unknown>,
   autoDetectFn?: (token: string) => Promise<void>,
 ): Promise<void> {
   const isParseOk = parseLoopApiResponse(data);
-  if (!isParseOk) {
-    return;
-  }
+  if (!isParseOk) return;
 
-  const freshToken = await getBearerToken();
-  dualWrite('__loopResolvedToken', '_internal.resolvedToken', freshToken);
+  const freshToken = resolveToken();
+  nsWrite('_internal.resolvedToken', freshToken);
 
   if (autoDetectFn) {
     await autoDetectFn(freshToken);
     syncCreditStateFromApi();
     mc().updateUI();
     log('Credit API: display updated (workspace detected)', 'success');
-    nsCall('__loopUpdateAuthDiag', NS_UPDATEAUTHDIAG);
+    nsCallTyped('_internal.updateAuthDiag');
 
     return;
   }
 
   syncCreditStateFromApi();
   mc().updateUI();
-  nsCall('__loopUpdateAuthDiag', NS_UPDATEAUTHDIAG);
+  nsCallTyped('_internal.updateAuthDiag');
 }
 
 // ============================================
 // fetchLoopCredits — callback-style credit fetch
 // v7.50: Uses marco.api.credits.fetchWorkspaces() via SDK.
 // ============================================
-/**
- * fetchLoopCredits — callback-style credit fetch
- * v7.50: Uses marco.api.credits.fetchWorkspaces() via SDK.
- * v2.136: Sequential auth recovery — NO recursive self-call.
- * @see spec/17-app-issues/88-auth-loading-failure-retry-inconsistency/00-overview.md
- */
-export async function fetchLoopCredits(
+export function fetchLoopCredits(
   isRetry?: boolean,
   autoDetectFn?: (token: string) => Promise<void>,
-): Promise<void> {
-  const token = await getBearerToken();
+): void {
+  const token = resolveToken();
   logCreditPreflight(token, isRetry);
 
-  try {
-    const resp = await apiFetchWorkspaces();
+  apiFetchWorkspaces()
+    .then(async function (resp: SdkApiResponse): Promise<Record<string, unknown> | undefined> {
+      if (!resp.ok) {
+        if (isAuthFailure(resp.status) && !isRetry) {
+          const recovered = await handleAuthRecovery(token, resp.status, '');
+          if (!recovered) { mc().updateUI(); return undefined; }
+          fetchLoopCredits(true, autoDetectFn);
 
-    if (!resp.ok) {
-      if (isAuthFailure(resp.status) && !isRetry) {
-        const recovered = await handleAuthRecovery(resp.status, '');
-        if (!recovered) { mc().updateUI(); return; }
-
-        // Sequential retry with recovered token — NOT a recursive self-call
-        const retryResp = await apiFetchWorkspaces();
-        if (!retryResp.ok) {
-          handleNonAuthError(retryResp);
-          return;
+          return undefined;
         }
-        await processSuccessData(retryResp.data as WorkspacesApiResponse, autoDetectFn);
-        return;
+
+        handleNonAuthError(resp);
+        throw new Error('HTTP ' + resp.status);
       }
 
-      handleNonAuthError(resp);
-      return;
-    }
+      const data = resp.data as Record<string, unknown>;
+      logSub('Credit API: response received, data keys=' + Object.keys(data).join(','), 1);
 
-    const data = resp.data as WorkspacesApiResponse;
-    logSub('Credit API: response received, data keys=' + Object.keys(data).join(','), 1);
-    await processSuccessData(data, autoDetectFn);
-  } catch (err) {
-    logError('Credit API failed', '' + (err as Error).message);
-    logSub('Token source: ' + getLastTokenSource(), 1);
-    logSub('isRetry: ' + (isRetry ? 'YES' : 'NO'), 1);
-    logSub('Hint: If 401/403, the token may be expired. Check extension bridge or re-login.', 1);
-    nsCall('__loopUpdateAuthDiag', NS_UPDATEAUTHDIAG);
-    mc().updateUI();
-  }
+      return data;
+    })
+    .then(async function (data: Record<string, unknown> | undefined) {
+      if (!data) return;
+      await processSuccessData(data, autoDetectFn);
+    })
+    .catch(function (err: Error) {
+      logError('Credit API failed', '' + err.message);
+      logSub('Token source: ' + getLastTokenSource(), 1);
+      logSub('isRetry: ' + (isRetry ? 'YES' : 'NO'), 1);
+      logSub('Hint: If 401/403, the token may be expired. Check extension bridge or re-login.', 1);
+      nsCallTyped('_internal.updateAuthDiag');
+      mc().updateUI();
+    });
 }
 
 // ============================================
@@ -272,14 +257,23 @@ export function fetchLoopCreditsAsync(isRetry?: boolean): Promise<void> {
   return promise;
 }
 
-/**
- * handleAsyncAuthFailure — sequential recovery via getBearerToken({ force: true }).
- * @see spec/17-app-issues/88-auth-loading-failure-retry-inconsistency/00-overview.md
- */
-async function handleAsyncAuthFailure(resp: SdkApiResponse): Promise<void> {
-  markBearerTokenExpired('credit-fetch-async');
+// CQ4: Extracted — resolve token with TTL-aware getBearerToken
+async function resolveTokenWithRecovery(isRetry?: boolean): Promise<string> {
+  if (isRetry) {
+    log('Credit API (async): retry — forcing token refresh', 'check');
 
-  log('Credit API (async): Auth ' + resp.status + ' — forcing token refresh...', 'warn');
+    return getBearerToken({ force: true });
+  }
+
+  return getBearerToken();
+}
+
+// CQ4: Extracted — handle auth failure in async path
+async function handleAsyncAuthFailure(resp: SdkApiResponse, token: string): Promise<void> {
+  markBearerTokenExpired('credit-fetch-async');
+  if (token) { invalidateSessionBridgeKey(token); }
+
+  log('Credit API (async): Auth ' + resp.status + ' — forcing token refresh before retry...', 'warn');
   showToast('Auth ' + resp.status + ' — recovering session...', 'warn', { noStop: true });
 
   const newToken = await getBearerToken({ force: true });
@@ -289,22 +283,13 @@ async function handleAsyncAuthFailure(resp: SdkApiResponse): Promise<void> {
     throw new Error('AUTH_RECOVERY_FAILED');
   }
 
-  log('Credit API (async): Token refreshed — retrying once sequentially', 'check');
+  log('Credit API (async): Token refreshed — retrying once', 'check');
 
-  const retryResp = await apiFetchWorkspaces();
-
-  if (!retryResp.ok) {
-    if (isAuthFailure(retryResp.status)) { markBearerTokenExpired('credit-fetch-async'); }
-    throw new Error('HTTP ' + retryResp.status + ' (after recovery)');
-  }
-
-  const data = retryResp.data as WorkspacesApiResponse;
-  parseLoopApiResponse(data);
-  log('Credit API (async): parsed ' + (loopCreditState.perWorkspace || []).length + ' workspaces (after recovery)', 'success');
+  return fetchLoopCreditsAsync(true);
 }
 
 async function doFetchLoopCreditsAsync(isRetry?: boolean): Promise<void> {
-  const token = await getBearerToken(isRetry ? { force: true } : undefined);
+  const token = await resolveTokenWithRecovery(isRetry);
 
   log('Credit API (async): GET /user/workspaces' + (isRetry ? ' (RETRY after recovery)' : ''), 'check');
 
@@ -318,14 +303,14 @@ async function doFetchLoopCreditsAsync(isRetry?: boolean): Promise<void> {
 
   if (!resp.ok) {
     if (isAuthFailure(resp.status) && !isRetry) {
-      return handleAsyncAuthFailure(resp);
+      return handleAsyncAuthFailure(resp, token);
     }
 
     if (isAuthFailure(resp.status)) { markBearerTokenExpired('credit-fetch-async'); }
     throw new Error('HTTP ' + resp.status);
   }
 
-  const data = resp.data as WorkspacesApiResponse;
+  const data = resp.data as Record<string, unknown>;
   parseLoopApiResponse(data);
   log('Credit API (async): parsed ' + (loopCreditState.perWorkspace || []).length + ' workspaces', 'success');
 }

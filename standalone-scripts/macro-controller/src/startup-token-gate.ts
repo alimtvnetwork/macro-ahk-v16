@@ -1,19 +1,15 @@
 /**
  * MacroLoop Controller — Startup Token Readiness Gate
  *
- * Uses the unified getBearerToken() contract so startup, bridge, and
- * background all share the same readiness budget and diagnostics.
- *
- * Includes a fast client-side pre-seed that runs synchronously before
- * the async waterfall to populate localStorage from signed URL tokens,
- * enabling sub-2s cold-load resolution.
+ * Polls resolveToken() at short intervals until a bearer token
+ * is available or the timeout expires. Proactively triggers
+ * extension bridge refresh if no local token exists.
  *
  * @see .lovable/memory/architecture/macro-controller/bootstrap-strategy.md
  */
 
-import { getAuthDebugSnapshot, getBearerToken, getLastTokenSource, resolveToken } from './auth';
-import { saveTokenWithTimestamp } from './auth-resolve';
-import { log } from './logging';
+import { resolveToken, refreshBearerTokenFromBestSource } from './auth';
+import { TOKEN_POLL_INTERVAL_MS as POLL_INTERVAL_MS, TOKEN_REFRESH_RETRY_MS as REFRESH_RETRY_MS } from './constants';
 
 export interface TokenReadyResult {
   token: string;
@@ -21,178 +17,86 @@ export interface TokenReadyResult {
   reason: string;
 }
 
-export interface StartupGateSnapshot {
-  settled: boolean;
-  token: boolean;
-  waitedMs: number;
-  reason: string;
-  pollCount: number;
-  refreshCount: number;
-  bridgeState: string;
-  visibleCookies: string;
-  signedUrlDetected: boolean;
-  preSeedSource: string;
-}
-
-export const AUTH_READY_TIMEOUT_MS = 10_000;
-
-let _lastGateSnapshot: StartupGateSnapshot = {
-  settled: false,
-  token: false,
-  waitedMs: 0,
-  reason: 'not-started',
-  pollCount: 0,
-  refreshCount: 0,
-  bridgeState: 'not-attempted',
-  visibleCookies: 'none',
-  signedUrlDetected: false,
-  preSeedSource: 'none',
-};
-
-export function getStartupGateSnapshot(): StartupGateSnapshot {
-  return _lastGateSnapshot;
-}
-
-// ── Fast client-side pre-seed ──
-// Runs synchronously before the async waterfall to populate localStorage
-// from sources that are already available in the page context.
-
-function extractSignedUrlJwt(): string | null {
-  try {
-    const url = new URL(window.location.href);
-    const token = url.searchParams.get('__lovable_token') ?? url.searchParams.get('lovable_token');
-    if (typeof token === 'string' && token.startsWith('eyJ') && token.split('.').length === 3) {
-      return token;
-    }
-  } catch { /* ignore */ }
-  return null;
-}
-
 /**
- * Fast client-side pre-seed: extracts JWT from signed URL params
- * and writes it into marco_bearer_token so resolveToken() can find it immediately.
- * Returns the source label if a token was seeded, or 'none'.
+ * Polls resolveToken() at short intervals until a token is available
+ * or the timeout expires. Returns immediately if a token already exists.
  */
-function fastPreSeed(): string {
-  // Skip if marco_bearer_token already has a valid JWT
-  try {
-    const existing = localStorage.getItem('marco_bearer_token') || '';
-    if (existing.startsWith('eyJ') && existing.split('.').length === 3) {
-      return 'already-seeded';
+// CQ16: Extracted token gate context + helpers
+interface TokenGateCtx {
+  settled: boolean;
+  refreshInFlight: boolean;
+  lastRefreshAt: number;
+  timer: ReturnType<typeof setInterval> | null;
+  startedAt: number;
+  resolve: (result: TokenReadyResult) => void;
+}
+
+function finishTokenGate(ctx: TokenGateCtx, result: TokenReadyResult): void {
+  if (ctx.settled) return;
+  ctx.settled = true;
+  if (ctx.timer !== null) { clearInterval(ctx.timer); }
+  ctx.resolve(result);
+}
+
+function maybeRefreshFromExtension(ctx: TokenGateCtx): void {
+  if (ctx.refreshInFlight) return;
+  const now = Date.now();
+  const isTooSoon = (now - ctx.lastRefreshAt) < REFRESH_RETRY_MS;
+  if (isTooSoon) return;
+
+  ctx.refreshInFlight = true;
+  ctx.lastRefreshAt = now;
+
+  refreshBearerTokenFromBestSource(function (refreshedToken: string, source: string) {
+    ctx.refreshInFlight = false;
+    const hasToken = !!refreshedToken;
+
+    if (hasToken) {
+      finishTokenGate(ctx, {
+        token: refreshedToken,
+        waitedMs: Date.now() - ctx.startedAt,
+        reason: 'refreshed-from-' + (source || 'extension-bridge'),
+      });
     }
-  } catch { /* ignore */ }
-
-  // Try signed URL (cold preview loads with __lovable_token param)
-  const signedUrlJwt = extractSignedUrlJwt();
-  if (signedUrlJwt) {
-    try {
-      saveTokenWithTimestamp(signedUrlJwt);
-      log('[TokenGate] Pre-seed: seeded JWT from signed URL param', 'success');
-      return 'signed-url';
-    } catch { /* ignore */ }
-  }
-
-  return 'none';
+  }, { skipSessionBridgeCache: true });
 }
 
-// ── Diagnostics helpers ──
-
-function detectSignedUrlToken(): boolean {
-  return extractSignedUrlJwt() !== null;
-}
-
-function getBridgeState(): string {
-  const diag = getAuthDebugSnapshot();
-  if (diag.bridgeOutcome.success) {
-    return 'hit:' + (diag.bridgeOutcome.source || 'bridge');
-  }
-  if (diag.bridgeOutcome.attempted) {
-    return 'miss:' + (diag.bridgeOutcome.error || 'empty');
-  }
-  return 'not-attempted';
-}
-
-function getVisibleCookies(): string {
-  const diag = getAuthDebugSnapshot();
-  return diag.visibleCookieNames.length > 0
-    ? diag.visibleCookieNames.join(',')
-    : 'none';
-}
-
-function buildTimeoutReason(waitedMs: number, preSeedSource: string): string {
-  const diag = getAuthDebugSnapshot();
-  return 'Timeout — no token after ' + Math.round(waitedMs / 1000) + 's'
-    + ' | source=' + diag.tokenSource
-    + ' | bridge=' + getBridgeState()
-    + ' | visibleCookies=' + getVisibleCookies()
-    + ' | signedUrl=' + (detectSignedUrlToken() ? 'yes' : 'no')
-    + ' | preSeed=' + preSeedSource
-    + ' | contract=getBearerToken';
-}
-
-function captureGateSnapshot(result: TokenReadyResult, preSeedSource: string): void {
-  _lastGateSnapshot = {
-    settled: true,
-    token: !!result.token,
-    waitedMs: result.waitedMs,
-    reason: result.reason,
-    pollCount: 0,
-    refreshCount: 0,
-    bridgeState: getBridgeState(),
-    visibleCookies: getVisibleCookies(),
-    signedUrlDetected: detectSignedUrlToken(),
-    preSeedSource,
-  };
-}
-
-// ── Main gate ──
-
-export async function ensureTokenReady(timeoutMs: number = AUTH_READY_TIMEOUT_MS): Promise<TokenReadyResult> {
-  const startedAt = Date.now();
-
-  // Phase 0: Fast client-side pre-seed (synchronous, <1ms)
-  const preSeedSource = fastPreSeed();
-  if (preSeedSource !== 'none') {
-    log('[TokenGate] Pre-seed completed: source=' + preSeedSource, 'info');
-  }
-
-  // Phase 1: Check if resolveToken() can find a token now (after pre-seed)
-  const immediateToken = resolveToken();
-
-  if (immediateToken) {
-    const result: TokenReadyResult = {
-      token: immediateToken,
-      waitedMs: 0,
-      reason: preSeedSource !== 'none' && preSeedSource !== 'already-seeded'
-        ? 'pre-seeded-from-' + preSeedSource
-        : 'immediate',
+export function ensureTokenReady(timeoutMs: number): Promise<TokenReadyResult> {
+  return new Promise<TokenReadyResult>(function (resolve) {
+    const ctx: TokenGateCtx = {
+      settled: false, refreshInFlight: false, lastRefreshAt: 0,
+      timer: null, startedAt: Date.now(), resolve,
     };
-    captureGateSnapshot(result, preSeedSource);
-    log('[TokenGate] Immediate token available — 0ms (preSeed=' + preSeedSource + ')', 'success');
-    return result;
-  }
 
-  // Phase 2: Fall back to async getBearerToken() with unified timeout
-  log('[TokenGate] Started — timeout=' + timeoutMs + 'ms, contract=getBearerToken(), preSeed=' + preSeedSource, 'check');
-  const token = await Promise.race<string>([
-    getBearerToken(),
-    new Promise<string>(function (resolve) {
-      setTimeout(function () { resolve(''); }, timeoutMs);
-    }),
-  ]);
-  const waitedMs = Date.now() - startedAt;
-  const hasToken = !!token;
-  const source = getLastTokenSource() || 'unknown';
-  const result: TokenReadyResult = hasToken
-    ? { token, waitedMs, reason: 'contract-resolved-from-' + source }
-    : { token: '', waitedMs, reason: buildTimeoutReason(waitedMs, preSeedSource) };
+    const immediateToken = resolveToken();
+    const hasImmediate = !!immediateToken;
 
-  captureGateSnapshot(result, preSeedSource);
+    if (hasImmediate) {
+      finishTokenGate(ctx, { token: immediateToken, waitedMs: 0, reason: 'immediate' });
 
-  log(
-    '[TokenGate] Settled — waited=' + waitedMs + 'ms, reason=' + result.reason,
-    hasToken ? 'success' : 'warn',
-  );
+      return;
+    }
 
-  return result;
+    maybeRefreshFromExtension(ctx);
+
+    ctx.timer = setInterval(function () {
+      const token = resolveToken();
+      const elapsed = Date.now() - ctx.startedAt;
+      const hasToken = !!token;
+
+      if (hasToken) {
+        finishTokenGate(ctx, { token, waitedMs: elapsed, reason: 'resolved' });
+
+        return;
+      }
+
+      maybeRefreshFromExtension(ctx);
+
+      const isTimedOut = elapsed >= timeoutMs;
+
+      if (isTimedOut) {
+        finishTokenGate(ctx, { token: '', waitedMs: elapsed, reason: 'Timeout — no token after ' + Math.round(elapsed / 1000) + 's. Ensure you are logged in.' });
+      }
+    }, POLL_INTERVAL_MS);
+  });
 }

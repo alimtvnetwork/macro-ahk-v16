@@ -71,16 +71,17 @@ export interface ComboShortcuts {
 
 export interface MacroLoopConfig {
   creditBarWidthPx?: number;
+  retry?: RetryConfig;
   timing?: MacroLoopTiming;
   urls?: MacroLoopUrls;
   xpaths?: MacroLoopXPaths;
   elementIds?: MacroLoopElementIds;
 }
 
-/**
- * @deprecated REMOVED — retry logic is forbidden per issue #88.
- * @see spec/17-app-issues/88-auth-loading-failure-retry-inconsistency/00-overview.md
- */
+export interface RetryConfig {
+  maxRetries?: number;
+  backoffMs?: number;
+}
 
 export interface MacroLoopTiming {
   loopIntervalMs?: number;
@@ -140,12 +141,8 @@ export interface CreditBalanceConfigInput {
 
 export interface GeneralConfig {
   logLevel?: string;
+  maxRetries?: number;
 }
-
-/** Default general config values. */
-export const DEFAULT_GENERAL_CONFIG: Required<GeneralConfig> = {
-  logLevel: 'info',
-};
 
 export interface AutoAttachConfig {
   timing?: AutoAttachTiming;
@@ -424,6 +421,8 @@ export interface ControllerState {
   projectNameFromApi: string;
   /** Project name resolved from DOM XPath on page load. */
   projectNameFromDom: string;
+  /** Custom display name set by user in settings — highest priority for title bar. */
+  customDisplayName: string;
   hasFreeCredit: boolean;
   lastStatusCheck: number;
   statusRefreshId: ReturnType<typeof setTimeout> | null;
@@ -433,12 +432,14 @@ export interface ControllerState {
   workspaceFromApi: boolean;
   workspaceFromCache: boolean;
   isManualCheck: boolean;
-  /**
-   * Internal: true while a loop cycle fetch is in-flight.
-   * @see spec/17-app-issues/88-auth-loading-failure-retry-inconsistency/00-overview.md
-   * NO RETRY FIELDS — cycle failures are transient; the loop interval is the natural retry.
-   */
+  retryCount: number;
+  maxRetries: number;
+  retryBackoffMs: number;
+  lastRetryError: string | null;
+  /** Internal: true while a loop cycle fetch is in-flight. */
   __cycleInFlight: boolean;
+  /** Internal: true while a retry is scheduled. */
+  __cycleRetryPending: boolean;
 }
 
 // Forward import for PromptsConfig → PromptEntry dependency

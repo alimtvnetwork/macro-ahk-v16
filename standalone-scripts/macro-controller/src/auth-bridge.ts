@@ -11,22 +11,20 @@ import { log } from './logging';
 import { getLastSessionBridgeSource } from './shared-state';
 import { logError } from './error-utils';
 import {
-  extractBearerTokenFromRaw,
+  extractBearerTokenFromUnknown,
   getBearerTokenFromSessionBridge,
   getSessionCookieNames,
   getLastTokenSource,
 } from './auth-resolve';
 
-/** Recursive value type for bridge message payloads. */
-type BridgePayloadValue = string | number | boolean | null | undefined | Record<string, string | number | boolean | null | undefined> | object;
-
-const EXTENSION_BRIDGE = 'Extension bridge ';
+import { BRIDGE_TIMEOUT_MS } from './constants';
+import { Label } from './types';
 
 // ============================================
 // Bridge Constants & Outcome Tracking
 // ============================================
 
-const BRIDGE_TIMEOUT_MS = 5000;
+
 
 // CQ11: Encapsulate bridge outcome in singleton class
 class BridgeOutcomeState {
@@ -118,7 +116,7 @@ export function getAuthDebugSnapshot(): AuthDebugSnapshot {
     bridgeOutcome: bridgeOutcomeState.get(),
     visibleCookieNames,
     flow:
-      'localStorage/session-bridge -> extension-bridge(GET_TOKEN, REFRESH_TOKEN) -> cookie[' +
+      'localStorage/session-bridge -> supabase-scan -> extension-bridge(GET_TOKEN, REFRESH_TOKEN) -> cookie[' +
       sessionCookieNames.join(' | ') +
       ']',
   };
@@ -129,33 +127,27 @@ export function getAuthDebugSnapshot(): AuthDebugSnapshot {
 // ============================================
 
 export function extractTokenFromAuthBridgeResponse(
-  payload: Record<string, BridgePayloadValue>,
+  payload: Record<string, unknown>,
 ): string {
-  if (!payload || typeof payload !== 'object') {
-    return '';
-  }
+  if (!payload || typeof payload !== 'object') return '';
 
-  return extractTokenFromContainer(payload, 0);
+  return extractTokenFromUnknownContainer(payload, 0);
 }
 
-function extractTokenFromContainer(
-  raw: BridgePayloadValue,
+function extractTokenFromUnknownContainer(
+  raw: unknown,
   depth: number,
 ): string {
-  const isInvalidContainer = depth > 4 || !raw || typeof raw !== 'object';
+  if (depth > 4 || !raw || typeof raw !== 'object') return '';
 
-  if (isInvalidContainer) {
-    return '';
-  }
-
-  const obj = raw as Record<string, BridgePayloadValue>;
+  const obj = raw as Record<string, unknown>;
 
   const tokenCandidates = [
     obj.token, obj.authToken, obj.access_token, obj.jwt, obj.sessionId,
   ];
 
   for (const candidate of tokenCandidates) {
-    const token = extractBearerTokenFromRaw(String(candidate ?? ''));
+    const token = extractBearerTokenFromUnknown(candidate);
 
     if (token) {
       return token;
@@ -165,7 +157,7 @@ function extractTokenFromContainer(
   const wrapperCandidates = [obj.payload, obj.result, obj.data, obj.response];
 
   for (const wrapper of wrapperCandidates) {
-    const nestedToken = extractTokenFromContainer(wrapper, depth + 1);
+    const nestedToken = extractTokenFromUnknownContainer(wrapper, depth + 1);
 
     if (nestedToken) {
       return nestedToken;
@@ -203,7 +195,7 @@ function handleAttemptResult(
     const errorMsg = attempt.errorMessage || 'No token returned';
 
     if (attempt.errorMessage) {
-      log(EXTENSION_BRIDGE + messageType + ' failed: ' + errorMsg, 'warn');
+      log(Label.ExtensionBridge + messageType + ' failed: ' + errorMsg, 'warn');
     }
 
     recordBridgeOutcome(false, 'none', errorMsg);
@@ -227,17 +219,13 @@ export function requestTokenFromExtension(
   const messageType = forceRefresh ? 'REFRESH_TOKEN' : 'GET_TOKEN';
 
   _requestTokenFromExtensionAttempt(forceRefresh, function (firstAttempt: ExtensionBridgeAttemptResult) {
-    if (handleAttemptResult(firstAttempt, messageType, onDone)) {
-      return;
-    }
+    if (handleAttemptResult(firstAttempt, messageType, onDone)) return;
 
     // Retry once on timeout (handles MV3 service worker cold-start)
-    log(EXTENSION_BRIDGE + messageType + ' timed out — retrying once...', 'warn');
+    log(Label.ExtensionBridge + messageType + ' timed out — retrying once...', 'warn');
 
     _requestTokenFromExtensionAttempt(forceRefresh, function (secondAttempt: ExtensionBridgeAttemptResult) {
-      if (handleAttemptResult(secondAttempt, messageType, onDone)) {
-        return;
-      }
+      if (handleAttemptResult(secondAttempt, messageType, onDone)) return;
 
       recordBridgeOutcome(false, 'none', secondAttempt.errorMessage || 'timeout (2 attempts)');
       onDone('', 'none');
@@ -264,27 +252,17 @@ interface BridgeAttemptCtxFull extends BridgeAttemptCtx {
 }
 
 function finishBridgeAttempt(ctx: BridgeAttemptCtxFull, result: ExtensionBridgeAttemptResult): void {
-  if (ctx.settled) {
-    return;
-  }
+  if (ctx.settled) return;
   ctx.settled = true;
   window.removeEventListener('message', ctx._onResponse!);
-  if (ctx.timeoutRef) {
-    clearTimeout(ctx.timeoutRef);
-  }
+  if (ctx.timeoutRef) clearTimeout(ctx.timeoutRef);
   ctx.onDone(result);
 }
 
 function handleBridgeResponse(ctx: BridgeAttemptCtxFull, event: MessageEvent): void {
-  if (!event.data) {
-    return;
-  }
-  if (event.data.source !== 'marco-extension') {
-    return;
-  }
-  if (event.data.requestId !== ctx.requestId) {
-    return;
-  }
+  if (!event.data) return;
+  if (event.data.source !== 'marco-extension') return;
+  if (event.data.requestId !== ctx.requestId) return;
 
   const payload = unwrapRelayPayload(event.data.payload);
   const token = extractTokenFromAuthBridgeResponse(payload);
@@ -292,7 +270,7 @@ function handleBridgeResponse(ctx: BridgeAttemptCtxFull, event: MessageEvent): v
   const source = token ? 'extension-bridge[' + ctx.messageType + ']' : 'none';
 
   if (token) {
-    log(EXTENSION_BRIDGE + ctx.messageType + ' resolved in ' + (Date.now() - ctx.startedAt) + 'ms', 'sub');
+    log(Label.ExtensionBridge + ctx.messageType + ' resolved in ' + (Date.now() - ctx.startedAt) + 'ms', 'sub');
   }
 
   finishBridgeAttempt(ctx, { token, source, isTimeout: false, errorMessage });
@@ -321,19 +299,15 @@ function _requestTokenFromExtensionAttempt(
   }, BRIDGE_TIMEOUT_MS);
 }
 
-function unwrapRelayPayload(rawPayload: BridgePayloadValue): Record<string, BridgePayloadValue> {
-  if (!rawPayload || typeof rawPayload !== 'object') {
-    return {}
-  }
+function unwrapRelayPayload(rawPayload: unknown): Record<string, unknown> {
+  if (!rawPayload || typeof rawPayload !== 'object') return {};
 
-  const payload = rawPayload as Record<string, BridgePayloadValue>;
+  const payload = rawPayload as Record<string, unknown>;
   const nested = payload.payload;
 
-  if (!nested || typeof nested !== 'object') {
-    return payload;
-  }
+  if (!nested || typeof nested !== 'object') return payload;
 
-  const nestedPayload = nested as Record<string, BridgePayloadValue>;
+  const nestedPayload = nested as Record<string, unknown>;
   const hasTokenLikeKey =
     typeof nestedPayload.token === 'string' ||
     typeof nestedPayload.authToken === 'string' ||
@@ -370,14 +344,10 @@ function isTransportFailure(errorMessage: string): boolean {
 }
 
 function handleRelayPong(ctx: RelayPingCtx, event: MessageEvent): void {
-  if (!event.data || event.data.source !== 'marco-extension') {
-    return;
-  }
-  if (event.data.requestId !== ctx.pingId) {
-    return;
-  }
+  if (!event.data || event.data.source !== 'marco-extension') return;
+  if (event.data.requestId !== ctx.pingId) return;
 
-  const payload = unwrapRelayPayload((event.data as { payload?: BridgePayloadValue }).payload);
+  const payload = unwrapRelayPayload((event.data as { payload?: unknown }).payload);
   const errorMsg = typeof payload.errorMessage === 'string' ? payload.errorMessage : '';
 
   if (!ctx.settled) {
@@ -409,5 +379,47 @@ export function isRelayActive(): Promise<boolean> {
     window.addEventListener('message', ctx._onPong);
 
     window.postMessage({ source: 'marco-controller', type: 'GET_TOKEN', requestId: pingId }, '*');
+  });
+}
+
+/**
+ * Wake the service worker by sending a lightweight ping via the content script relay.
+ * If the relay responds (even with an error), the bridge outcome is refreshed.
+ * Returns true if the bridge is alive after the wake attempt.
+ */
+export function wakeBridge(): Promise<boolean> {
+  return new Promise(function (resolve) {
+    const pingId = 'wake-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+    let settled = false;
+
+    function finish(alive: boolean): void {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener('message', onResponse);
+      if (timer) clearTimeout(timer);
+      resolve(alive);
+    }
+
+    function onResponse(event: MessageEvent): void {
+      if (!event.data || event.data.source !== 'marco-extension') return;
+      if (event.data.requestId !== pingId) return;
+
+      const payload = unwrapRelayPayload((event.data as { payload?: unknown }).payload);
+      const errorMsg = typeof payload.errorMessage === 'string' ? payload.errorMessage : '';
+
+      if (errorMsg && isTransportFailure(errorMsg)) {
+        // Bridge still broken after wake attempt
+        finish(false);
+      } else {
+        // Got a response — service worker is awake, refresh outcome
+        recordBridgeOutcome(true, 'extension-bridge[WAKE]');
+        finish(true);
+      }
+    }
+
+    window.addEventListener('message', onResponse);
+    window.postMessage({ source: 'marco-controller', type: 'GET_TOKEN', requestId: pingId }, '*');
+
+    const timer = setTimeout(function () { finish(false); }, 3000);
   });
 }

@@ -25,7 +25,7 @@ const PREFIX = "[RiseupAsia]";
 /**
  * Extract a useful message string from an unknown error value.
  */
-function formatError(error: Error | string | object | null | undefined): string {
+function formatError(error: unknown): string {
     if (error instanceof Error) {
         return error.stack || error.message;
     }

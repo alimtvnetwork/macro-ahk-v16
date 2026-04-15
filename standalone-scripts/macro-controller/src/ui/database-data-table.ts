@@ -8,10 +8,7 @@
  */
 
 import { loadTableData } from './database-modal-data';
-import type { DatabaseRow } from '../types';
-
-const PAGE_SIZE = 25;
-
+import { DB_PAGE_SIZE as PAGE_SIZE } from '../constants';
 // ── Helpers ──
 
 export function escapeHtml(text: string): string {
@@ -71,7 +68,7 @@ export function buildPagination(
 
 export function buildDataTableElement(
   columns: string[],
-  rows: DatabaseRow[],
+  rows: Record<string, unknown>[],
 ): HTMLElement {
   const wrapper = document.createElement('div');
   wrapper.className = 'marco-db-table-wrapper';
@@ -102,7 +99,7 @@ function buildTableHeader(columns: string[]): HTMLElement {
 
 function buildTableBody(
   columns: string[],
-  rows: DatabaseRow[],
+  rows: Record<string, unknown>[],
 ): HTMLElement {
   const tbody = document.createElement('tbody');
 
@@ -120,7 +117,7 @@ function buildTableBody(
   return tbody;
 }
 
-function buildTableCell(value: string | number | boolean | null | undefined): HTMLTableCellElement {
+function buildTableCell(value: unknown): HTMLTableCellElement {
   const cell = document.createElement('td');
   const isNullish = value === null || value === undefined;
 

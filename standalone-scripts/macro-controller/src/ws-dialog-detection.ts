@@ -14,7 +14,7 @@ import { reactClick, getByXPath, getAllByXPath, findElement, ML_ELEMENTS } from 
 import { collectWorkspaceNameCandidatesFromNode, matchWorkspaceByName, normalizeWorkspaceName } from './ws-name-matching';
 import type { WorkspaceCredit, WorkspaceMatchCandidate } from './types';
 
-const KEEPING_EXISTING_WORKSPACE = ': Keeping existing workspace: ';
+import { Label } from './types';
 
 // ============================================
 // Tier 2: Detect workspace via Project Dialog XPath
@@ -53,14 +53,12 @@ export function detectWorkspaceViaProjectDialog(callerFn?: string, perWs?: Works
   log(fn + ': Tier 2 — Opening project dialog to read workspace name...', 'check');
   logSub('ProjectButtonXPath: ' + CONFIG.PROJECT_BUTTON_XPATH, 1);
   logSub('WorkspaceNameXPath: ' + CONFIG.WORKSPACE_XPATH, 1);
-  if (keepDialogOpen) {
-    logSub('keepDialogOpen=true — caller will close dialog after Step 3', 1);
-  }
+  if (keepDialogOpen) logSub('keepDialogOpen=true — caller will close dialog after Step 3', 1);
 
   return findProjectButtonWithRetry(fn, 3, 1000).then(function(btn: Element | null) {
     if (!btn) {
-      logError(fn, 'Project button NOT found after retries — cannot open dialog. XPath=' + CONFIG.PROJECT_BUTTON_XPATH);
-      log(fn + KEEPING_EXISTING_WORKSPACE + (state.workspaceName || '(none)'), 'warn');
+      logError('ws-dialog-detection', 'Project button NOT found after retries — cannot open dialog. XPath=' + CONFIG.PROJECT_BUTTON_XPATH);
+      log(fn + Label.KeepingExistingWs + (state.workspaceName || '(none)'), 'warn');
       return Promise.resolve(null);
     }
     return openDialogAndPoll(fn, btn, perWs!, !!keepDialogOpen).then(function() {
@@ -161,19 +159,13 @@ function resolveChosenWorkspace(
   for (const c of matchedCandidates) {
     const key = c.matched.id || normalizeWorkspaceName(c.matched.fullName || c.matched.name || '');
     const existing = uniqueById[key];
-    if (!existing || (!existing.selected && c.selected)) {
-      uniqueById[key] = c;
-    }
+    if (!existing || (!existing.selected && c.selected)) uniqueById[key] = c;
   }
 
   const uniqueMatches = Object.values(uniqueById);
   const selected = uniqueMatches.find(m => m.selected);
-  if (selected) {
-    return selected;
-  }
-  if (uniqueMatches.length === 1) {
-    return uniqueMatches[0];
-  }
+  if (selected) return selected;
+  if (uniqueMatches.length === 1) return uniqueMatches[0];
 
   if (uniqueMatches.length === 0 && perWs.length === 1) {
     log(fn + ': XPath candidates not cleanly matchable, but only one workspace exists — selecting it', 'warn');
@@ -199,7 +191,7 @@ function applyChosenWorkspace(
     log(fn + ': ✅ No workspace list — using raw XPath text as workspace name: "' + firstRaw + '"', 'success');
   } else {
     log(fn + ': XPath returned ' + allNodes.length + ' nodes but no unambiguous exact match. First node: "' + firstRaw + '" (checked ' + perWs.length + ' workspaces)', 'warn');
-    log(fn + KEEPING_EXISTING_WORKSPACE + (state.workspaceName || '(none)'), 'warn');
+    log(fn + Label.KeepingExistingWs + (state.workspaceName || '(none)'), 'warn');
   }
 }
 
@@ -214,9 +206,7 @@ function handlePollTimeout(
     state.workspaceName = cssFallback.matched.fullName || cssFallback.matched.name;
     loopCreditState.currentWs = cssFallback.matched;
     log(fn + ': ⚠️ Workspace detected via CSS fallback: "' + cssFallback.rawName + '" → ' + state.workspaceName, 'warn');
-    if (!keepDialogOpen) {
-      closeProjectDialogSafe(btn);
-    }
+    if (!keepDialogOpen) closeProjectDialogSafe(btn);
     resolve();
     return;
   }
@@ -290,7 +280,7 @@ function findWorkspaceNameViaCss(_fn: string, perWs: WorkspaceCredit[]): { match
           return result;
         }
       }
-    } catch (e) {
+    } catch (e: unknown) {
       logSub('CSS fallback [' + (si + 1) + '/' + selectors.length + ']: "' + sel + '" → ERROR: ' + toErrorMessage(e), 2);
     }
   }
@@ -306,7 +296,7 @@ function closeDialogAndDefault(fn: string, btn: Element, _perWs: WorkspaceCredit
   if (!state.workspaceName) {
     log(fn + ': No reliable workspace match — keeping workspace empty after fallback miss', 'warn');
   } else {
-    log(fn + KEEPING_EXISTING_WORKSPACE + state.workspaceName, 'warn');
+    log(fn + Label.KeepingExistingWs + state.workspaceName, 'warn');
   }
   closeProjectDialogSafe(btn);
   resolve();
@@ -319,7 +309,7 @@ export function closeProjectDialogSafe(btn: Element): void {
       logSub('Closing project dialog after workspace read', 1);
       reactClick(btn, CONFIG.PROJECT_BUTTON_XPATH);
     }
-  } catch (e) {
+  } catch (e: unknown) {
     logSub('Error closing dialog: ' + toErrorMessage(e), 1);
   }
 }

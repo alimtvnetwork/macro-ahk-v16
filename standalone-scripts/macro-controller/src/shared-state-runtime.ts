@@ -36,13 +36,11 @@ export function setActivityLogVisible(v: boolean): void { activityLogState.visib
 /** @deprecated Use getActivityLogVisible(). Kept for backward compat. */
 export { activityLogState };
 export const activityLogLines: ActivityLogEntry[] = [];
-export const maxActivityLines = 100;
-
-// ============================================
-// Credit state
-// ============================================
-export const CREDIT_API_BASE = 'https://api.lovable.dev';
-export const CREDIT_CACHE_TTL_S = 30;
+import { ApiPath, DomId } from './types';
+import { MAX_ACTIVITY_LINES, CREDIT_CACHE_TTL_S } from './constants';
+export { CREDIT_CACHE_TTL_S };
+export const maxActivityLines = MAX_ACTIVITY_LINES;
+export const CREDIT_API_BASE = ApiPath.CreditApiBase;
 
 export const loopCreditState: LoopCreditState = {
   lastCheckedAt: null,
@@ -85,17 +83,11 @@ export function getLoopWsCheckedIds(): Record<string, boolean> { return wsSelect
 export function setLoopWsCheckedIds(v: Record<string, boolean>): void { wsSelectionState.checkedIds = v; }
 export function getLoopWsLastCheckedIdx(): number { return wsSelectionState.lastCheckedIdx; }
 export function setLoopWsLastCheckedIdx(v: number): void { wsSelectionState.lastCheckedIdx = v; }
-
 // ============================================
 // Auth state (CQ11: singleton)
 // ============================================
-export const SESSION_BRIDGE_KEYS = [
-  'marco_bearer_token',
-  'lovable-session-id',
-  'lovable-session-id-v2',
-  'lovable-session-id.id',
-  'ahk_bearer_token'
-];
+export { SESSION_BRIDGE_KEYS } from './constants';
+
 
 class SessionBridgeState {
   private _source = '';
@@ -116,7 +108,7 @@ export function setLastSessionBridgeSource(v: string): void { sessionBridgeState
 // ============================================
 // Toast constants (legacy — now delegated to SDK marco.notify)
 // ============================================
-export const toastContainerId = 'marco-toast-container';
+export const toastContainerId = DomId.ToastContainer;
 
 // ============================================
 // Controller State (Step 2i: moved from macro-looping.ts IIFE)
@@ -128,11 +120,8 @@ import { getCachedWorkspaceName, migrateLegacyCache } from './workspace-cache';
 migrateLegacyCache(); // one-time migration from old non-scoped keys
 const _cachedWsName = getCachedWorkspaceName();
 
-/**
- * Controller State — NO RETRY FIELDS.
- * Cycle failures are transient — the loop interval is the natural retry mechanism.
- * @see spec/17-app-issues/88-auth-loading-failure-retry-inconsistency/00-overview.md
- */
+// loopCfg imported at shared-state.ts level — use config-validator defaults
+import { RETRY_MAX_RETRIES as _retryMaxRetries, RETRY_BACKOFF_MS as _retryBackoffMs } from './constants';
 
 export const state: ControllerState = {
   running: false,
@@ -148,6 +137,7 @@ export const state: ControllerState = {
   workspaceName: _cachedWsName,
   projectNameFromApi: '',
   projectNameFromDom: '',
+  customDisplayName: (() => { try { return localStorage.getItem('marco_custom_display_name') || ''; } catch { return ''; } })(),
   hasFreeCredit: false,
   lastStatusCheck: 0,
   statusRefreshId: null,
@@ -157,5 +147,10 @@ export const state: ControllerState = {
   workspaceFromApi: false,
   workspaceFromCache: !!_cachedWsName,
   isManualCheck: false,
+  retryCount: 0,
+  maxRetries: _retryMaxRetries,
+  retryBackoffMs: _retryBackoffMs,
+  lastRetryError: null,
   __cycleInFlight: false,
+  __cycleRetryPending: false,
 };

@@ -83,10 +83,9 @@ export interface ExtensionCallbackResponse {
   isOk?: boolean;
   errorMessage?: string;
   tables?: Array<{ name?: string; TableName?: string; ColumnDefs?: string; rowCount?: number }>;
-  rows?: Record<string, string | number | boolean | null>[];
+  rows?: Record<string, unknown>[];
   count?: number;
-  status?: string;
-  message?: string;
+  [key: string]: unknown;
 }
 
 /* ================================================================== */

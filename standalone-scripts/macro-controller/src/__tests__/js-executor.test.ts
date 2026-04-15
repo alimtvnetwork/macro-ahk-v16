@@ -18,9 +18,16 @@ vi.mock('../logging', () => ({
   log: vi.fn(),
   logSub: vi.fn(),
 }));
+vi.mock('../error-utils', () => ({
+  logError: vi.fn(),
+}));
+vi.mock('../constants', () => ({
+  LOOP_JS_HISTORY_MAX: 50,
+}));
 
 import { addLoopJsHistoryEntry, navigateLoopJsHistory, executeJs } from '../ui/js-executor';
 import { log } from '../logging';
+import { logError } from '../error-utils';
 
  
 describe('js-executor', () => {
@@ -109,7 +116,7 @@ describe('js-executor', () => {
   describe('executeJs', () => {
     it('warns when textbox not found', () => {
       executeJs();
-      expect(log).toHaveBeenCalledWith('JS textbox element not found', 'error');
+      expect(logError).toHaveBeenCalledWith('unknown', 'JS textbox element not found');
     });
 
     it('warns for empty code', () => {

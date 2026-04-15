@@ -20,7 +20,6 @@ import { resolveToken, markBearerTokenExpired } from './auth';
 import { matchWorkspaceByName } from './ws-name-matching';
 import { detectWorkspaceViaProjectDialog } from './ws-dialog-detection';
 import { logError } from './error-utils';
-import type { MarkViewedResponse } from './types';
 
 // ============================================
 // Helper — auth failure check
@@ -124,8 +123,8 @@ function fallbackDetect(
 // extractWorkspaceIdFromResponse — parses workspace_id from mark-viewed data
 // ============================================
 
-function extractWorkspaceIdFromResponse(data: MarkViewedResponse): string {
-  const project = data.project;
+function extractWorkspaceIdFromResponse(data: Record<string, unknown>): string {
+  const project = data.project as Record<string, unknown> | undefined;
 
   return (data.workspace_id as string)
     || (project && (project.workspace_id as string))
@@ -137,8 +136,8 @@ function extractWorkspaceIdFromResponse(data: MarkViewedResponse): string {
 // extractProjectNameFromResponse — pulls project name if present
 // ============================================
 
-function extractProjectNameFromResponse(fn: string, data: MarkViewedResponse): void {
-  const project = data.project;
+function extractProjectNameFromResponse(fn: string, data: Record<string, unknown>): void {
+  const project = data.project as Record<string, unknown> | undefined;
   const apiProjectName = (project && ((project.name as string) || (project.title as string)))
     || (data.name as string) || (data.title as string) || '';
 
@@ -195,7 +194,7 @@ function matchWorkspaceById(
 interface SdkApiResponse {
   readonly ok: boolean;
   readonly status: number;
-  readonly data: Record<string, string | number | boolean | null>;
+  readonly data: unknown;
   readonly headers: Record<string, string>;
 }
 
@@ -229,7 +228,7 @@ async function processTier1Response(
     return;
   }
 
-  const data = resp.data as MarkViewedResponse | null;
+  const data = resp.data as Record<string, unknown> | null;
 
   if (!data) {
     log(fn + ': Tier 1 — empty response body — falling to passive fallback', 'warn');
@@ -270,9 +269,7 @@ async function processTier1Response(
 // ============================================
 /** Handle single-workspace case. Returns true if resolved. */
 function handleSingleWorkspace(fn: string, perWs: import('./types').WorkspaceCredit[]): boolean {
-  if (perWs.length !== 1) {
-    return false;
-  }
+  if (perWs.length !== 1) return false;
   if (!state.workspaceName) {
     state.workspaceName = perWs[0].fullName || perWs[0].name;
     state.workspaceFromApi = true;
@@ -287,9 +284,7 @@ function handleSingleWorkspace(fn: string, perWs: import('./types').WorkspaceCre
 
 /** Check if workspace is already authoritatively set. Returns true if resolved. */
 function checkAuthoritativeGuard(fn: string, perWs: import('./types').WorkspaceCredit[]): boolean {
-  if (!state.workspaceFromApi || !state.workspaceName) {
-    return false;
-  }
+  if (!state.workspaceFromApi || !state.workspaceName) return false;
   const matched = matchWorkspaceByName(state.workspaceName, perWs);
   if (matched) {
     loopCreditState.currentWs = matched;
@@ -319,12 +314,8 @@ export async function autoDetectLoopCurrentWorkspace(
     return;
   }
 
-  if (checkAuthoritativeGuard(fn, perWs)) {
-    return;
-  }
-  if (handleSingleWorkspace(fn, perWs)) {
-    return;
-  }
+  if (checkAuthoritativeGuard(fn, perWs)) return;
+  if (handleSingleWorkspace(fn, perWs)) return;
 
   const projectId = extractProjectIdFromUrl();
   const token = bearerToken || resolveToken();
@@ -347,9 +338,7 @@ export async function autoDetectLoopCurrentWorkspace(
     const resp = await window.marco!.api!.workspace.markViewed(projectId, { baseUrl: CREDIT_API_BASE });
     await processTier1Response(fn, resp, perWs, skipDialog);
   } catch (err) {
-    if (state.isManualCheck) {
-      return;
-    }
+    if (state.isManualCheck) return;
     log(fn + ': Tier 1 NETWORK ERROR: ' + (err instanceof Error ? err.message : String(err)) + ' — falling to passive fallback', 'warn');
     await fallbackDetect(fn, perWs, skipDialog);
   }

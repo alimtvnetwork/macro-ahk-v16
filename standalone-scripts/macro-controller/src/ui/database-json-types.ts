@@ -7,15 +7,13 @@
  * @see spec/04-macro-controller/ts-migration-v2/05-module-splitting.md
  */
 
-import type { ValidationRules } from '../types';
-
 export interface JsonColumnDef {
   name: string;
   type: 'TEXT' | 'INTEGER' | 'REAL' | 'BLOB' | 'BOOLEAN';
   nullable?: boolean;
   unique?: boolean;
   default?: string;
-  validation?: ValidationRules;
+  validation?: Record<string, unknown>;
 }
 
 export interface JsonForeignKey {

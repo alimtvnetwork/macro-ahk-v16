@@ -14,15 +14,14 @@
 
 import { MacroController } from './core/MacroController';
 import { log, logSub } from './logging';
-import { getBearerToken, markBearerTokenExpired } from './auth';
+import { resolveToken, invalidateSessionBridgeKey, recoverAuthOnce } from './auth';
 import { extractProjectIdFromUrl } from './workspace-detection';
 import { showToast } from './toast';
 import { CREDIT_API_BASE, state } from './shared-state';
 import { clearResolvedWorkspace } from './credit-balance';
 import { logError } from './error-utils';
-import type { WorkspaceProbeData } from './types/api-data-types';
 
-const LOG_SESSIONCHECK = '[SessionCheck/';
+import { Label } from './types';
 
 function mc() { return MacroController.getInstance(); }
 
@@ -71,13 +70,13 @@ export function updateLoopMoveStatus(statusState: string, message: string): void
 async function probeSessionWithToken(context: string, token: string): Promise<void> {
   const authLabel = 'Bearer ' + token.substring(0, 12) + '...REDACTED';
 
-  log(LOG_SESSIONCHECK + context + '] Probing workspace session (auth: ' + authLabel + ')', 'info');
+  log(Label.LogSessionCheck + context + '] Probing workspace session (auth: ' + authLabel + ')', 'info');
 
   try {
     const resp = await window.marco!.api!.workspace.probe({ baseUrl: CREDIT_API_BASE });
 
     if (!resp.ok) {
-      logError('unknown', LOG_SESSIONCHECK + context + '] ❌ Session probe failed: HTTP ' + resp.status + ' (auth: ' + authLabel + ')');
+      logError('unknown', Label.LogSessionCheck + context + '] ❌ Session probe failed: HTTP ' + resp.status + ' (auth: ' + authLabel + ')');
       showToast(context + ' failed — session also broken (HTTP ' + resp.status + '). Re-auth needed.', 'error');
 
       return;
@@ -86,14 +85,14 @@ async function probeSessionWithToken(context: string, token: string): Promise<vo
     const data = resp.data;
     const wsCount = Array.isArray(data)
       ? data.length
-      : (data && typeof data === 'object' && 'workspaces' in (data as WorkspaceProbeData) && Array.isArray((data as WorkspaceProbeData).workspaces)
-        ? ((data as WorkspaceProbeData).workspaces!).length
+      : (data && typeof data === 'object' && 'workspaces' in (data as Record<string, unknown>) && Array.isArray((data as Record<string, unknown>).workspaces)
+        ? ((data as Record<string, unknown[]>).workspaces).length
         : '?');
 
-    log(LOG_SESSIONCHECK + context + '] ✅ Session valid — ' + wsCount + ' workspaces loaded (auth: ' + authLabel + ')', 'success');
+    log(Label.LogSessionCheck + context + '] ✅ Session valid — ' + wsCount + ' workspaces loaded (auth: ' + authLabel + ')', 'success');
     showToast(context + ' failed but session is valid (' + wsCount + ' workspaces)', 'info');
   } catch (err) {
-    logError('unknown', LOG_SESSIONCHECK + context + '] ❌ Network error: ' + (err as Error).message);
+    logError('unknown', Label.LogSessionCheck + context + '] ❌ Network error: ' + (err as Error).message);
     showToast(context + ' failed — network error on session check', 'error');
   }
 }
@@ -103,7 +102,7 @@ async function probeSessionWithToken(context: string, token: string): Promise<vo
 // ============================================
 
 export async function verifyWorkspaceSessionAfterFailure(context: string): Promise<void> {
-  const token = await getBearerToken();
+  const token = resolveToken();
 
   if (token) {
     await probeSessionWithToken(context, token);
@@ -111,13 +110,14 @@ export async function verifyWorkspaceSessionAfterFailure(context: string): Promi
     return;
   }
 
-  log(LOG_SESSIONCHECK + context + '] No bearer token — forcing refresh before probe', 'warn');
+  log(Label.LogSessionCheck + context + '] No bearer token — recovering before probe', 'warn');
 
   try {
-    const fallbackToken = await getBearerToken({ force: true });
+    const recoveredToken = await recoverAuthOnce();
+    const fallbackToken = recoveredToken || resolveToken();
 
     if (!fallbackToken) {
-      logError('unknown', LOG_SESSIONCHECK + context + '] Recovery failed — skipping unauthenticated session probe');
+      logError('unknown', Label.LogSessionCheck + context + '] Recovery failed — skipping unauthenticated session probe');
       showToast(context + ' failed — no bearer token available for session check', 'error', { noStop: true });
 
       return;
@@ -125,7 +125,7 @@ export async function verifyWorkspaceSessionAfterFailure(context: string): Promi
 
     await probeSessionWithToken(context, fallbackToken);
   } catch {
-    logError('unknown', LOG_SESSIONCHECK + context + '] Recovery error — skipping unauthenticated session probe');
+    logError('unknown', Label.LogSessionCheck + context + '] Recovery error — skipping unauthenticated session probe');
     showToast(context + ' failed — no bearer token available for session check', 'error', { noStop: true });
   }
 }
@@ -231,22 +231,35 @@ async function handleMoveAuthFailure(
   projectId: string,
   targetWorkspaceId: string,
   targetWorkspaceName: string,
-  _token: string,
+  token: string,
   status: number,
 ): Promise<void> {
-  markBearerTokenExpired('ws-move');
-  log('Move got ' + status + ' — forcing token refresh before retry', 'warn');
-  showToast('Move auth ' + status + ' — recovering session...', 'warn', { noStop: true });
+  const invalidatedKey = invalidateSessionBridgeKey(token);
+  log('Move got ' + status + ' — invalidated "' + invalidatedKey + '", retrying with fallback', 'warn');
+  showToast('Move auth ' + status + ' — token "' + invalidatedKey + '" expired, retrying...', 'warn', { noStop: true });
 
-  const refreshedToken = await getBearerToken({ force: true });
+  const fallbackToken = resolveToken();
 
-  if (!refreshedToken) {
-    handleMoveNoToken();
+  if (fallbackToken) {
+    await executeMove(projectId, targetWorkspaceId, targetWorkspaceName, true);
 
     return;
   }
 
-  await executeMove(projectId, targetWorkspaceId, targetWorkspaceName, true);
+  try {
+    const recoveredToken = await recoverAuthOnce();
+    const refreshedToken = recoveredToken || resolveToken();
+
+    if (!refreshedToken) {
+      handleMoveNoToken();
+
+      return;
+    }
+
+    await executeMove(projectId, targetWorkspaceId, targetWorkspaceName, true);
+  } catch {
+    handleMoveNoToken();
+  }
 }
 
 // ============================================
@@ -259,7 +272,7 @@ async function executeMove(
   targetWorkspaceName: string,
   isRetry: boolean,
 ): Promise<void> {
-  const token = await getBearerToken();
+  const token = resolveToken();
 
   if (!token) {
     handleMoveNoToken();
@@ -332,12 +345,19 @@ export async function moveToWorkspace(targetWorkspaceId: string, targetWorkspace
     return;
   }
 
-  let token = await getBearerToken();
+  let token = resolveToken();
 
   if (!token) {
-    log('No bearer token — forcing refresh before move request', 'warn');
+    log('No bearer token — recovering before move request', 'warn');
 
-    token = await getBearerToken({ force: true });
+    try {
+      const recoveredToken = await recoverAuthOnce();
+      token = recoveredToken || resolveToken();
+    } catch {
+      handleMoveNoToken();
+
+      return;
+    }
 
     if (!token) {
       handleMoveNoToken();

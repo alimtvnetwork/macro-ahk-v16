@@ -6,7 +6,7 @@
  */
 
 import { log, logSub } from './logging';
-import { CreditSource, type RawWorkspaceApiItem, type WorkspacesApiResponse } from './types';
+import { CreditSource } from './types';
 import { calcTotalCredits, calcAvailableCredits } from './credit-api';
 import { loopCreditState, state } from './shared-state';
 
@@ -40,31 +40,17 @@ export function resolveWsTier(plan: string, subStatus: string, billingLimit: num
   const s = (subStatus || '').toLowerCase().trim();
 
   // Lite / ktlo plan
-  if (p === 'ktlo' || p === 'lite') {
-    return 'LITE';
-  }
+  if (p === 'ktlo' || p === 'lite') return 'LITE';
 
   // Has billing = was/is pro
-  const hasBillingOrPaidPlan = billingLimit > 0 || (p && p !== 'free');
-
-  if (hasBillingOrPaidPlan) {
-    if (s === 'active') {
-      return 'PRO';
-    }
-    const isCancelledOrPastDue = s === 'canceled' || s === 'cancelled' || s === 'past_due';
-
-    if (isCancelledOrPastDue) {
-      return 'EXPIRED';
-    }
+  if (billingLimit > 0 || (p && p !== 'free')) {
+    if (s === 'active') return 'PRO';
+    if (s === 'canceled' || s === 'cancelled' || s === 'past_due') return 'EXPIRED';
     return 'PRO'; // default if billing exists
   }
 
   // Free plan + canceled sub = expired trial/pro
-  const isCancelledSub = s === 'canceled' || s === 'cancelled';
-
-  if (isCancelledSub) {
-    return 'EXPIRED';
-  }
+  if (s === 'canceled' || s === 'cancelled') return 'EXPIRED';
 
   return 'FREE';
 }
@@ -72,8 +58,8 @@ export function resolveWsTier(plan: string, subStatus: string, billingLimit: num
 // ============================================
 // parseWorkspaceItem — extract a single workspace from API response
 // ============================================
-function parseWorkspaceItem(rawItem: RawWorkspaceApiItem, wsIdx: number): import('./types').WorkspaceCredit {
-  const rawWs = rawItem;
+function parseWorkspaceItem(rawItem: Record<string, unknown>, wsIdx: number): import('./types').WorkspaceCredit {
+  const rawWs = rawItem as Record<string, unknown>;
   const ws = (rawWs.workspace || rawWs) as Record<string, number | string>;
   const bUsed = (ws.billing_period_credits_used as number) || 0;
   const bLimit = (ws.billing_period_credits_limit as number) || 0;
@@ -93,9 +79,9 @@ function parseWorkspaceItem(rawItem: RawWorkspaceApiItem, wsIdx: number): import
   const totalCredits = calcTotalCredits(freeGranted, dLimit, bLimit, topupLimit, rLimit);
   const available = calcAvailableCredits(totalCredits, rUsed, dUsed, bUsed, freeUsed);
 
-  const subStatus = ((rawWs.workspace ? rawWs.subscription_status : ws.subscription_status) || '') as string;
-  const role = ((rawWs.workspace ? rawWs.role : ws.role) || 'N/A') as string;
-  const plan = ((rawWs.workspace ? rawWs.plan : ws.plan) || (rawWs.plan as string) || '') as string;
+  const subStatus = ((rawWs.workspace ? (rawWs as Record<string, unknown>).subscription_status : ws.subscription_status) || '') as string;
+  const role = ((rawWs.workspace ? (rawWs as Record<string, unknown>).role : ws.role) || 'N/A') as string;
+  const plan = ((rawWs.workspace ? (rawWs as Record<string, unknown>).plan : ws.plan) || (rawWs.plan as string) || '') as string;
 
   return {
     id: (ws.id as string) || '',
@@ -140,13 +126,9 @@ function aggregateCreditTotals(perWs: import('./types').WorkspaceCredit[]): void
 // matchCurrentWorkspace — find current ws by name
 // ============================================
 function matchCurrentWorkspace(perWs: import('./types').WorkspaceCredit[]): void {
-  if (!state.workspaceName || perWs.length === 0) {
-    return;
-  }
+  if (!state.workspaceName || perWs.length === 0) return;
   for (const ws of perWs) {
-    const isNameMatch = ws.fullName === state.workspaceName || ws.name === state.workspaceName;
-
-    if (isNameMatch) {
+    if (ws.fullName === state.workspaceName || ws.name === state.workspaceName) {
       loopCreditState.currentWs = ws;
       return;
     }
@@ -159,17 +141,15 @@ function matchCurrentWorkspace(perWs: import('./types').WorkspaceCredit[]): void
 function buildWsByIdIndex(perWs: import('./types').WorkspaceCredit[]): void {
   loopCreditState.wsById = {};
   for (const ws of perWs) {
-    if (ws.id) {
-      loopCreditState.wsById[ws.id] = ws;
-    }
+    if (ws.id) loopCreditState.wsById[ws.id] = ws;
   }
 }
 
 // ============================================
 // parseLoopApiResponse — parse /user/workspaces API response
 // ============================================
-export function parseLoopApiResponse(data: WorkspacesApiResponse): boolean {
-  const workspaces = (data.workspaces || data || []) as RawWorkspaceApiItem[];
+export function parseLoopApiResponse(data: Record<string, unknown>): boolean {
+  const workspaces = (data.workspaces || data || []) as Array<Record<string, unknown>>;
   if (!Array.isArray(workspaces)) {
     log('parseLoopApiResponse: unexpected response shape', 'warn');
     return false;

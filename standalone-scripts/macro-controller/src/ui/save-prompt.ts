@@ -81,8 +81,7 @@ function extractTitleFromMarkdown(markdown: string): string {
 /*  Container Detection                                                */
 /* ------------------------------------------------------------------ */
 
-const SAVE_PROMPT_XPATH = '/html/body/div[3]/div/div[2]/main/div/div/div[1]/div/div[2]/div/form/div[2]/div';
-
+import { SAVE_PROMPT_XPATH } from '../constants';
 const SAVE_PROMPT_CSS_FALLBACKS = [
   'form div[class*="flex"] > div[type="button"]',
   'main form div:last-child > div:last-child',
@@ -99,37 +98,37 @@ export function findSavePromptContainer(): Element | null {
       log('Save Prompt: Container found via XPath', 'check');
       return xpathResult as Element;
     }
-  } catch (_e) { log('Save Prompt: XPath eval error: ' + (_e instanceof Error ? _e.message : String(_e)), 'warn'); }
+  } catch (_e: unknown) { log('Save Prompt: XPath eval error: ' + (_e instanceof Error ? _e.message : String(_e)), 'warn'); }
 
   return findContainerViaCssFallback();
 }
 
-// eslint-disable-next-line sonarjs/cognitive-complexity -- multi-stage CSS fallback with per-fallback error handling
+function tryToolbarButtonFallback(fallbackSelector: string, fallbackIndex: number): Element | null {
+  const toolbarBtn = document.querySelector(fallbackSelector);
+  if (toolbarBtn?.parentElement) {
+    log('Save Prompt: Container found via CSS fallback #' + (fallbackIndex + 1) + ' (parent of toolbar button)', 'check');
+    return toolbarBtn.parentElement;
+  }
+  return null;
+}
+
+function tryDirectFallback(fallbackSelector: string, fallbackIndex: number): Element | null {
+  const element = document.querySelector(fallbackSelector);
+  if (element) {
+    log('Save Prompt: Container found via CSS fallback #' + (fallbackIndex + 1), 'check');
+    return element;
+  }
+  return null;
+}
+
 function findContainerViaCssFallback(): Element | null {
   for (const [fallbackIndex, fallbackSelector] of SAVE_PROMPT_CSS_FALLBACKS.entries()) {
     try {
-      const isToolbarButtonFallback = fallbackIndex === 2;
-
-      if (isToolbarButtonFallback) {
-        const toolbarBtn = document.querySelector(fallbackSelector);
-        const hasParent = toolbarBtn !== null && toolbarBtn.parentElement !== null;
-
-        if (hasParent) {
-          log('Save Prompt: Container found via CSS fallback #' + (fallbackIndex + 1) + ' (parent of toolbar button)', 'check');
-
-          return toolbarBtn!.parentElement;
-        }
-      } else {
-        const element = document.querySelector(fallbackSelector);
-        const isFound = element !== null;
-
-        if (isFound) {
-          log('Save Prompt: Container found via CSS fallback #' + (fallbackIndex + 1), 'check');
-
-          return element;
-        }
-      }
-    } catch (_e) { log('Save Prompt: CSS selector error at fallback #' + (fallbackIndex + 1) + ': ' + (_e instanceof Error ? _e.message : String(_e)), 'warn'); }
+      const result = fallbackIndex === 2
+        ? tryToolbarButtonFallback(fallbackSelector, fallbackIndex)
+        : tryDirectFallback(fallbackSelector, fallbackIndex);
+      if (result) return result;
+    } catch (_e: unknown) { log('Save Prompt: CSS selector error at fallback #' + (fallbackIndex + 1) + ': ' + (_e instanceof Error ? _e.message : String(_e)), 'warn'); }
   }
 
   return null;
@@ -157,9 +156,7 @@ interface InjectCtx {
 }
 
 function tryInjectSavePrompt(ctx: InjectCtx): boolean {
-  if (ctx.injected) {
-    return true;
-  }
+  if (ctx.injected) return true;
 
   const isAlreadyPresent = document.getElementById('marco-save-prompt-btn') !== null;
 
@@ -173,9 +170,7 @@ function tryInjectSavePrompt(ctx: InjectCtx): boolean {
     const container = findSavePromptContainer();
     const isContainerMissing = container === null;
 
-    if (isContainerMissing) {
-      return false;
-    }
+    if (isContainerMissing) return false;
 
     const promptsWrapper = buildPromptsButton(ctx.deps);
     const saveWrapper = buildSaveButton(ctx.deps);
@@ -187,7 +182,7 @@ function tryInjectSavePrompt(ctx: InjectCtx): boolean {
     log('Save Prompt + Prompts buttons injected into chatbox toolbar', 'info');
 
     return true;
-  } catch (e) {
+  } catch (e: unknown) {
     logError('savePrompt', 'Prompt save failed', e);
     showToast('❌ Prompt save failed', 'error');
     return false;

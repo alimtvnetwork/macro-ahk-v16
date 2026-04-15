@@ -51,8 +51,8 @@ export interface OverlayError {
 // State
 // ============================================
 
-const MAX_OVERLAY_ERRORS = 30;
-
+import { MAX_OVERLAY_ERRORS } from '../constants';
+import { DomId } from '../types';
 class ErrorOverlayState {
   private _errors: OverlayError[] = [];
   private _nextId = 1;
@@ -176,7 +176,7 @@ const overlayState = new ErrorOverlayState();
 // Overlay Container ID
 // ============================================
 
-const OVERLAY_ID = 'marco-error-overlay';
+const OVERLAY_ID = DomId.ErrorOverlay;
 
 // ============================================
 // Styles
@@ -672,7 +672,7 @@ function handleCopyAll(): void {
 
   navigator.clipboard.writeText(lines.join('\n')).then(function () {
     log('[ErrorOverlay] Copied ' + overlayState.errors.length + ' errors to clipboard', 'success');
-  }).catch(function (err) {
+  }).catch(function (err: unknown) {
     log('[ErrorOverlay] Clipboard copy failed: ' + toErrorMessage(err), 'warn');
   });
 }

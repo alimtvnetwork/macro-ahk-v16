@@ -17,8 +17,8 @@ import { log, getDisplayProjectName } from '../logging';
 import {
   getLastTokenSource,
   refreshBearerTokenFromBestSource,
+  resolveToken,
   updateAuthBadge,
-  getBearerToken,
 } from '../auth';
 import { showToast } from '../toast';
 import { showAboutModal } from './about-modal';
@@ -31,9 +31,7 @@ import { destroyPanel, updateUI } from './ui-updaters';
 import type { PanelBuilderDeps } from './panel-builder';
 import type { PanelLayoutCtx } from './panel-layout';
 import { logError } from '../error-utils';
-
-const CSS_FONT_SIZE = 'font-size:';
-
+import { CssFragment } from '../types';
 // ============================================
 // Return type for buildTitleRow
 // ============================================
@@ -72,7 +70,7 @@ function _buildTitleElements(deps: PanelBuilderDeps, plCtx: PanelLayoutCtx) {
   const wsNameEl = buildWorkspaceNameBadge(deps);
 
   const versionSpan = document.createElement('span');
-  versionSpan.style.cssText = CSS_FONT_SIZE + tFontTiny + ';color:' + cPrimaryLight + ';margin-right:4px;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;';
+  versionSpan.style.cssText = CssFragment.FontSize + tFontTiny + ';color:' + cPrimaryLight + ';margin-right:4px;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px;';
   versionSpan.textContent = 'v' + VERSION;
   versionSpan.title = 'Click to see About info';
   versionSpan.onclick = function(e: Event) { e.stopPropagation(); showAboutModal(); };
@@ -80,14 +78,14 @@ function _buildTitleElements(deps: PanelBuilderDeps, plCtx: PanelLayoutCtx) {
   const authBadge = buildAuthBadge();
 
   const panelToggleSpan = document.createElement('span');
-  panelToggleSpan.style.cssText = CSS_FONT_SIZE + tFontTiny + ';color:' + cNeutral500 + ';cursor:pointer;margin-right:4px;';
+  panelToggleSpan.style.cssText = CssFragment.FontSize + tFontTiny + ';color:' + cNeutral500 + ';cursor:pointer;margin-right:4px;';
   panelToggleSpan.textContent = plCtx.panelState === 'minimized' ? '[ + ]' : '[ - ]';
   panelToggleSpan.title = 'Minimize / Expand panel';
   panelToggleSpan.onclick = function(e: Event) { e.stopPropagation(); toggleMinimize(plCtx); };
   plCtx.panelToggleSpan = panelToggleSpan;
 
   const hideBtn = document.createElement('span');
-  hideBtn.style.cssText = CSS_FONT_SIZE + tFontTiny + ';color:' + cNeutral500 + ';cursor:pointer;';
+  hideBtn.style.cssText = CssFragment.FontSize + tFontTiny + ';color:' + cNeutral500 + ';cursor:pointer;';
   hideBtn.textContent = '[ x ]';
   hideBtn.title = 'Close and fully remove controller (re-inject to restore)';
   hideBtn.onclick = function(e: Event) { e.stopPropagation(); destroyPanel(); };
@@ -100,15 +98,11 @@ function _buildTitleElements(deps: PanelBuilderDeps, plCtx: PanelLayoutCtx) {
 
 function _setupTitleDragHandlers(titleRow: HTMLElement, plCtx: PanelLayoutCtx, hideBtn: HTMLElement, panelToggleSpan: HTMLElement): void {
   titleRow.onpointerdown = function(e: PointerEvent) {
-    if (e.target === hideBtn || e.target === panelToggleSpan) {
-      return;
-    }
+    if (e.target === hideBtn || e.target === panelToggleSpan) return;
     startDragHandler(plCtx, e);
   };
   titleRow.onpointerup = function(e: PointerEvent) {
-    if (e.target === hideBtn || e.target === panelToggleSpan) {
-      return;
-    }
+    if (e.target === hideBtn || e.target === panelToggleSpan) return;
     const dx = Math.abs(e.clientX - plCtx.dragStartPos.x);
     const dy = Math.abs(e.clientY - plCtx.dragStartPos.y);
     if (dx < 5 && dy < 5) { toggleMinimize(plCtx); }
@@ -136,20 +130,19 @@ function _assembleTitleRow(titleRow: HTMLElement, els: Record<string, HTMLElemen
 function buildWorkspaceNameBadge(deps: PanelBuilderDeps): HTMLElement {
   const wsNameEl = document.createElement('div');
   wsNameEl.id = 'loop-title-ws-name';
-  wsNameEl.style.cssText = CSS_FONT_SIZE + tFontTiny + ';color:#fbbf24;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;cursor:pointer;border-bottom:1px dotted rgba(251,191,36,0.4);transition:color 0.15s;margin-right:4px;';
-  wsNameEl.title = 'Workspace name — click to re-detect';
+  wsNameEl.style.cssText = CssFragment.FontSize + tFontTiny + ';color:#fbbf24;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;cursor:pointer;border-bottom:1px dotted rgba(251,191,36,0.4);transition:color 0.15s;margin-right:4px;';
+  wsNameEl.title = 'Project name — click to re-detect workspace';
 
+  const projectName = getDisplayProjectName();
   const wsName = state.workspaceName
     || (loopCreditState.currentWs ? (loopCreditState.currentWs.fullName || loopCreditState.currentWs.name) : '');
-  const projectName = getDisplayProjectName();
 
-  if (wsName) {
-    wsNameEl.textContent = wsName;
-    wsNameEl.title = 'Workspace: ' + wsName + (projectName ? ' | Project: ' + projectName : '') + ' — click to re-detect';
-  } else if (projectName && projectName !== 'Unknown Project') {
+  if (projectName && projectName !== 'Unknown Project') {
     wsNameEl.textContent = projectName;
-    wsNameEl.title = 'Project: ' + projectName + ' (workspace not yet detected) — click to re-detect';
-    wsNameEl.style.opacity = '0.7';
+    wsNameEl.title = 'Project: ' + projectName + (wsName ? ' | Workspace: ' + wsName : '') + ' — click to re-detect';
+  } else if (wsName) {
+    wsNameEl.textContent = wsName;
+    wsNameEl.title = 'Workspace: ' + wsName + ' (project name not yet resolved) — click to re-detect';
   } else {
     const wsShimmer = document.createElement('span');
     wsShimmer.className = 'marco-skeleton';
@@ -164,29 +157,30 @@ function buildWorkspaceNameBadge(deps: PanelBuilderDeps): HTMLElement {
     e.stopPropagation();
     wsNameEl.textContent = '⏳ detecting…';
     wsNameEl.style.color = '#9ca3af';
+    const token = resolveToken();
     state.workspaceFromApi = false;
-    getBearerToken().then(function(token) {
-      return deps.autoDetectLoopCurrentWorkspace(token);
-    }).then(function() {
+    deps.autoDetectLoopCurrentWorkspace(token).then(function() {
       wsNameEl.style.color = '#fbbf24';
       wsNameEl.style.opacity = '1';
       const ws = state.workspaceName || '';
       const name = getDisplayProjectName();
-      wsNameEl.textContent = ws || name || '❌ unknown';
-      wsNameEl.title = (ws ? 'Workspace: ' + ws : '') + (name ? ' | Project: ' + name : '') + ' — click to re-detect';
+      // Title bar prioritizes project name; workspace shown in tooltip
+      wsNameEl.textContent = (name && name !== 'Unknown Project') ? name : ws || '❌ unknown';
+      wsNameEl.title = (name ? 'Project: ' + name : '') + (ws ? ' | Workspace: ' + ws : '') + ' — click to re-detect';
       if (ws) {
         log('Title bar: ✅ Workspace re-detected: "' + ws + '"', 'success');
         showToast('Workspace: ' + ws, 'success');
       }
       updateUI();
-    }).catch(function() {
+    }).catch(function(e: unknown) {
       logError('switchWorkspace', 'Workspace switch failed', e);
       showToast('❌ Workspace switch failed', 'error');
       wsNameEl.style.color = '#f87171';
       wsNameEl.textContent = '❌ failed';
       setTimeout(function() {
         wsNameEl.style.color = '#fbbf24';
-        wsNameEl.textContent = state.workspaceName || getDisplayProjectName() || '⟳ detecting…';
+        const fallbackName = getDisplayProjectName();
+        wsNameEl.textContent = (fallbackName && fallbackName !== 'Unknown Project') ? fallbackName : state.workspaceName || '⟳ detecting…';
       }, 2000);
     });
   };
@@ -221,11 +215,10 @@ function buildAuthBadge(): HTMLElement {
       }
     });
   });
-  getBearerToken().then(function(currentToken) {
-    if (currentToken) {
-      authBadge.textContent = '🟢';
-      authBadge.title = 'Auth: token available (' + (getLastTokenSource() || 'cached') + ') — click to refresh';
-    }
-  }).catch(function() { /* no token yet — badge stays red */ });
+  const currentToken = resolveToken();
+  if (currentToken) {
+    authBadge.textContent = '🟢';
+    authBadge.title = 'Auth: token available (' + (getLastTokenSource() || 'cached') + ') — click to refresh';
+  }
   return authBadge;
 }
