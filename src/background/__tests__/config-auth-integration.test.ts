@@ -7,8 +7,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
  * and global fetch to validate the current no-network auth resolution waterfall:
  *
  *   1. Session cookie JWT
- *   2. Signed URL token fallback
- *   3. Error diagnostics when nothing resolves
+ *   2. Supabase localStorage JWT scan
+ *   3. Signed URL token fallback
+ *   4. Error diagnostics when nothing resolves
  */
 
 /* ------------------------------------------------------------------ */
@@ -29,13 +30,11 @@ function buildChromeMock(options: {
     cookies?: CookieStore;
     tabs?: chrome.tabs.Tab[];
     scriptResults?: Map<number, unknown>;
-    frameUrls?: Map<number, Array<{ frameId: number; url?: string }>>;
     storageData?: Record<string, unknown>;
 }) {
     const cookieStore = options.cookies ?? new Map();
     const tabs = options.tabs ?? [];
     const scriptResults = options.scriptResults ?? new Map();
-    const frameUrls = options.frameUrls ?? new Map();
     const storageData = options.storageData ?? {};
 
     return {
@@ -65,19 +64,10 @@ function buildChromeMock(options: {
             get: vi.fn(async (tabId: number) => tabs.find(t => t.id === tabId) ?? null),
         },
         scripting: {
-            executeScript: vi.fn(async ({ target }: { target: { tabId: number; allFrames?: boolean } }) => {
-                const raw = scriptResults.get(target.tabId);
-                const result = typeof raw === "function" ? await raw() : raw;
-
-                if (target.allFrames && Array.isArray(result)) {
-                    return result.map((entry) => ({ result: entry }));
-                }
-
-                return [{ result }];
+            executeScript: vi.fn(async ({ target }: { target: { tabId: number } }) => {
+                const result = scriptResults.get(target.tabId);
+                return [{ result: typeof result === "function" ? await result() : result }];
             }),
-        },
-        webNavigation: {
-            getAllFrames: vi.fn(async ({ tabId }: { tabId: number }) => frameUrls.get(tabId) ?? []),
         },
         storage: {
             local: {
@@ -123,7 +113,6 @@ async function setupTest(options: {
     cookies?: CookieStore;
     tabs?: chrome.tabs.Tab[];
     scriptResults?: Map<number, unknown>;
-    frameUrls?: Map<number, Array<{ frameId: number; url?: string }>>;
     storageData?: Record<string, unknown>;
     fetchResponses?: Map<string, { ok: boolean; status: number; json: unknown }>;
 }) {
@@ -234,7 +223,7 @@ describe("fetchAuthToken — integration", () => {
         const result = await mod.fetchAuthToken(null, PROJECT_ID);
         expect(result).toBeNull();
         expect(globalThis.fetch).not.toHaveBeenCalled();
-    }, 15_000);
+    });
 });
 
 /* ------------------------------------------------------------------ */
@@ -300,28 +289,8 @@ describe("handleGetToken — integration", () => {
         const result = await mod.handleGetToken(PROJECT_ID);
         expect(result.token).toBeNull();
         expect(result.errorMessage).toBeDefined();
-        expect(result.errorMessage).toContain("No JWT found after waiting 12s for auth restoration");
-    }, 15_000);
-
-    it("finds a signed URL token in a preview frame when the top-level editor URL has no token", async () => {
-        const editorUrl = `https://lovable.dev/projects/${PROJECT_ID}`;
-        const previewUrl = `https://id-preview--${PROJECT_ID}.lovable.app/?__lovable_token=${FAKE_JWT}`;
-        const tabs = [
-            { id: 1, url: editorUrl, active: true } as chrome.tabs.Tab,
-        ];
-        const frameUrls = new Map<number, Array<{ frameId: number; url?: string }>>();
-        frameUrls.set(1, [
-            { frameId: 0, url: editorUrl },
-            { frameId: 1, url: previewUrl },
-        ]);
-
-        const { mod } = await setupTest({ tabs, frameUrls });
-
-        const result = await mod.handleGetToken(PROJECT_ID, editorUrl);
-        expect(result.token).toBe(FAKE_JWT);
-        expect(result.cookieName).toBe("signedUrl[__lovable_token]");
+        expect(result.errorMessage).toContain("Session cookie not found");
     });
-
 });
 
 /* ------------------------------------------------------------------ */
@@ -360,7 +329,7 @@ describe("handleRefreshToken — integration", () => {
         const result = await mod.handleRefreshToken(PROJECT_ID);
         expect(result.authToken).toBeUndefined();
         expect(result.errorMessage).toBeDefined();
-    }, 15_000);
+    });
 });
 
 /* ------------------------------------------------------------------ */

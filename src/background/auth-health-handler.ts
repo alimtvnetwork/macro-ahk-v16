@@ -102,8 +102,51 @@ export async function buildAuthHealthResponse(): Promise<AuthHealthResponse> {
     });
     strategies.push(s1);
 
-    // ── Strategy 2: Signed URL token scan ──
-    const s2 = await timedStrategy("Signed URL token", 2, async () => {
+    // ── Strategy 2: Supabase localStorage JWT scan ──
+    const s2 = await timedStrategy("localStorage JWT scan", 2, async () => {
+        const tabs = await getActivePlatformTabs();
+        if (tabs.length === 0) {
+            return { success: false, detail: "No platform tabs available" };
+        }
+
+        for (const tab of tabs) {
+            if (typeof tab.id !== "number") continue;
+            try {
+                const result = await _chrome.scripting!.executeScript({
+                    target: { tabId: tab.id },
+                    world: "MAIN",
+                    func: (): string | null => {
+                        try {
+                            for (let i = 0; i < localStorage.length; i++) {
+                                const key = localStorage.key(i);
+                                if (key && key.startsWith("sb-") && key.endsWith("-auth-token")) {
+                                    const raw = localStorage.getItem(key);
+                                    if (raw) {
+                                        const parsed = JSON.parse(raw);
+                                        const token = parsed?.access_token;
+                                        if (typeof token === "string" && token.startsWith("eyJ")) {
+                                            return `found:${key}`;
+                                        }
+                                    }
+                                }
+                            }
+                        } catch { /* ignore */ }
+                        return null;
+                    },
+                });
+                const val = result?.[0]?.result;
+                if (typeof val === "string" && val.startsWith("found:")) {
+                    return { success: true, detail: `JWT in ${val.slice(6)} (tabId=${tab.id})` };
+                }
+            } catch { /* tab access failed */ }
+        }
+        return { success: false, detail: `Scanned ${tabs.length} tab(s) — no JWT found` };
+    });
+    strategies.push(s2);
+    if (s2.success && !resolvedVia) resolvedVia = s2.name;
+
+    // ── Strategy 3: Signed URL token scan ──
+    const s3 = await timedStrategy("Signed URL token", 3, async () => {
         if (!tabUrl) {
             return { success: false, detail: "No active tab URL" };
         }
@@ -122,21 +165,21 @@ export async function buildAuthHealthResponse(): Promise<AuthHealthResponse> {
 
         return { success: false, detail: "No signed URL token found" };
     });
-    strategies.push(s2);
-    if (s2.success && !resolvedVia) resolvedVia = s2.name;
-
-    // ── Strategy 3: Network auth-token exchange (disabled) ──
-    const s3 = await timedStrategy("Auth-token exchange", 3, async () => {
-        const detail = projectId
-            ? `Disabled — cookie-only mode (no call to ${AUTH_API_BASE}/projects/${projectId}/auth-token)`
-            : `Disabled — cookie-only mode (no call to ${AUTH_API_BASE}/projects/{id}/auth-token)`;
-        return { success: false, detail };
-    });
     strategies.push(s3);
     if (s3.success && !resolvedVia) resolvedVia = s3.name;
 
-    // ── Strategy 4: Cross-tab session cookie scan ──
-    const s4 = await timedStrategy("Cross-tab cookie scan", 4, async () => {
+    // ── Strategy 4: Network auth-token exchange (disabled) ──
+    const s4 = await timedStrategy("Auth-token exchange", 4, async () => {
+        const detail = projectId
+            ? `Disabled — cookie/localStorage-only mode (no call to ${AUTH_API_BASE}/projects/${projectId}/auth-token)`
+            : `Disabled — cookie/localStorage-only mode (no call to ${AUTH_API_BASE}/projects/{id}/auth-token)`;
+        return { success: false, detail };
+    });
+    strategies.push(s4);
+    if (s4.success && !resolvedVia) resolvedVia = s4.name;
+
+    // ── Strategy 5: Cross-tab session cookie scan ──
+    const s5 = await timedStrategy("Cross-tab cookie scan", 5, async () => {
         try {
             const cookies = await _chrome.cookies!.getAll({ domain: "lovable.dev" });
             const sessionCookie = (cookies as Array<{ name: string; domain: string; expirationDate?: number }>).find(
@@ -156,7 +199,7 @@ export async function buildAuthHealthResponse(): Promise<AuthHealthResponse> {
             return { success: false, detail: (e as Error).message };
         }
     });
-    strategies.push(s4);
+    strategies.push(s5);
 
     const totalMs = Math.round(performance.now() - t0);
 

@@ -140,7 +140,7 @@ function sendInternalMessage<T>(message: Record<string, unknown>): Promise<T> {
         // handleMessage is async — it calls sendResponse when done
         handleMessage(message, sender, (response: unknown) => {
             resolve(response as T);
-        }).catch((err) => {
+        }).catch((err: unknown) => {
             logCaughtError(BgLogTag.SHORTCUT, "Internal message dispatch error", err);
             reject(err);
         });

@@ -334,7 +334,7 @@ function logConditionSkip(tabId: number, url: string): void {
 /** Logs an injection error. */
 function logInjectionError(
     scriptId: string,
-    error: Error | string,
+    error: unknown,
 ): void {
     const errorMessage = error instanceof Error
         ? error.message

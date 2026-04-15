@@ -39,7 +39,7 @@ export interface ErrorModel {
 /** Creates an ErrorModel from a caught error and context. */
 // eslint-disable-next-line max-lines-per-function -- flat property mapping, no branching complexity
 export function createErrorModel(
-  error: Error | string | null | undefined | object,
+  error: unknown,
   context: {
     title?: string;
     source: string;

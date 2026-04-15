@@ -14,7 +14,7 @@ import {
     resolveConfigCascade,
     getRemoteFetchStatus,
 } from "../remote-config-fetcher";
-import { logBgWarnError, logCaughtError, BgLogTag, type CaughtError} from "../bg-logger";
+import { logBgWarnError, logCaughtError, BgLogTag} from "../bg-logger";
 import {
     buildCookieUrlCandidates,
     readCookieValueFromCandidates,
@@ -37,8 +37,6 @@ const COOKIE_SESSION_ID_HOST = "__Host-lovable-session-id.id";
 const COOKIE_REFRESH_TOKEN_HOST = "__Host-lovable-session-id.refresh";
 const AUTH_API_BASE = "https://api.lovable.dev";
 const TOKEN_CACHE_TTL_MS = 30_000;
-const AUTH_READY_TIMEOUT_MS = 10_000;
-const AUTH_READY_RETRY_INTERVAL_MS = 300;
 
 const SESSION_COOKIE_NAME_CANDIDATES = [
     COOKIE_SESSION_ID_V2,
@@ -148,11 +146,6 @@ interface CookieDiscoverySummary {
     authLikeCookieNames: string[];
 }
 
-interface TokenCandidateResult {
-    token: string | null;
-    cookieName?: string;
-}
-
 /* ------------------------------------------------------------------ */
 /*  Default Config                                                     */
 /* ------------------------------------------------------------------ */
@@ -192,7 +185,7 @@ export function getConfigFetchStatus() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  GET_TOKEN  (with auth-ready wait)                                  */
+/*  GET_TOKEN  (with auto-refresh on expiry)                           */
 /* ------------------------------------------------------------------ */
 
 /**
@@ -217,29 +210,56 @@ export async function handleGetToken(
     const projectId = _projectId ?? await getActiveTabProjectId(tabUrlHint);
     const resolvedCookieNames = await resolveSessionCookieNamesFromProjects(projectId);
     const primaryUrl = await resolvePrimaryUrl(tabUrlHint);
-    const tokenCandidate = await waitForTokenCandidate(resolvedCookieNames, primaryUrl, tabUrlHint);
 
-    if (tokenCandidate.token !== null) {
-        cachedSessionId = tokenCandidate.token;
-        cachedAt = Date.now();
-        return {
-            token: tokenCandidate.token,
-            refreshed: true,
-            cookieName: tokenCandidate.cookieName,
-        };
-    }
-
+    // ── Strategy 1 (preferred): Direct cookie read — no network, no 401 risk ──
     const sessionLookup = await readCookieValueByNameCandidates(
         resolvedCookieNames.sessionNames,
         primaryUrl,
     );
+    if (sessionLookup.value !== null && isLikelyJwt(sessionLookup.value)) {
+        console.log("[config-auth] GET_TOKEN: found JWT directly in session cookie");
+        cachedSessionId = sessionLookup.value;
+        cachedAt = Date.now();
+        return {
+            token: sessionLookup.value,
+            refreshed: true,
+            cookieName: sessionLookup.cookieName ?? COOKIE_SESSION_ID,
+        };
+    }
+
+    // ── Strategy 2: Supabase localStorage JWT from platform tabs ──
+    const localStorageJwt = await readSupabaseJwtFromPlatformTabs(tabUrlHint);
+    if (localStorageJwt !== null) {
+        console.log("[config-auth] GET_TOKEN: found JWT in platform tab localStorage");
+        cachedSessionId = localStorageJwt;
+        cachedAt = Date.now();
+        return {
+            token: localStorageJwt,
+            refreshed: true,
+            cookieName: "localStorage[sb-*-auth-token]",
+        };
+    }
+
+    // ── Strategy 3: Signed URL token fallback (no network) ──
+    const signedUrlToken = await resolveSignedUrlTokenCandidate(tabUrlHint, primaryUrl);
+
+    if (signedUrlToken !== null) {
+        console.log("[config-auth] GET_TOKEN: using signed URL token fallback");
+        cachedSessionId = signedUrlToken;
+        cachedAt = Date.now();
+        return {
+            token: signedUrlToken,
+            refreshed: true,
+            cookieName: "signedUrl[__lovable_token]",
+        };
+    }
 
     if (sessionLookup.value !== null) {
-        logBgWarnError(BgLogTag.CONFIG_AUTH, "GET_TOKEN: session cookie exists but no JWT could be derived after auth-ready wait");
+        logBgWarnError(BgLogTag.CONFIG_AUTH, "GET_TOKEN: session cookie exists but no JWT could be derived");
         return {
             token: null,
             refreshed: false,
-            errorMessage: "Session cookie exists, but JWT cookie/localStorage lookup failed after waiting for auth restoration.",
+            errorMessage: "Session cookie exists, but JWT cookie/localStorage lookup failed.",
         };
     }
 
@@ -285,7 +305,7 @@ export async function handleGetTokens(): Promise<SessionTokens> {
 }
 
 /* ------------------------------------------------------------------ */
-/*  REFRESH_TOKEN  (forced re-read + auth-ready wait)                  */
+/*  REFRESH_TOKEN  (forced re-read + API refresh)                      */
 /* ------------------------------------------------------------------ */
 
 /** Forces cookie re-read and API refresh. */
@@ -310,8 +330,23 @@ export async function handleRefreshToken(
     );
     const sessionId = sessionLookup.value;
     const refreshToken = refreshLookup.value;
-    const tokenCandidate = await waitForTokenCandidate(resolved, primaryUrl, tabUrlHint);
-    const authToken = tokenCandidate.token;
+
+    // Strategy 1 (preferred): Session cookie is already a JWT — no network call
+    let authToken: string | null = null;
+    if (sessionId && isLikelyJwt(sessionId)) {
+        authToken = sessionId;
+        console.log("[config-auth] REFRESH: found JWT directly in session cookie");
+    }
+
+    // Strategy 2: Supabase localStorage JWT
+    if (!authToken) {
+        authToken = await readSupabaseJwtFromPlatformTabs(tabUrlHint);
+    }
+
+    // Strategy 3: Signed URL token fallback (no network)
+    if (!authToken) {
+        authToken = await resolveSignedUrlTokenCandidate(tabUrlHint, primaryUrl);
+    }
 
     cachedSessionId = authToken ?? null;
     cachedRefreshToken = refreshToken;
@@ -382,16 +417,24 @@ export async function fetchAuthToken(
 ): Promise<string | null> {
     const primaryUrl = await resolvePrimaryUrl(tabUrlHint);
     const resolved = await resolveSessionCookieNamesFromProjects(projectId);
-    const tokenCandidate = await waitForTokenCandidate(resolved, primaryUrl, tabUrlHint);
-
-    if (tokenCandidate.token !== null) {
-        return tokenCandidate.token;
-    }
 
     const sessionCookieLookup = await readCookieValueByNameCandidates(
         resolved.sessionNames,
         primaryUrl,
     );
+    if (sessionCookieLookup.value !== null && isLikelyJwt(sessionCookieLookup.value)) {
+        return sessionCookieLookup.value;
+    }
+
+    const localStorageJwt = await readSupabaseJwtFromPlatformTabs(tabUrlHint);
+    if (localStorageJwt !== null) {
+        return localStorageJwt;
+    }
+
+    const signedUrlToken = await resolveSignedUrlTokenCandidate(tabUrlHint, primaryUrl);
+    if (signedUrlToken !== null) {
+        return signedUrlToken;
+    }
 
     if (sessionCookieLookup.value !== null) {
         logBgWarnError(BgLogTag.CONFIG_AUTH, "Session cookie exists but auth-token exchange is disabled because the cookie is not a JWT");
@@ -403,60 +446,6 @@ export async function fetchAuthToken(
 /** Checks if a token looks like a JWT (3-part base64 starting with eyJ). */
 function isLikelyJwt(token: string): boolean {
     return token.startsWith("eyJ") && token.split(".").length === 3;
-}
-
-async function waitForTokenCandidate(
-    resolvedCookieNames: { sessionNames: readonly string[]; refreshNames: readonly string[] },
-    primaryUrl: string,
-    tabUrlHint?: string,
-): Promise<TokenCandidateResult> {
-    const startedAt = Date.now();
-
-    while ((Date.now() - startedAt) < AUTH_READY_TIMEOUT_MS) {
-        const candidate = await readTokenCandidateOnce(resolvedCookieNames, primaryUrl, tabUrlHint);
-
-        if (candidate.token !== null) {
-            return candidate;
-        }
-
-        await new Promise<void>((resolve) => {
-            setTimeout(resolve, AUTH_READY_RETRY_INTERVAL_MS);
-        });
-    }
-
-    return readTokenCandidateOnce(resolvedCookieNames, primaryUrl, tabUrlHint);
-}
-
-async function readTokenCandidateOnce(
-    resolvedCookieNames: { sessionNames: readonly string[]; refreshNames: readonly string[] },
-    primaryUrl: string,
-    tabUrlHint?: string,
-): Promise<TokenCandidateResult> {
-    const sessionLookup = await readCookieValueByNameCandidates(
-        resolvedCookieNames.sessionNames,
-        primaryUrl,
-    );
-
-    if (sessionLookup.value !== null && isLikelyJwt(sessionLookup.value)) {
-        console.log("[config-auth] token wait: found JWT directly in session cookie");
-        return {
-            token: sessionLookup.value,
-            cookieName: sessionLookup.cookieName ?? COOKIE_SESSION_ID,
-        };
-    }
-
-
-    const signedUrlToken = await resolveSignedUrlTokenCandidate(tabUrlHint, primaryUrl);
-
-    if (signedUrlToken !== null) {
-        console.log("[config-auth] token wait: using signed URL token fallback");
-        return {
-            token: signedUrlToken,
-            cookieName: "signedUrl[__lovable_token]",
-        };
-    }
-
-    return { token: null };
 }
 
 interface TokenValidationResult {
@@ -475,82 +464,112 @@ async function validateToken(
     };
 }
 
-function logRefreshError(refreshError: CaughtError): void {
-    logCaughtError(BgLogTag.CONFIG_AUTH, "Error refreshing session", refreshError);
-}
-
-async function readCookieValueByNameCandidates(
-    cookieNames: readonly string[],
-    primaryUrl: string,
-): Promise<CookieLookupResult> {
-    for (const cookieName of cookieNames) {
-        const value = await readCookieValueFromCandidates(cookieName, primaryUrl);
-        if (value !== null) {
-            return { value, cookieName };
-        }
-    }
-
-    return { value: null, cookieName: null };
-}
-
-async function discoverAuthCookieNames(primaryUrl: string): Promise<CookieDiscoverySummary> {
-    const checkedUrls = buildCookieUrlCandidates(primaryUrl);
-
+/** Returns the active tab URL when available. */
+async function getActiveTabUrl(): Promise<string | null> {
     try {
-        const allCookies = await chrome.cookies.getAll({});
-        const authLikeCookieNames = allCookies
-            .filter((cookie) => AUTH_COOKIE_NAME_PATTERN.test(cookie.name))
-            .map((cookie) => cookie.name)
-            .filter((name, index, arr) => arr.indexOf(name) === index)
-            .sort();
+        const tabs = await chrome.tabs.query({
+            active: true,
+            currentWindow: true,
+        });
 
-        return {
-            checkedUrls,
-            authLikeCookieNames,
-        };
+        return tabs[0]?.url ?? null;
     } catch {
-        return {
-            checkedUrls,
-            authLikeCookieNames: [],
-        };
+        return null;
     }
-}
-
-function buildMissingCookieMessage(
-    cookieDiscovery: CookieDiscoverySummary,
-    expectedSessionNames: readonly string[],
-    expectedRefreshNames: readonly string[],
-): string {
-    const discovered = cookieDiscovery.authLikeCookieNames.length > 0
-        ? cookieDiscovery.authLikeCookieNames.join(", ")
-        : "none";
-
-    return [
-        `No JWT found after waiting ${Math.round(AUTH_READY_TIMEOUT_MS / 1000)}s for unified auth readiness.`,
-        `Checked cookie URLs: ${cookieDiscovery.checkedUrls.join(" | ")}`,
-        `Expected session cookie names: ${expectedSessionNames.join(", ")}`,
-        `Expected refresh cookie names: ${expectedRefreshNames.join(", ")}`,
-        `Discovered auth-like cookie names: ${discovered}`,
-        `Contract: background waitForTokenCandidate -> localStorage JWT / signed URL / JWT cookie`,
-    ].join(" ");
 }
 
 async function getActivePlatformTabs(tabUrlHint?: string): Promise<chrome.tabs.Tab[]> {
-    const hintedUrl = typeof tabUrlHint === "string" && tabUrlHint.length > 0
-        ? tabUrlHint
-        : null;
+    const byHint: chrome.tabs.Tab[] = [];
 
-    if (hintedUrl !== null) {
-        const hintedTabs = await chrome.tabs.query({ url: hintedUrl });
-        if (hintedTabs.length > 0) {
-            return hintedTabs;
+    if (typeof tabUrlHint === "string" && tabUrlHint.length > 0) {
+        try {
+            const hintedTabs = await chrome.tabs.query({ url: [tabUrlHint] });
+            byHint.push(...hintedTabs);
+        } catch {
+            // Ignore hint query failures.
         }
     }
 
-    const tabs = await chrome.tabs.query({ url: [...PLATFORM_TAB_PATTERNS] });
-    return tabs;
+    const patternTabs = await chrome.tabs.query({ url: [...PLATFORM_TAB_PATTERNS] });
+
+    const merged = new Map<number, chrome.tabs.Tab>();
+    for (const tab of byHint) {
+        if (typeof tab.id === "number") merged.set(tab.id, tab);
+    }
+    for (const tab of patternTabs) {
+        if (typeof tab.id === "number") merged.set(tab.id, tab);
+    }
+
+    return [...merged.values()];
 }
 
+// eslint-disable-next-line max-lines-per-function
+async function readSupabaseJwtFromPlatformTabs(tabUrlHint?: string): Promise<string | null> {
+    const tabs = await getActivePlatformTabs(tabUrlHint);
+
+    for (const tab of tabs) {
+        if (typeof tab.id !== "number") continue;
+
+        try {
+            const result = await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                world: "MAIN",
+                func: function scanLocalStorageForJwt(): string | null { // eslint-disable-line sonarjs/cognitive-complexity -- localStorage scan with priority matching
+                    try {
+                        const len = localStorage.length;
+                        // Priority 1: Supabase auth token (sb-*-auth-token)
+                        for (let i = 0; i < len; i++) {
+                            const key = localStorage.key(i);
+                            if (!key) continue;
+                            if (key.startsWith("sb-") && key.includes("-auth-token")) {
+                                const raw = localStorage.getItem(key);
+                                if (!raw) continue;
+                                try {
+                                    const parsed = JSON.parse(raw);
+                                    const token = parsed?.access_token
+                                        ?? parsed?.currentSession?.access_token
+                                        ?? parsed?.session?.access_token;
+                                    if (typeof token === "string" && token.startsWith("eyJ") && token.split(".").length === 3) {
+                                        return token;
+                                    }
+                                } catch {
+                                    if (raw.startsWith("eyJ") && raw.split(".").length === 3) {
+                                        return raw;
+                                    }
+                                }
+                            }
+                        }
+                        // Priority 2: Lovable-specific auth keys
+                        const lovableKeys = ["lovable-auth-token", "lovable:token", "auth-token", "supabase.auth.token"];
+                        for (let j = 0; j < lovableKeys.length; j++) {
+                            const val = localStorage.getItem(lovableKeys[j]);
+                            if (!val) continue;
+                            try {
+                                const p2 = JSON.parse(val);
+                                const t2 = p2?.access_token ?? p2?.currentSession?.access_token ?? p2?.token;
+                                if (typeof t2 === "string" && t2.startsWith("eyJ") && t2.split(".").length === 3) return t2;
+                            } catch {
+                                if (val.startsWith("eyJ") && val.split(".").length === 3) return val;
+                            }
+                        }
+                    } catch {
+                        // localStorage may be unavailable in some contexts
+                    }
+                    return null;
+                },
+            });
+
+            const token = result?.[0]?.result;
+            if (typeof token === "string" && isLikelyJwt(token)) {
+                return token;
+            }
+        } catch {
+            // Tab may be unavailable or restricted.
+        }
+    }
+
+    return null;
+}
 
 /** Extracts project ID from the active tab URL.
  *  Supports both path-based (/projects/{id}) and subdomain-based
@@ -611,71 +630,132 @@ async function resolveSignedUrlTokenCandidate(
         return primaryToken;
     }
 
-    const frameToken = await readSignedUrlTokenFromPlatformFrames(tabUrlHint);
-    if (frameToken) {
-        return frameToken;
-    }
-
     const activeTabUrl = await getActiveTabUrl();
     return extractSignedUrlTokenFromUrl(activeTabUrl);
-}
-
-async function readSignedUrlTokenFromPlatformFrames(tabUrlHint?: string): Promise<string | null> {
-    const tabs = await getActivePlatformTabs(tabUrlHint);
-
-    for (const tab of tabs) {
-        if (typeof tab.id !== "number") {
-            continue;
-        }
-
-        try {
-            const frames = await chrome.webNavigation.getAllFrames({ tabId: tab.id });
-            const seenUrls = new Set<string>();
-
-            for (const frame of frames ?? []) {
-                const frameUrl = typeof frame?.url === "string" ? frame.url : "";
-                if (!frameUrl || seenUrls.has(frameUrl)) {
-                    continue;
-                }
-
-                seenUrls.add(frameUrl);
-                const token = extractSignedUrlTokenFromUrl(frameUrl);
-                if (token) {
-                    return token;
-                }
-            }
-        } catch {
-            // Frame URLs may be unavailable on restricted tabs.
-        }
-    }
-
-    return null;
 }
 
 /** Extracts project ID from a URL string. */
 function extractProjectIdFromUrl(url: string): string | null {
     // Pattern 1: /projects/{id} (editor URL)
     const pathMatch = url.match(/\/projects\/([^/?#]+)/);
-    if (pathMatch?.[1]) {
-        return pathMatch[1];
+    if (pathMatch) return pathMatch[1];
+
+    try {
+        const hostname = new URL(url).hostname;
+        const firstLabel = hostname.split(".")[0] ?? "";
+
+        // Pattern 2: id-preview--{uuid}.{domain}
+        const idPreviewLabelMatch = firstLabel.match(/^id-preview--([a-f0-9-]{36})$/i);
+        if (idPreviewLabelMatch) return idPreviewLabelMatch[1];
+
+        // Pattern 3: {uuid}--preview.{domain} or {uuid}-preview.{domain}
+        const previewSuffixLabelMatch = firstLabel.match(/^([a-f0-9-]{36})(?:--preview|-preview)$/i);
+        if (previewSuffixLabelMatch) return previewSuffixLabelMatch[1];
+
+        // Pattern 4: bare UUID subdomain: {uuid}.lovableproject.com
+        const bareUuidLabelMatch = firstLabel.match(/^([a-f0-9-]{36})$/i);
+        if (bareUuidLabelMatch) return bareUuidLabelMatch[1];
+    } catch {
+        // Fall through to legacy string regex checks below.
     }
 
-    // Pattern 2: subdomain --{id}.lovable.app (preview URL)
-    const subdomainMatch = url.match(/\/\/[^/]*--([a-f0-9-]{36})\.lovable\.app/i);
-    if (subdomainMatch?.[1]) {
-        return subdomainMatch[1];
-    }
+    // Legacy fallback regexes (defensive)
+    const subdomainMatch = url.match(/id-preview--([a-f0-9-]{36})\./i);
+    if (subdomainMatch) return subdomainMatch[1];
+
+    const altSubdomainMatch = url.match(/([a-f0-9-]{36})(?:--preview|-preview)\./i);
+    if (altSubdomainMatch) return altSubdomainMatch[1];
+
+    const bareUuidSubdomainMatch = url.match(/https?:\/\/([a-f0-9-]{36})\.[^/]+/i);
+    if (bareUuidSubdomainMatch) return bareUuidSubdomainMatch[1];
 
     return null;
 }
 
-/** Gets the active tab's URL. */
-async function getActiveTabUrl(): Promise<string | null> {
-    try {
-        const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-        const firstTab = tabs[0];
-        return typeof firstTab?.url === "string" ? firstTab.url : null;
-    } catch {
-        return null;
+/* ------------------------------------------------------------------ */
+/*  Cookie Reader                                                      */
+/* ------------------------------------------------------------------ */
+
+async function readCookieValueByNameCandidates(
+    cookieNames: readonly string[],
+    primaryUrl: string,
+): Promise<CookieLookupResult> {
+    for (const cookieName of cookieNames) {
+        let value: string | null = null;
+
+        try {
+            value = await readCookieValueFromCandidates(cookieName, primaryUrl);
+        } catch (cookieError) {
+            const errorMessage = cookieError instanceof Error
+                ? cookieError.message
+                : String(cookieError);
+            logCaughtError(BgLogTag.CONFIG_AUTH, `Cookie read failed (${cookieName})`, cookieError);
+        }
+
+        if (value !== null) {
+            return { value, cookieName };
+        }
     }
+
+    return { value: null, cookieName: null };
+}
+
+async function discoverAuthCookieNames(primaryUrl: string): Promise<CookieDiscoverySummary> {
+    const checkedUrls = buildCookieUrlCandidates(primaryUrl);
+    const authLikeCookieNames = new Set<string>();
+    const canListCookies = typeof chrome.cookies?.getAll === "function";
+
+    if (!canListCookies) {
+        return { checkedUrls, authLikeCookieNames: [] };
+    }
+
+    for (const url of checkedUrls) {
+        try {
+            const cookies = await chrome.cookies.getAll({ url });
+
+            for (const cookie of cookies) {
+                const isAuthLike = AUTH_COOKIE_NAME_PATTERN.test(cookie.name);
+
+                if (isAuthLike) {
+                    authLikeCookieNames.add(cookie.name);
+                }
+            }
+        } catch {
+            // Ignore candidate URL errors and keep scanning.
+        }
+    }
+
+    return {
+        checkedUrls,
+        authLikeCookieNames: [...authLikeCookieNames],
+    };
+}
+
+function buildMissingCookieMessage(
+    summary: CookieDiscoverySummary,
+    expectedSessionNamesInput: readonly string[],
+    expectedRefreshNamesInput: readonly string[],
+): string {
+    const expectedSessionNames = expectedSessionNamesInput.join(", ");
+    const expectedRefreshNames = expectedRefreshNamesInput.join(", ");
+    const foundNames = summary.authLikeCookieNames.length > 0
+        ? summary.authLikeCookieNames.join(", ")
+        : "none";
+
+    return [
+        "Session cookie not found via chrome.cookies.get.",
+        `Expected session names: [${expectedSessionNames}].`,
+        `Expected refresh names: [${expectedRefreshNames}].`,
+        `Checked URLs: [${summary.checkedUrls.join(", ")}].`,
+        `Found auth-like cookie names: [${foundNames}].`,
+    ].join(" ");
+}
+
+/* ------------------------------------------------------------------ */
+/*  Error Logging                                                      */
+/* ------------------------------------------------------------------ */
+
+/** Logs a refresh failure. */
+function logRefreshError(error: unknown): void {
+    logCaughtError(BgLogTag.CONFIG_AUTH, "Token refresh failed", error);
 }

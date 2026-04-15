@@ -2,7 +2,7 @@
 
 **Version**: v2.0.0  
 **Date**: 2026-04-03  
-**Supersedes**: Auth Bridge Waterfall v1.x (4-tier waterfall, external auth scan, broadcast)
+**Supersedes**: Auth Bridge Waterfall v1.x (4-tier waterfall, Supabase scan, broadcast)
 
 ---
 
@@ -89,10 +89,10 @@ Both keys are written together atomically. Any component reading `marco_bearer_t
 
 ---
 
-## Why No Broadcast / No External Auth Scan
+## Why No Broadcast / No Supabase Scan
 
 - **No broadcast needed**: All components read from the same localStorage. When the Auth Bridge saves a fresh token, it's immediately available to all components on the same origin.
-- **No external auth scan**: Tokens come from the Lovable session cookie and signed URLs only. No third-party auth systems are used.
+- **No Supabase scan**: The system does not use Supabase. Tokens come from the Lovable session cookie only.
 - **No multi-tier fallthrough**: Two steps are sufficient — localStorage cache with TTL, and cookie fallback. Adding more tiers adds complexity without value.
 
 ---
